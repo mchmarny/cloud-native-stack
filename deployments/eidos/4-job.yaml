@@ -42,7 +42,7 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: eidos
-          image: ghcr.io/mchmarny/cloud-native-stack:latest
+          image: ghcr.io/mchmarny/cloud-native-stack:v0.2.0
           command: ["/bin/sh", "-c"]
           env:
             - name: NODE_NAME

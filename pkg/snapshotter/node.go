@@ -12,16 +12,12 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializers"
 
 	"golang.org/x/sync/errgroup"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Snapshot struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
-	// +optional
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-
+	Kind         string                   `json:"kind,omitempty" yaml:"kind,omitempty"`
+	APIVersion   string                   `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
+	Metadata     map[string]string        `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 	Measurements []collectors.Measurement `json:"measurements" yaml:"measurements"`
 }
 
@@ -50,10 +46,9 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 
 	// Initialize snapshot structure
 	snap := &Snapshot{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Snapshot",
-			APIVersion: "snapshot.dgxc.io/v1",
-		},
+		Kind:         "Snapshot",
+		APIVersion:   "snapshot.dgxc.io/v1",
+		Metadata:     make(map[string]string),
 		Measurements: make([]collectors.Measurement, 0),
 	}
 
@@ -66,14 +61,27 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 			return fmt.Errorf("failed to get node info: %w", err)
 		}
 		mu.Lock()
-		snap.Name = nd.Name
-		snap.Namespace = nd.Namespace
-		// snap.Labels = nd.Labels // Noisy but uncomment if labels are needed
-		snap.Annotations = map[string]string{
-			"snapshot-time": time.Now().UTC().Format(time.RFC1123Z),
-		}
+		snap.Metadata["source-node"] = nd.Name
+		snap.Metadata["source-namespace"] = nd.Namespace
+		snap.Metadata["snapshot-timestamp"] = time.Now().UTC().Format(time.RFC1123Z)
 		mu.Unlock()
 		n.Logger.Debug("obtained node metadata", slog.String("name", nd.Name), slog.String("namespace", nd.Namespace))
+		return nil
+	})
+
+	// Collect component concurrently
+	g.Go(func() error {
+		n.Logger.Debug("collecting component information")
+		c := n.Factory.ComponentCollector()
+		components, err := c.Collect(ctx)
+		if err != nil {
+			n.Logger.Error("failed to collect component", slog.String("error", err.Error()))
+			return fmt.Errorf("failed to collect component info: %w", err)
+		}
+		mu.Lock()
+		snap.Measurements = append(snap.Measurements, components...)
+		mu.Unlock()
+		n.Logger.Debug("collected component information", slog.Int("count", len(components)))
 		return nil
 	})
 

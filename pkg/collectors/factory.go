@@ -7,6 +7,10 @@ type CollectorFactory interface {
 	CreateSystemDCollector() Collector
 	CreateGrubCollector() Collector
 	CreateSysctlCollector() Collector
+	CreateHelmCollector() Collector
+	CreateKubernetesCollector() Collector
+	CreateImageCollector() Collector
+	ComponentCollector() Collector
 }
 
 // DefaultCollectorFactory creates collectors with production dependencies.
@@ -19,6 +23,11 @@ func NewDefaultCollectorFactory() *DefaultCollectorFactory {
 	return &DefaultCollectorFactory{
 		SystemDServices: []string{"containerd.service"},
 	}
+}
+
+// ComponentCollector creates a component collector.
+func (f *DefaultCollectorFactory) ComponentCollector() Collector {
+	return &ComponentCollector{}
 }
 
 // CreateKModCollector creates a kernel module collector.
@@ -41,4 +50,19 @@ func (f *DefaultCollectorFactory) CreateGrubCollector() Collector {
 // CreateSysctlCollector creates a sysctl collector.
 func (f *DefaultCollectorFactory) CreateSysctlCollector() Collector {
 	return &SysctlCollector{}
+}
+
+// CreateHelmCollector creates a Helm collector.
+func (f *DefaultCollectorFactory) CreateHelmCollector() Collector {
+	return &HelmCollector{}
+}
+
+// CreateKubernetesCollector creates a Kubernetes API collector.
+func (f *DefaultCollectorFactory) CreateKubernetesCollector() Collector {
+	return &KubernetesCollector{}
+}
+
+// CreateImageCollector creates a container image collector.
+func (f *DefaultCollectorFactory) CreateImageCollector() Collector {
+	return &ImageCollector{}
 }
