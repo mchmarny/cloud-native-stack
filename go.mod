@@ -1,6 +1,6 @@
 module github.com/NVIDIA/cloud-native-stack
 
-go 1.25.3
+go 1.25.0
 
 require (
 	github.com/coreos/go-systemd/v22 v22.6.0
