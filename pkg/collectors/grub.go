@@ -18,7 +18,7 @@ const GrubType string = "Grub"
 
 // Collect retrieves the GRUB bootloader parameters from /proc/cmdline
 // and parses them into GrubConfig structures
-func (s *GrubCollector) Collect(ctx context.Context) ([]Configuration, error) {
+func (s *GrubCollector) Collect(ctx context.Context) ([]Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func (s *GrubCollector) Collect(ctx context.Context) ([]Configuration, error) {
 		props[key] = val
 	}
 
-	res := []Configuration{
+	res := []Measurement{
 		{
 			Type: GrubType,
 			Data: props,

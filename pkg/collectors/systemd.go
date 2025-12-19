@@ -23,12 +23,12 @@ type SystemDConfig struct {
 
 // Collect gathers configuration data from specified systemd services.
 // It implements the Collector interface.
-func (s *SystemDCollector) Collect(ctx context.Context) ([]Configuration, error) {
+func (s *SystemDCollector) Collect(ctx context.Context) ([]Measurement, error) {
 	services := s.Services
 	if len(services) == 0 {
 		services = []string{"containerd.service"}
 	}
-	res := make([]Configuration, 0, len(services)*10)
+	res := make([]Measurement, 0, len(services)*10)
 
 	conn, err := dbus.NewSystemdConnectionContext(ctx)
 	if err != nil {
@@ -42,7 +42,7 @@ func (s *SystemDCollector) Collect(ctx context.Context) ([]Configuration, error)
 			return nil, fmt.Errorf("failed to get unit properties: %w", err)
 		}
 
-		res = append(res, Configuration{
+		res = append(res, Measurement{
 			Type: SystemDType,
 			Data: SystemDConfig{
 				Unit:       service,

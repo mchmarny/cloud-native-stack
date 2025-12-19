@@ -6,7 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: eidos
 spec:
-  completions: 1                 # total number of one-time Pods to run 
+  completions: 1                 # total number of one-time Pods to run
   parallelism: 1                 # how many run concurrently (concurrency=1)
   completionMode: NonIndexed     # single pod execution
   backoffLimit: 0                # don't retry (adjust if you want limited retries)
@@ -44,15 +44,20 @@ spec:
         - name: eidos
           image: ghcr.io/mchmarny/cloud-native-stack:latest
           command: ["/bin/sh", "-c"]
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           args:
             - |
               set -e
               echo "Starting eidos snapshot collection..."
-              
+
               # Run eidos directly (reads from mounted host paths)
               if /ko-app/eidos snapshot -o yaml > /tmp/eidos-snapshot.yaml; then
                 echo "Snapshot collected successfully"
-                  
+
                 # Output to stdout for logs
                 cat /tmp/eidos-snapshot.yaml
               else

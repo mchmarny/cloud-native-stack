@@ -17,7 +17,7 @@ const KModType string = "KMod"
 
 // Collect retrieves the list of loaded kernel modules from /proc/modules
 // and parses them into KModConfig structures
-func (s *KModCollector) Collect(ctx context.Context) ([]Configuration, error) {
+func (s *KModCollector) Collect(ctx context.Context) ([]Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (s *KModCollector) Collect(ctx context.Context) ([]Configuration, error) {
 		modules = append(modules, mod[0])
 	}
 
-	res := []Configuration{
+	res := []Measurement{
 		{
 			Type: KModType,
 			Data: modules,

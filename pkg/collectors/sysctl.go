@@ -19,7 +19,7 @@ const SysctlType string = "Sysctl"
 
 // Collect gathers sysctl configurations from /proc/sys, excluding /proc/sys/net
 // and returns them as a single Configuration with a map of all parameters.
-func (s *SysctlCollector) Collect(ctx context.Context) ([]Configuration, error) {
+func (s *SysctlCollector) Collect(ctx context.Context) ([]Measurement, error) {
 	root := "/proc/sys"
 	params := make(map[string]any)
 
@@ -65,7 +65,7 @@ func (s *SysctlCollector) Collect(ctx context.Context) ([]Configuration, error) 
 		return nil, fmt.Errorf("failed to capture sysctl config: %w", err)
 	}
 
-	res := []Configuration{
+	res := []Measurement{
 		{
 			Type: SysctlType,
 			Data: params,
