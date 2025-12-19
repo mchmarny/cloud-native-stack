@@ -5,7 +5,7 @@
 
 NVIDIA Cloud Native Stack (CNS) is a collection of software to run cloud native workloads on NVIDIA GPUs. NVIDIA Cloud Native Stack is based on Ubuntu/RHEL, Kubernetes, Helm and the NVIDIA GPU and Network Operator.
 
-Interested in deploying NVIDIA Cloud Native Stack? This repository has [install guides](https://github.com/NVIDIA/cloud-native-stack/tree/master/docs/install-guides) for manual installations and [ansible playbooks](https://github.com/NVIDIA/cloud-native-stack/tree/master/docs/playbooks) for automated installations.
+Interested in deploying NVIDIA Cloud Native Stack? This repository has [install guides](https://github.com/NVIDIA/cloud-native-stack/tree/master/install-guides) for manual installations and [ansible playbooks](https://github.com/NVIDIA/cloud-native-stack/tree/master/playbooks) for automated installations.
 
 Interested in a pre-provisioned NVIDIA Cloud Native Stack environment? [NVIDIA LaunchPad](https://www.nvidia.com/en-us/data-center/launchpad/) provides pre-provisioned environments so that you can quickly get started.
 
@@ -67,14 +67,14 @@ For more information, Refer [Cloud Native Stack Releases](https://github.com/NVI
   - [Network Operator](https://github.com/Mellanox/network-operator)  
   - [NVIDIA NIM Operator](https://docs.nvidia.com/nim-operator/latest/index.html)
   - [NVIDIA Nsight Operator](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/devtools/helm-charts/nsight-operator)
-  - [FeatureGates](https://github.com/NVIDIA/cloud-native-stack/tree/master/docs/playbooks#enable-feature-gates-to-cloud-native-stack)
-- [MicroK8s on CNS](https://github.com/NVIDIA/cloud-native-stack/tree/master/docs/playbooks#enable-microk8s)
-- [Installation on CSP's](https://github.com/NVIDIA/cloud-native-stack/tree/master/docs/playbooks#installation-on-csps)
-- [Storage on CNS](https://github.com/NVIDIA/cloud-native-stack/tree/master/docs/playbooks#storage-on-cns)
-- [Monitoring on CNS](https://github.com/NVIDIA/cloud-native-stack/tree/master/docs/playbooks#monitoring-on-cns)
-- [LoadBalancer on CNS](https://github.com/NVIDIA/cloud-native-stack/tree/master/docs/playbooks#load-balancer-on-cns)
-- [Kserve](https://github.com/NVIDIA/cloud-native-stack/tree/master/docs/playbooks#enable-kserve-on-cns)
-- [LeaderWorkerSet(lws)](https://github.com/NVIDIA/cloud-native-stack/tree/master/docs/playbooks#enable-leaderworkerset)
+  - [FeatureGates](https://github.com/NVIDIA/cloud-native-stack/tree/master/playbooks#enable-feature-gates-to-cloud-native-stack)
+- [MicroK8s on CNS](https://github.com/NVIDIA/cloud-native-stack/tree/master/playbooks#enable-microk8s)
+- [Installation on CSP's](https://github.com/NVIDIA/cloud-native-stack/tree/master/playbooks#installation-on-csps)
+- [Storage on CNS](https://github.com/NVIDIA/cloud-native-stack/tree/master/playbooks#storage-on-cns)
+- [Monitoring on CNS](https://github.com/NVIDIA/cloud-native-stack/tree/master/playbooks#monitoring-on-cns)
+- [LoadBalancer on CNS](https://github.com/NVIDIA/cloud-native-stack/tree/master/playbooks#load-balancer-on-cns)
+- [Kserve](https://github.com/NVIDIA/cloud-native-stack/tree/master/playbooks#enable-kserve-on-cns)
+- [LeaderWorkerSet(lws)](https://github.com/NVIDIA/cloud-native-stack/tree/master/playbooks#enable-leaderworkerset)
 
 | CNS Version               | 16.0    | 15.1 | 14.2 |
 | :-----:                   | :-----: | :------: | :------: |
@@ -108,10 +108,10 @@ Run the below commands to clone the NVIDIA Cloud Native Stack.
 
 ```
 git clone https://github.com/NVIDIA/cloud-native-stack.git
-cd cloud-native-stack/docs/playbooks
+cd cloud-native-stack/playbooks
 ```
 
-Update the hosts file in docs/playbooks directory with master and worker nodes(if you have) IP's with username and password like below
+Update the hosts file in playbooks directory with master and worker nodes(if you have) IP's with username and password like below
 
 ```
 nano hosts
@@ -127,7 +127,7 @@ Install the NVIDIA Cloud Native Stack stack by running the below command. "Skipp
 ```
 bash setup.sh install
 ```
-For more Information about customize the values, please refer [Installation](https://github.com/NVIDIA/cloud-native-stack/tree/master/docs/playbooks#installation)
+For more Information about customize the values, please refer [Installation](https://github.com/NVIDIA/cloud-native-stack/tree/master/playbooks#installation)
 
 # Topologies
 
@@ -139,12 +139,12 @@ For more Information about customize the values, please refer [Installation](htt
 
 # Advanced Settings for NVIDIA Platforms
 
-- [Optimizations for NVIDIA GB200 NVL72](./docs/optimizations/GB200-NVL72.md)
+- [Optimizations for NVIDIA GB200 NVL72](./optimizations/GB200-NVL72.md)
  
 
 # Troubleshooting
 
-[Troubleshoot CNS installation issues](https://github.com/NVIDIA/cloud-native-stack/blob/master/docs/troubleshooting/README.md)
+[Troubleshoot CNS installation issues](https://github.com/NVIDIA/cloud-native-stack/blob/master/troubleshooting/README.md)
 
 # Getting help or Providing feedback
 

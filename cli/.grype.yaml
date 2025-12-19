@@ -1,6 +1,0 @@
-ignore:
-  - vulnerability: GHSA-qxp5-gwg8-xv66
-    package:
-      name: golang.org/x/net
-      version: v0.30.0
-    until: "2025-12-31"
