@@ -47,31 +47,42 @@ func TestSysctlCollector_Integration(t *testing.T) {
 		t.Fatalf("Collect() failed: %v", err)
 	}
 
-	// Most systems have many sysctl parameters
+	// Should return exactly one configuration
+	if len(configs) != 1 {
+		t.Errorf("Expected 1 config, got %d", len(configs))
+	}
+
 	if len(configs) == 0 {
+		return
+	}
+
+	cfg := configs[0]
+	if cfg.Type != collectors.SysctlType {
+		t.Errorf("Expected type %s, got %s", collectors.SysctlType, cfg.Type)
+	}
+
+	// Validate that Data is a map
+	params, ok := cfg.Data.(map[string]any)
+	if !ok {
+		t.Errorf("Expected map[string]any, got %T", cfg.Data)
+		return
+	}
+
+	// Most systems have many sysctl parameters
+	if len(params) == 0 {
 		t.Error("Expected at least one sysctl parameter")
 	}
 
-	t.Logf("Found %d sysctl parameters", len(configs))
+	t.Logf("Found %d sysctl parameters", len(params))
 
 	// Verify no /proc/sys/net entries (should be excluded)
-	for _, cfg := range configs {
-		if cfg.Type != collectors.SysctlType {
-			t.Errorf("Expected type %s, got %s", collectors.SysctlType, cfg.Type)
+	for key := range params {
+		if strings.HasPrefix(key, "/proc/sys/net") {
+			t.Errorf("Found /proc/sys/net entry which should be excluded: %s", key)
 		}
 
-		sysctlCfg, ok := cfg.Data.(collectors.SysctlConfig)
-		if !ok {
-			t.Errorf("Expected SysctlConfig, got %T", cfg.Data)
-			continue
-		}
-
-		if strings.HasPrefix(sysctlCfg.Key, "/proc/sys/net") {
-			t.Errorf("Found /proc/sys/net entry which should be excluded: %s", sysctlCfg.Key)
-		}
-
-		if !strings.HasPrefix(sysctlCfg.Key, "/proc/sys") {
-			t.Errorf("Key doesn't start with /proc/sys: %s", sysctlCfg.Key)
+		if !strings.HasPrefix(key, "/proc/sys") {
+			t.Errorf("Key doesn't start with /proc/sys: %s", key)
 		}
 	}
 }
@@ -93,11 +104,16 @@ func TestSysctlCollector_ExcludesNet(t *testing.T) {
 		t.Fatalf("Collect() failed: %v", err)
 	}
 
+	if len(configs) == 0 {
+		return
+	}
+
+	params := configs[0].Data.(map[string]any)
+
 	// Ensure no network parameters are included
-	for _, cfg := range configs {
-		sysctlCfg := cfg.Data.(collectors.SysctlConfig)
-		if strings.Contains(sysctlCfg.Key, "/net/") {
-			t.Errorf("Network sysctl should be excluded: %s", sysctlCfg.Key)
+	for key := range params {
+		if strings.Contains(key, "/net/") {
+			t.Errorf("Network sysctl should be excluded: %s", key)
 		}
 	}
 }

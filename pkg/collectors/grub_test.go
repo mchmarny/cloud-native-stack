@@ -44,29 +44,33 @@ func TestGrubCollector_Integration(t *testing.T) {
 		t.Fatalf("Collect() failed: %v", err)
 	}
 
-	// Most systems have at least a few boot parameters
+	// Should have exactly one configuration with all boot parameters
+	if len(configs) != 1 {
+		t.Errorf("Expected exactly 1 config, got %d", len(configs))
+	}
+
 	if len(configs) == 0 {
+		return
+	}
+
+	cfg := configs[0]
+	if cfg.Type != collectors.GrubType {
+		t.Errorf("Expected type %s, got %s", collectors.GrubType, cfg.Type)
+	}
+
+	// Validate that Data is a map
+	props, ok := cfg.Data.(map[string]any)
+	if !ok {
+		t.Errorf("Expected map[string]any, got %T", cfg.Data)
+		return
+	}
+
+	// Most systems have at least a few boot parameters
+	if len(props) == 0 {
 		t.Error("Expected at least one boot parameter")
 	}
 
-	t.Logf("Found %d boot parameters", len(configs))
-
-	for _, cfg := range configs {
-		if cfg.Type != collectors.GrubType {
-			t.Errorf("Expected type %s, got %s", collectors.GrubType, cfg.Type)
-		}
-
-		// Validate that Data is GrubConfig
-		grubCfg, ok := cfg.Data.(collectors.GrubConfig)
-		if !ok {
-			t.Errorf("Expected GrubConfig, got %T", cfg.Data)
-			continue
-		}
-
-		if grubCfg.Key == "" {
-			t.Error("Expected non-empty key")
-		}
-	}
+	t.Logf("Found %d boot parameters", len(props))
 }
 
 func TestGrubCollector_ValidatesParsing(t *testing.T) {
@@ -86,16 +90,28 @@ func TestGrubCollector_ValidatesParsing(t *testing.T) {
 		t.Fatalf("Collect() failed: %v", err)
 	}
 
+	if len(configs) == 0 {
+		t.Fatal("Expected at least one config")
+	}
+
+	props := configs[0].Data.(map[string]any)
+
 	// Check that we can parse both key-only and key=value formats
 	hasKeyOnly := false
 	hasKeyValue := false
 
-	for _, cfg := range configs {
-		grubCfg := cfg.Data.(collectors.GrubConfig)
-		if grubCfg.Value == "" {
+	for key, value := range props {
+		if key == "" {
+			t.Error("Found empty key in Properties")
+			continue
+		}
+
+		if value == "" {
 			hasKeyOnly = true
+			t.Logf("Key-only param: %s", key)
 		} else {
 			hasKeyValue = true
+			t.Logf("Key=value param: %s=%v", key, value)
 		}
 	}
 

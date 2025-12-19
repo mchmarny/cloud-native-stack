@@ -15,12 +15,6 @@ type KModCollector struct {
 // KModType is the type identifier for kernel module configurations
 const KModType string = "KMod"
 
-// KModConfig represents the configuration of a loaded kernel module
-// with its name
-type KModConfig struct {
-	Name string
-}
-
 // Collect retrieves the list of loaded kernel modules from /proc/modules
 // and parses them into KModConfig structures
 func (s *KModCollector) Collect(ctx context.Context) ([]Configuration, error) {
@@ -30,7 +24,7 @@ func (s *KModCollector) Collect(ctx context.Context) ([]Configuration, error) {
 	}
 
 	root := "/proc/modules"
-	res := make([]Configuration, 0, 100)
+	modules := make([]string, 0, 100)
 
 	cmdline, err := os.ReadFile(root)
 	if err != nil {
@@ -46,13 +40,14 @@ func (s *KModCollector) Collect(ctx context.Context) ([]Configuration, error) {
 		}
 
 		mod := strings.Split(p, " ")
+		modules = append(modules, mod[0])
+	}
 
-		res = append(res, Configuration{
+	res := []Configuration{
+		{
 			Type: KModType,
-			Data: KModConfig{
-				Name: mod[0],
-			},
-		})
+			Data: modules,
+		},
 	}
 
 	return res, nil

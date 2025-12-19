@@ -11,6 +11,6 @@ type Collector interface {
 
 // Configuration represents a single collector configuration.
 type Configuration struct {
-	Type string
-	Data any
+	Type string `json:"type" yaml:"type"`
+	Data any    `json:"data" yaml:"data"`
 }

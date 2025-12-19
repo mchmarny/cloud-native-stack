@@ -17,18 +17,11 @@ type SysctlCollector struct {
 // SysctlType is the type identifier for sysctl configurations
 const SysctlType string = "Sysctl"
 
-// SysctlConfig represents a single sysctl configuration entry
-// with its key and value
-type SysctlConfig struct {
-	Key   string
-	Value string
-}
-
 // Collect gathers sysctl configurations from /proc/sys, excluding /proc/sys/net
-// and returns them as a slice of Configuration objects.
+// and returns them as a single Configuration with a map of all parameters.
 func (s *SysctlCollector) Collect(ctx context.Context) ([]Configuration, error) {
 	root := "/proc/sys"
-	res := make([]Configuration, 0, 500)
+	params := make(map[string]any)
 
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -64,18 +57,19 @@ func (s *SysctlCollector) Collect(ctx context.Context) ([]Configuration, error) 
 			return nil
 		}
 
-		res = append(res, Configuration{
-			Type: SysctlType,
-			Data: SysctlConfig{
-				Key:   path,
-				Value: strings.TrimSpace(string(c)),
-			},
-		})
+		params[path] = strings.TrimSpace(string(c))
 
 		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to capture sysctl config: %w", err)
+	}
+
+	res := []Configuration{
+		{
+			Type: SysctlType,
+			Data: params,
+		},
 	}
 
 	return res, nil

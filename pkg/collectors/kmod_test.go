@@ -61,12 +61,31 @@ func TestKModCollector_Integration(t *testing.T) {
 		t.Fatalf("Collect() failed: %v", err)
 	}
 
-	// Most systems have at least a few kernel modules loaded
-	t.Logf("Found %d kernel modules", len(configs))
-
-	for _, cfg := range configs {
-		if cfg.Type != collectors.KModType {
-			t.Errorf("Expected type %s, got %s", collectors.KModType, cfg.Type)
-		}
+	// Should return exactly one configuration
+	if len(configs) != 1 {
+		t.Errorf("Expected 1 config, got %d", len(configs))
 	}
+
+	if len(configs) == 0 {
+		return
+	}
+
+	cfg := configs[0]
+	if cfg.Type != collectors.KModType {
+		t.Errorf("Expected type %s, got %s", collectors.KModType, cfg.Type)
+	}
+
+	// Validate that Data is a string slice
+	modules, ok := cfg.Data.([]string)
+	if !ok {
+		t.Errorf("Expected []string, got %T", cfg.Data)
+		return
+	}
+
+	// Most systems have at least a few kernel modules loaded
+	if len(modules) == 0 {
+		t.Error("Expected at least one kernel module")
+	}
+
+	t.Logf("Found %d kernel modules", len(modules))
 }

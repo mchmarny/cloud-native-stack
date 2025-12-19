@@ -1,0 +1,4168 @@
+[
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "BOOT_IMAGE",
+      "Value": "/boot/vmlinuz-6.8.0-1028-aws"
+    }
+  },
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "root",
+      "Value": "PARTUUID=8f173f4e-5cdd-42a6-bde6-d7564da61cf1"
+    }
+  },
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "ro",
+      "Value": ""
+    }
+  },
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "apparmor",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "security",
+      "Value": "apparmor"
+    }
+  },
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "audit",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "audit_backlog_limit",
+      "Value": "8192"
+    }
+  },
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "hugepagesz",
+      "Value": "1G"
+    }
+  },
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "hugepages",
+      "Value": "2"
+    }
+  },
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "hugepagesz",
+      "Value": "2M"
+    }
+  },
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "hugepages",
+      "Value": "5128"
+    }
+  },
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "nokaslr",
+      "Value": ""
+    }
+  },
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "init_on_alloc",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "numa_balancing",
+      "Value": "disable"
+    }
+  },
+  {
+    "Type": "Grub",
+    "Data": {
+      "Key": "panic",
+      "Value": "-1"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "tls"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "gdrdrv"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nvidia_modeset"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "video"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nvidia_uvm"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nvidia"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "ecc"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "ipmi_devintf"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "ipmi_msghandler"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "cls_bpf"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "sch_ingress"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "veth"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "xt_state"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "xt_connmark"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nf_conntrack_netlink"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "xt_addrtype"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "xt_nat"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "xt_statistic"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "xt_MASQUERADE"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "xt_mark"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "xt_nfacct"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "ipt_REJECT"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nf_reject_ipv4"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "xt_tcpudp"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nft_chain_nat"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nf_nat"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nfnetlink_acct"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "xt_conntrack"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "xt_comment"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nft_compat"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nf_tables"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nfnetlink"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "overlay"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "binfmt_misc"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "xfs"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nls_iso8859_1"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "aes_ce_blk"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "aes_ce_cipher"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "crct10dif_ce"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "polyval_ce"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "polyval_generic"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "ghash_ce"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "sm4_ce_gcm"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "sm4_ce_ccm"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "sm4_ce"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "sm4_ce_cipher"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "sm4"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "raid0"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "sm3_ce"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "sm3"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "sha3_ce"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "sha2_ce"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "sha256_arm64"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "sha1_ce"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "drm_gpuvm"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "drm_exec"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "gpu_sched"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "drm_ttm_helper"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "ttm"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "drm_display_helper"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "cec"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "rc_core"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "i2c_algo_bit"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "ena"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "qemu_fw_cfg"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "sch_fq_codel"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nf_conntrack"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nf_defrag_ipv6"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "nf_defrag_ipv4"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "libcrc32c"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "rpcrdma"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "sunrpc"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "rdma_ucm"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "ib_iser"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "libiscsi"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "scsi_transport_iscsi"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "rdma_cm"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "iw_cm"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "ib_cm"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "efa"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "ib_uverbs"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "ib_core"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "efi_pstore"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "ip_tables"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "x_tables"
+    }
+  },
+  {
+    "Type": "KMod",
+    "Data": {
+      "Name": "autofs4"
+    }
+  },
+  {
+    "Type": "SystemD",
+    "Data": {
+      "Unit": "containerd.service",
+      "Properties": {
+        "ActiveEnterTimestamp": 1764981336878100,
+        "ActiveEnterTimestampMonotonic": 147039705,
+        "ActiveExitTimestamp": 1764981331257620,
+        "ActiveExitTimestampMonotonic": 141419225,
+        "ActiveState": "active",
+        "After": [
+          "system.slice",
+          "sysinit.target",
+          "systemd-journald.socket",
+          "basic.target",
+          "dbus.service",
+          "local-fs.target",
+          "network.target"
+        ],
+        "AllowIsolate": false,
+        "AllowedCPUs": "",
+        "AllowedMemoryNodes": "",
+        "AmbientCapabilities": 0,
+        "AppArmorProfile": [
+          false,
+          ""
+        ],
+        "AssertResult": true,
+        "AssertTimestamp": 1764981336415952,
+        "AssertTimestampMonotonic": 146577557,
+        "Asserts": [],
+        "BPFProgram": [],
+        "Before": [
+          "multi-user.target",
+          "shutdown.target"
+        ],
+        "BindPaths": [],
+        "BindReadOnlyPaths": [],
+        "BindsTo": [],
+        "BlockIOAccounting": false,
+        "BlockIODeviceWeight": [],
+        "BlockIOReadBandwidth": [],
+        "BlockIOWeight": 18446744073709551615,
+        "BlockIOWriteBandwidth": [],
+        "BoundBy": [],
+        "BusName": "",
+        "CPUAccounting": true,
+        "CPUAffinity": "",
+        "CPUAffinityFromNUMA": false,
+        "CPUQuotaPerSecUSec": 18446744073709551615,
+        "CPUQuotaPeriodUSec": 18446744073709551615,
+        "CPUSchedulingPolicy": 0,
+        "CPUSchedulingPriority": 0,
+        "CPUSchedulingResetOnFork": false,
+        "CPUShares": 18446744073709551615,
+        "CPUUsageNSec": 431236749953000,
+        "CPUWeight": 18446744073709551615,
+        "CacheDirectory": [],
+        "CacheDirectoryMode": 493,
+        "CanClean": [],
+        "CanFreeze": true,
+        "CanIsolate": false,
+        "CanReload": false,
+        "CanStart": true,
+        "CanStop": true,
+        "CapabilityBoundingSet": 18446744073709551615,
+        "CleanResult": "success",
+        "CollectMode": "inactive",
+        "ConditionResult": true,
+        "ConditionTimestamp": 1764981336415950,
+        "ConditionTimestampMonotonic": 146577555,
+        "Conditions": [],
+        "ConfigurationDirectory": [],
+        "ConfigurationDirectoryMode": 493,
+        "ConflictedBy": [],
+        "Conflicts": [
+          "shutdown.target"
+        ],
+        "ConsistsOf": [],
+        "ControlGroup": "/system.slice/containerd.service",
+        "ControlPID": 0,
+        "CoredumpFilter": 51,
+        "DefaultDependencies": true,
+        "DefaultMemoryLow": 0,
+        "DefaultMemoryMin": 0,
+        "Delegate": true,
+        "DelegateControllers": [
+          "cpu",
+          "cpuacct",
+          "cpuset",
+          "io",
+          "blkio",
+          "memory",
+          "devices",
+          "pids",
+          "bpf-firewall",
+          "bpf-devices",
+          "bpf-foreign",
+          "bpf-socket-bind"
+        ],
+        "Description": "containerd container runtime",
+        "DeviceAllow": [],
+        "DevicePolicy": "auto",
+        "DisableControllers": [],
+        "Documentation": [
+          "https://containerd.io"
+        ],
+        "DropInPaths": [
+          "/etc/systemd/system/containerd.service.d/10-compat-symlink.conf",
+          "/etc/systemd/system/containerd.service.d/999-tuning-tuning.conf"
+        ],
+        "DynamicUser": false,
+        "EffectiveCPUs": "////////////////////////AAAAAAAA",
+        "EffectiveMemoryNodes": "AwAAAAAAAAA=",
+        "Environment": [],
+        "EnvironmentFiles": [],
+        "ExecCondition": [],
+        "ExecConditionEx": [],
+        "ExecMainCode": 0,
+        "ExecMainExitTimestamp": 0,
+        "ExecMainExitTimestampMonotonic": 0,
+        "ExecMainPID": 29317,
+        "ExecMainStartTimestamp": 1764981336429438,
+        "ExecMainStartTimestampMonotonic": 146591043,
+        "ExecMainStatus": 0,
+        "ExecPaths": [],
+        "ExecReload": [],
+        "ExecReloadEx": [],
+        "ExecStart": [
+          [
+            "/usr/bin/containerd",
+            [
+              "/usr/bin/containerd"
+            ],
+            false,
+            1764981336429411,
+            146591016,
+            0,
+            0,
+            29317,
+            0,
+            0
+          ]
+        ],
+        "ExecStartEx": [
+          [
+            "/usr/bin/containerd",
+            [
+              "/usr/bin/containerd"
+            ],
+            [],
+            1764981336429411,
+            146591016,
+            0,
+            0,
+            29317,
+            0,
+            0
+          ]
+        ],
+        "ExecStartPost": [],
+        "ExecStartPostEx": [],
+        "ExecStartPre": [
+          [
+            "/sbin/modprobe",
+            [
+              "/sbin/modprobe",
+              "overlay"
+            ],
+            true,
+            1764981336424458,
+            146586063,
+            1764981336426651,
+            146588256,
+            29315,
+            1,
+            0
+          ],
+          [
+            "/bin/ln",
+            [
+              "/bin/ln",
+              "-sf",
+              "/run/containerd/containerd.sock",
+              "/run/dockershim.sock"
+            ],
+            false,
+            1764981336427147,
+            146588752,
+            1764981336428778,
+            146590383,
+            29316,
+            1,
+            0
+          ]
+        ],
+        "ExecStartPreEx": [
+          [
+            "/sbin/modprobe",
+            [
+              "/sbin/modprobe",
+              "overlay"
+            ],
+            [
+              "ignore-failure"
+            ],
+            1764981336424458,
+            146586063,
+            1764981336426651,
+            146588256,
+            29315,
+            1,
+            0
+          ],
+          [
+            "/bin/ln",
+            [
+              "/bin/ln",
+              "-sf",
+              "/run/containerd/containerd.sock",
+              "/run/dockershim.sock"
+            ],
+            [],
+            1764981336427147,
+            146588752,
+            1764981336428778,
+            146590383,
+            29316,
+            1,
+            0
+          ]
+        ],
+        "ExecStop": [],
+        "ExecStopEx": [],
+        "ExecStopPost": [],
+        "ExecStopPostEx": [],
+        "ExtensionImages": [],
+        "FailureAction": "none",
+        "FailureActionExitStatus": -1,
+        "FileDescriptorStoreMax": 0,
+        "FinalKillSignal": 9,
+        "Following": "",
+        "FragmentPath": "/lib/systemd/system/containerd.service",
+        "FreezerState": "running",
+        "GID": 4294967295,
+        "Group": "",
+        "GuessMainPID": true,
+        "IOAccounting": false,
+        "IODeviceLatencyTargetUSec": [],
+        "IODeviceWeight": [],
+        "IOReadBandwidthMax": [],
+        "IOReadBytes": 18446744073709551615,
+        "IOReadIOPSMax": [],
+        "IOReadOperations": 18446744073709551615,
+        "IOSchedulingClass": 2,
+        "IOSchedulingPriority": 4,
+        "IOWeight": 18446744073709551615,
+        "IOWriteBandwidthMax": [],
+        "IOWriteBytes": 18446744073709551615,
+        "IOWriteIOPSMax": [],
+        "IOWriteOperations": 18446744073709551615,
+        "IPAccounting": false,
+        "IPAddressAllow": [],
+        "IPAddressDeny": [],
+        "IPCNamespacePath": "",
+        "IPEgressBytes": 18446744073709551615,
+        "IPEgressFilterPath": [],
+        "IPEgressPackets": 18446744073709551615,
+        "IPIngressBytes": 18446744073709551615,
+        "IPIngressFilterPath": [],
+        "IPIngressPackets": 18446744073709551615,
+        "Id": "containerd.service",
+        "IgnoreOnIsolate": false,
+        "IgnoreSIGPIPE": true,
+        "InaccessiblePaths": [],
+        "InactiveEnterTimestamp": 1764981336415682,
+        "InactiveEnterTimestampMonotonic": 146577287,
+        "InactiveExitTimestamp": 1764981336424724,
+        "InactiveExitTimestampMonotonic": 146586329,
+        "InvocationID": "plIyWr5pQV+tRQq0V/W0GQ==",
+        "Job": [
+          0,
+          "/"
+        ],
+        "JobRunningTimeoutUSec": 18446744073709551615,
+        "JobTimeoutAction": "none",
+        "JobTimeoutRebootArgument": "",
+        "JobTimeoutUSec": 18446744073709551615,
+        "JoinsNamespaceOf": [],
+        "KeyringMode": "private",
+        "KillMode": "process",
+        "KillSignal": 15,
+        "LimitAS": 18446744073709551615,
+        "LimitASSoft": 18446744073709551615,
+        "LimitCORE": 18446744073709551615,
+        "LimitCORESoft": 18446744073709551615,
+        "LimitCPU": 18446744073709551615,
+        "LimitCPUSoft": 18446744073709551615,
+        "LimitDATA": 18446744073709551615,
+        "LimitDATASoft": 18446744073709551615,
+        "LimitFSIZE": 18446744073709551615,
+        "LimitFSIZESoft": 18446744073709551615,
+        "LimitLOCKS": 18446744073709551615,
+        "LimitLOCKSSoft": 18446744073709551615,
+        "LimitMEMLOCK": 18446744073709551615,
+        "LimitMEMLOCKSoft": 18446744073709551615,
+        "LimitMSGQUEUE": 819200,
+        "LimitMSGQUEUESoft": 819200,
+        "LimitNICE": 0,
+        "LimitNICESoft": 0,
+        "LimitNOFILE": 18446744073709551615,
+        "LimitNOFILESoft": 18446744073709551615,
+        "LimitNPROC": 18446744073709551615,
+        "LimitNPROCSoft": 18446744073709551615,
+        "LimitRSS": 18446744073709551615,
+        "LimitRSSSoft": 18446744073709551615,
+        "LimitRTPRIO": 0,
+        "LimitRTPRIOSoft": 0,
+        "LimitRTTIME": 18446744073709551615,
+        "LimitRTTIMESoft": 18446744073709551615,
+        "LimitSIGPENDING": 3789289,
+        "LimitSIGPENDINGSoft": 3789289,
+        "LimitSTACK": 67108864,
+        "LimitSTACKSoft": 67108864,
+        "LoadCredential": [],
+        "LoadError": [
+          "",
+          ""
+        ],
+        "LoadState": "loaded",
+        "LockPersonality": false,
+        "LogExtraFields": [],
+        "LogLevelMax": -1,
+        "LogNamespace": "",
+        "LogRateLimitBurst": 0,
+        "LogRateLimitIntervalUSec": 0,
+        "LogsDirectory": [],
+        "LogsDirectoryMode": 493,
+        "MainPID": 29317,
+        "ManagedOOMMemoryPressure": "auto",
+        "ManagedOOMMemoryPressureLimit": 0,
+        "ManagedOOMPreference": "none",
+        "ManagedOOMSwap": "auto",
+        "Markers": [],
+        "MemoryAccounting": true,
+        "MemoryAvailable": 18446744073709551615,
+        "MemoryCurrent": 91661398016,
+        "MemoryDenyWriteExecute": false,
+        "MemoryHigh": 18446744073709551615,
+        "MemoryLimit": 18446744073709551615,
+        "MemoryLow": 0,
+        "MemoryMax": 18446744073709551615,
+        "MemoryMin": 0,
+        "MemorySwapMax": 18446744073709551615,
+        "MountAPIVFS": false,
+        "MountFlags": 0,
+        "MountImages": [],
+        "NFileDescriptorStore": 0,
+        "NRestarts": 1,
+        "NUMAMask": "",
+        "NUMAPolicy": -1,
+        "Names": [
+          "containerd.service"
+        ],
+        "NeedDaemonReload": false,
+        "NetworkNamespacePath": "",
+        "Nice": 0,
+        "NoExecPaths": [],
+        "NoNewPrivileges": false,
+        "NonBlocking": false,
+        "NotifyAccess": "main",
+        "OOMPolicy": "continue",
+        "OOMScoreAdjust": -999,
+        "OnFailure": [],
+        "OnFailureJobMode": "replace",
+        "OnFailureOf": [],
+        "OnSuccess": [],
+        "OnSuccessJobMode": "fail",
+        "OnSuccessOf": [],
+        "PAMName": "",
+        "PIDFile": "",
+        "PartOf": [],
+        "PassEnvironment": [],
+        "Perpetual": false,
+        "Personality": "",
+        "PrivateDevices": false,
+        "PrivateIPC": false,
+        "PrivateMounts": false,
+        "PrivateNetwork": false,
+        "PrivateTmp": false,
+        "PrivateUsers": false,
+        "ProcSubset": "all",
+        "PropagatesReloadTo": [],
+        "PropagatesStopTo": [],
+        "ProtectClock": false,
+        "ProtectControlGroups": false,
+        "ProtectHome": "no",
+        "ProtectHostname": false,
+        "ProtectKernelLogs": false,
+        "ProtectKernelModules": false,
+        "ProtectKernelTunables": false,
+        "ProtectProc": "default",
+        "ProtectSystem": "no",
+        "ReadOnlyPaths": [],
+        "ReadWritePaths": [],
+        "RebootArgument": "",
+        "Refs": [],
+        "RefuseManualStart": false,
+        "RefuseManualStop": false,
+        "ReloadPropagatedFrom": [],
+        "ReloadResult": "success",
+        "RemainAfterExit": false,
+        "RemoveIPC": false,
+        "RequiredBy": [],
+        "Requires": [
+          "sysinit.target",
+          "system.slice"
+        ],
+        "RequiresMountsFor": [],
+        "Requisite": [],
+        "RequisiteOf": [],
+        "Restart": "always",
+        "RestartForceExitStatus": [
+          [],
+          []
+        ],
+        "RestartKillSignal": 15,
+        "RestartPreventExitStatus": [
+          [],
+          []
+        ],
+        "RestartUSec": 5000000,
+        "RestrictAddressFamilies": [
+          false,
+          []
+        ],
+        "RestrictNamespaces": 18446744073709551615,
+        "RestrictRealtime": false,
+        "RestrictSUIDSGID": false,
+        "Result": "success",
+        "RootDirectory": "",
+        "RootDirectoryStartOnly": false,
+        "RootHash": "",
+        "RootHashPath": "",
+        "RootHashSignature": "",
+        "RootHashSignaturePath": "",
+        "RootImage": "",
+        "RootImageOptions": [],
+        "RootVerity": "",
+        "RuntimeDirectory": [],
+        "RuntimeDirectoryMode": 493,
+        "RuntimeDirectoryPreserve": "no",
+        "RuntimeMaxUSec": 18446744073709551615,
+        "SELinuxContext": [
+          false,
+          ""
+        ],
+        "SameProcessGroup": false,
+        "SecureBits": 0,
+        "SendSIGHUP": false,
+        "SendSIGKILL": true,
+        "SetCredential": [],
+        "Slice": "system.slice",
+        "SliceOf": [],
+        "SmackProcessLabel": [
+          false,
+          ""
+        ],
+        "SocketBindAllow": [],
+        "SocketBindDeny": [],
+        "SourcePath": "",
+        "StandardError": "inherit",
+        "StandardErrorFileDescriptorName": "",
+        "StandardInput": "null",
+        "StandardInputData": "",
+        "StandardInputFileDescriptorName": "",
+        "StandardOutput": "journal",
+        "StandardOutputFileDescriptorName": "",
+        "StartLimitAction": "none",
+        "StartLimitBurst": 5,
+        "StartLimitIntervalUSec": 10000000,
+        "StartupBlockIOWeight": 18446744073709551615,
+        "StartupCPUShares": 18446744073709551615,
+        "StartupCPUWeight": 18446744073709551615,
+        "StartupIOWeight": 18446744073709551615,
+        "StateChangeTimestamp": 1764981336878100,
+        "StateChangeTimestampMonotonic": 147039705,
+        "StateDirectory": [],
+        "StateDirectoryMode": 493,
+        "StatusErrno": 0,
+        "StatusText": "",
+        "StopPropagatedFrom": [],
+        "StopWhenUnneeded": false,
+        "SubState": "running",
+        "SuccessAction": "none",
+        "SuccessActionExitStatus": -1,
+        "SuccessExitStatus": [
+          [],
+          []
+        ],
+        "SupplementaryGroups": [],
+        "SyslogFacility": 3,
+        "SyslogIdentifier": "",
+        "SyslogLevel": 6,
+        "SyslogLevelPrefix": true,
+        "SyslogPriority": 30,
+        "SystemCallArchitectures": [],
+        "SystemCallErrorNumber": 2147483646,
+        "SystemCallFilter": [
+          false,
+          []
+        ],
+        "SystemCallLog": [
+          false,
+          []
+        ],
+        "TTYPath": "",
+        "TTYReset": false,
+        "TTYVHangup": false,
+        "TTYVTDisallocate": false,
+        "TasksAccounting": true,
+        "TasksCurrent": 461,
+        "TasksMax": 18446744073709551615,
+        "TemporaryFileSystem": [],
+        "TimeoutAbortUSec": 90000000,
+        "TimeoutCleanUSec": 18446744073709551615,
+        "TimeoutStartFailureMode": "terminate",
+        "TimeoutStartUSec": 90000000,
+        "TimeoutStopFailureMode": "terminate",
+        "TimeoutStopUSec": 90000000,
+        "TimerSlackNSec": 50000,
+        "Transient": false,
+        "TriggeredBy": [],
+        "Triggers": [],
+        "Type": "notify",
+        "UID": 4294967295,
+        "UMask": 18,
+        "USBFunctionDescriptors": "",
+        "USBFunctionStrings": "",
+        "UnitFilePreset": "enabled",
+        "UnitFileState": "enabled",
+        "UnsetEnvironment": [],
+        "User": "",
+        "UtmpIdentifier": "",
+        "UtmpMode": "init",
+        "WantedBy": [
+          "multi-user.target"
+        ],
+        "Wants": [],
+        "WatchdogSignal": 6,
+        "WatchdogTimestamp": 0,
+        "WatchdogTimestampMonotonic": 0,
+        "WatchdogUSec": 0,
+        "WorkingDirectory": ""
+      }
+    }
+  },
+  {
+    "Type": "SystemD",
+    "Data": {
+      "Unit": "docker.service",
+      "Properties": {
+        "ActiveEnterTimestamp": 0,
+        "ActiveEnterTimestampMonotonic": 0,
+        "ActiveExitTimestamp": 0,
+        "ActiveExitTimestampMonotonic": 0,
+        "ActiveState": "inactive",
+        "After": [],
+        "AllowIsolate": false,
+        "AllowedCPUs": "",
+        "AllowedMemoryNodes": "",
+        "AmbientCapabilities": 0,
+        "AppArmorProfile": [
+          false,
+          ""
+        ],
+        "AssertResult": false,
+        "AssertTimestamp": 0,
+        "AssertTimestampMonotonic": 0,
+        "Asserts": [],
+        "BPFProgram": [],
+        "Before": [],
+        "BindPaths": [],
+        "BindReadOnlyPaths": [],
+        "BindsTo": [],
+        "BlockIOAccounting": false,
+        "BlockIODeviceWeight": [],
+        "BlockIOReadBandwidth": [],
+        "BlockIOWeight": 18446744073709551615,
+        "BlockIOWriteBandwidth": [],
+        "BoundBy": [],
+        "BusName": "",
+        "CPUAccounting": true,
+        "CPUAffinity": "",
+        "CPUAffinityFromNUMA": false,
+        "CPUQuotaPerSecUSec": 18446744073709551615,
+        "CPUQuotaPeriodUSec": 18446744073709551615,
+        "CPUSchedulingPolicy": 0,
+        "CPUSchedulingPriority": 0,
+        "CPUSchedulingResetOnFork": false,
+        "CPUShares": 18446744073709551615,
+        "CPUUsageNSec": 18446744073709551615,
+        "CPUWeight": 18446744073709551615,
+        "CacheDirectory": [],
+        "CacheDirectoryMode": 493,
+        "CanClean": [],
+        "CanFreeze": true,
+        "CanIsolate": false,
+        "CanReload": false,
+        "CanStart": false,
+        "CanStop": true,
+        "CapabilityBoundingSet": 18446744073709551615,
+        "CleanResult": "success",
+        "CollectMode": "inactive",
+        "ConditionResult": false,
+        "ConditionTimestamp": 0,
+        "ConditionTimestampMonotonic": 0,
+        "Conditions": [],
+        "ConfigurationDirectory": [],
+        "ConfigurationDirectoryMode": 493,
+        "ConflictedBy": [],
+        "Conflicts": [],
+        "ConsistsOf": [],
+        "ControlGroup": "",
+        "ControlPID": 0,
+        "CoredumpFilter": 51,
+        "DefaultDependencies": true,
+        "DefaultMemoryLow": 0,
+        "DefaultMemoryMin": 0,
+        "Delegate": false,
+        "DelegateControllers": [],
+        "Description": "docker.service",
+        "DeviceAllow": [],
+        "DevicePolicy": "auto",
+        "DisableControllers": [],
+        "Documentation": [],
+        "DropInPaths": [],
+        "DynamicUser": false,
+        "EffectiveCPUs": "",
+        "EffectiveMemoryNodes": "",
+        "Environment": [],
+        "EnvironmentFiles": [],
+        "ExecCondition": [],
+        "ExecConditionEx": [],
+        "ExecMainCode": 0,
+        "ExecMainExitTimestamp": 0,
+        "ExecMainExitTimestampMonotonic": 0,
+        "ExecMainPID": 0,
+        "ExecMainStartTimestamp": 0,
+        "ExecMainStartTimestampMonotonic": 0,
+        "ExecMainStatus": 0,
+        "ExecPaths": [],
+        "ExecReload": [],
+        "ExecReloadEx": [],
+        "ExecStart": [],
+        "ExecStartEx": [],
+        "ExecStartPost": [],
+        "ExecStartPostEx": [],
+        "ExecStartPre": [],
+        "ExecStartPreEx": [],
+        "ExecStop": [],
+        "ExecStopEx": [],
+        "ExecStopPost": [],
+        "ExecStopPostEx": [],
+        "ExtensionImages": [],
+        "FailureAction": "none",
+        "FailureActionExitStatus": -1,
+        "FileDescriptorStoreMax": 0,
+        "FinalKillSignal": 9,
+        "Following": "",
+        "FragmentPath": "",
+        "FreezerState": "running",
+        "GID": 4294967295,
+        "Group": "",
+        "GuessMainPID": true,
+        "IOAccounting": false,
+        "IODeviceLatencyTargetUSec": [],
+        "IODeviceWeight": [],
+        "IOReadBandwidthMax": [],
+        "IOReadBytes": 18446744073709551615,
+        "IOReadIOPSMax": [],
+        "IOReadOperations": 18446744073709551615,
+        "IOSchedulingClass": 2,
+        "IOSchedulingPriority": 4,
+        "IOWeight": 18446744073709551615,
+        "IOWriteBandwidthMax": [],
+        "IOWriteBytes": 18446744073709551615,
+        "IOWriteIOPSMax": [],
+        "IOWriteOperations": 18446744073709551615,
+        "IPAccounting": false,
+        "IPAddressAllow": [],
+        "IPAddressDeny": [],
+        "IPCNamespacePath": "",
+        "IPEgressBytes": 18446744073709551615,
+        "IPEgressFilterPath": [],
+        "IPEgressPackets": 18446744073709551615,
+        "IPIngressBytes": 18446744073709551615,
+        "IPIngressFilterPath": [],
+        "IPIngressPackets": 18446744073709551615,
+        "Id": "docker.service",
+        "IgnoreOnIsolate": false,
+        "IgnoreSIGPIPE": true,
+        "InaccessiblePaths": [],
+        "InactiveEnterTimestamp": 0,
+        "InactiveEnterTimestampMonotonic": 0,
+        "InactiveExitTimestamp": 0,
+        "InactiveExitTimestampMonotonic": 0,
+        "InvocationID": "",
+        "Job": [
+          0,
+          "/"
+        ],
+        "JobRunningTimeoutUSec": 18446744073709551615,
+        "JobTimeoutAction": "none",
+        "JobTimeoutRebootArgument": "",
+        "JobTimeoutUSec": 18446744073709551615,
+        "JoinsNamespaceOf": [],
+        "KeyringMode": "private",
+        "KillMode": "control-group",
+        "KillSignal": 15,
+        "LimitAS": 18446744073709551615,
+        "LimitASSoft": 18446744073709551615,
+        "LimitCORE": 18446744073709551615,
+        "LimitCORESoft": 0,
+        "LimitCPU": 18446744073709551615,
+        "LimitCPUSoft": 18446744073709551615,
+        "LimitDATA": 18446744073709551615,
+        "LimitDATASoft": 18446744073709551615,
+        "LimitFSIZE": 18446744073709551615,
+        "LimitFSIZESoft": 18446744073709551615,
+        "LimitLOCKS": 18446744073709551615,
+        "LimitLOCKSSoft": 18446744073709551615,
+        "LimitMEMLOCK": 124437454848,
+        "LimitMEMLOCKSoft": 124437454848,
+        "LimitMSGQUEUE": 819200,
+        "LimitMSGQUEUESoft": 819200,
+        "LimitNICE": 0,
+        "LimitNICESoft": 0,
+        "LimitNOFILE": 1048576,
+        "LimitNOFILESoft": 1048576,
+        "LimitNPROC": 3789289,
+        "LimitNPROCSoft": 3789289,
+        "LimitRSS": 18446744073709551615,
+        "LimitRSSSoft": 18446744073709551615,
+        "LimitRTPRIO": 0,
+        "LimitRTPRIOSoft": 0,
+        "LimitRTTIME": 18446744073709551615,
+        "LimitRTTIMESoft": 18446744073709551615,
+        "LimitSIGPENDING": 3789289,
+        "LimitSIGPENDINGSoft": 3789289,
+        "LimitSTACK": 18446744073709551615,
+        "LimitSTACKSoft": 8388608,
+        "LoadCredential": [],
+        "LoadError": [
+          "org.freedesktop.systemd1.NoSuchUnit",
+          "Unit docker.service not found."
+        ],
+        "LoadState": "not-found",
+        "LockPersonality": false,
+        "LogExtraFields": [],
+        "LogLevelMax": -1,
+        "LogNamespace": "",
+        "LogRateLimitBurst": 0,
+        "LogRateLimitIntervalUSec": 0,
+        "LogsDirectory": [],
+        "LogsDirectoryMode": 493,
+        "MainPID": 0,
+        "ManagedOOMMemoryPressure": "auto",
+        "ManagedOOMMemoryPressureLimit": 0,
+        "ManagedOOMPreference": "none",
+        "ManagedOOMSwap": "auto",
+        "Markers": [],
+        "MemoryAccounting": true,
+        "MemoryAvailable": 18446744073709551615,
+        "MemoryCurrent": 18446744073709551615,
+        "MemoryDenyWriteExecute": false,
+        "MemoryHigh": 18446744073709551615,
+        "MemoryLimit": 18446744073709551615,
+        "MemoryLow": 0,
+        "MemoryMax": 18446744073709551615,
+        "MemoryMin": 0,
+        "MemorySwapMax": 18446744073709551615,
+        "MountAPIVFS": false,
+        "MountFlags": 0,
+        "MountImages": [],
+        "NFileDescriptorStore": 0,
+        "NRestarts": 0,
+        "NUMAMask": "",
+        "NUMAPolicy": -1,
+        "Names": [
+          "docker.service"
+        ],
+        "NeedDaemonReload": false,
+        "NetworkNamespacePath": "",
+        "Nice": 0,
+        "NoExecPaths": [],
+        "NoNewPrivileges": false,
+        "NonBlocking": false,
+        "NotifyAccess": "none",
+        "OOMPolicy": "",
+        "OOMScoreAdjust": 0,
+        "OnFailure": [],
+        "OnFailureJobMode": "replace",
+        "OnFailureOf": [],
+        "OnSuccess": [],
+        "OnSuccessJobMode": "fail",
+        "OnSuccessOf": [],
+        "PAMName": "",
+        "PIDFile": "",
+        "PartOf": [],
+        "PassEnvironment": [],
+        "Perpetual": false,
+        "Personality": "",
+        "PrivateDevices": false,
+        "PrivateIPC": false,
+        "PrivateMounts": false,
+        "PrivateNetwork": false,
+        "PrivateTmp": false,
+        "PrivateUsers": false,
+        "ProcSubset": "all",
+        "PropagatesReloadTo": [],
+        "PropagatesStopTo": [],
+        "ProtectClock": false,
+        "ProtectControlGroups": false,
+        "ProtectHome": "no",
+        "ProtectHostname": false,
+        "ProtectKernelLogs": false,
+        "ProtectKernelModules": false,
+        "ProtectKernelTunables": false,
+        "ProtectProc": "default",
+        "ProtectSystem": "no",
+        "ReadOnlyPaths": [],
+        "ReadWritePaths": [],
+        "RebootArgument": "",
+        "Refs": [],
+        "RefuseManualStart": false,
+        "RefuseManualStop": false,
+        "ReloadPropagatedFrom": [],
+        "ReloadResult": "success",
+        "RemainAfterExit": false,
+        "RemoveIPC": false,
+        "RequiredBy": [],
+        "Requires": [],
+        "RequiresMountsFor": [],
+        "Requisite": [],
+        "RequisiteOf": [],
+        "Restart": "no",
+        "RestartForceExitStatus": [
+          [],
+          []
+        ],
+        "RestartKillSignal": 15,
+        "RestartPreventExitStatus": [
+          [],
+          []
+        ],
+        "RestartUSec": 100000,
+        "RestrictAddressFamilies": [
+          false,
+          []
+        ],
+        "RestrictNamespaces": 18446744073709551615,
+        "RestrictRealtime": false,
+        "RestrictSUIDSGID": false,
+        "Result": "success",
+        "RootDirectory": "",
+        "RootDirectoryStartOnly": false,
+        "RootHash": "",
+        "RootHashPath": "",
+        "RootHashSignature": "",
+        "RootHashSignaturePath": "",
+        "RootImage": "",
+        "RootImageOptions": [],
+        "RootVerity": "",
+        "RuntimeDirectory": [],
+        "RuntimeDirectoryMode": 493,
+        "RuntimeDirectoryPreserve": "no",
+        "RuntimeMaxUSec": 18446744073709551615,
+        "SELinuxContext": [
+          false,
+          ""
+        ],
+        "SameProcessGroup": false,
+        "SecureBits": 0,
+        "SendSIGHUP": false,
+        "SendSIGKILL": true,
+        "SetCredential": [],
+        "Slice": "",
+        "SliceOf": [],
+        "SmackProcessLabel": [
+          false,
+          ""
+        ],
+        "SocketBindAllow": [],
+        "SocketBindDeny": [],
+        "SourcePath": "",
+        "StandardError": "inherit",
+        "StandardErrorFileDescriptorName": "",
+        "StandardInput": "null",
+        "StandardInputData": "",
+        "StandardInputFileDescriptorName": "",
+        "StandardOutput": "inherit",
+        "StandardOutputFileDescriptorName": "",
+        "StartLimitAction": "none",
+        "StartLimitBurst": 5,
+        "StartLimitIntervalUSec": 10000000,
+        "StartupBlockIOWeight": 18446744073709551615,
+        "StartupCPUShares": 18446744073709551615,
+        "StartupCPUWeight": 18446744073709551615,
+        "StartupIOWeight": 18446744073709551615,
+        "StateChangeTimestamp": 0,
+        "StateChangeTimestampMonotonic": 0,
+        "StateDirectory": [],
+        "StateDirectoryMode": 493,
+        "StatusErrno": 0,
+        "StatusText": "",
+        "StopPropagatedFrom": [],
+        "StopWhenUnneeded": false,
+        "SubState": "dead",
+        "SuccessAction": "none",
+        "SuccessActionExitStatus": -1,
+        "SuccessExitStatus": [
+          [],
+          []
+        ],
+        "SupplementaryGroups": [],
+        "SyslogFacility": 3,
+        "SyslogIdentifier": "",
+        "SyslogLevel": 6,
+        "SyslogLevelPrefix": true,
+        "SyslogPriority": 30,
+        "SystemCallArchitectures": [],
+        "SystemCallErrorNumber": 2147483646,
+        "SystemCallFilter": [
+          false,
+          []
+        ],
+        "SystemCallLog": [
+          false,
+          []
+        ],
+        "TTYPath": "",
+        "TTYReset": false,
+        "TTYVHangup": false,
+        "TTYVTDisallocate": false,
+        "TasksAccounting": true,
+        "TasksCurrent": 18446744073709551615,
+        "TasksMax": 629145,
+        "TemporaryFileSystem": [],
+        "TimeoutAbortUSec": 90000000,
+        "TimeoutCleanUSec": 18446744073709551615,
+        "TimeoutStartFailureMode": "terminate",
+        "TimeoutStartUSec": 90000000,
+        "TimeoutStopFailureMode": "terminate",
+        "TimeoutStopUSec": 90000000,
+        "TimerSlackNSec": 50000,
+        "Transient": false,
+        "TriggeredBy": [],
+        "Triggers": [],
+        "Type": "",
+        "UID": 4294967295,
+        "UMask": 18,
+        "USBFunctionDescriptors": "",
+        "USBFunctionStrings": "",
+        "UnitFilePreset": "",
+        "UnitFileState": "",
+        "UnsetEnvironment": [],
+        "User": "",
+        "UtmpIdentifier": "",
+        "UtmpMode": "init",
+        "WantedBy": [],
+        "Wants": [],
+        "WatchdogSignal": 6,
+        "WatchdogTimestamp": 0,
+        "WatchdogTimestampMonotonic": 0,
+        "WatchdogUSec": 18446744073709551615,
+        "WorkingDirectory": ""
+      }
+    }
+  },
+  {
+    "Type": "SystemD",
+    "Data": {
+      "Unit": "kubelet.service",
+      "Properties": {
+        "ActiveEnterTimestamp": 0,
+        "ActiveEnterTimestampMonotonic": 0,
+        "ActiveExitTimestamp": 0,
+        "ActiveExitTimestampMonotonic": 0,
+        "ActiveState": "inactive",
+        "After": [],
+        "AllowIsolate": false,
+        "AllowedCPUs": "",
+        "AllowedMemoryNodes": "",
+        "AmbientCapabilities": 0,
+        "AppArmorProfile": [
+          false,
+          ""
+        ],
+        "AssertResult": false,
+        "AssertTimestamp": 0,
+        "AssertTimestampMonotonic": 0,
+        "Asserts": [],
+        "BPFProgram": [],
+        "Before": [],
+        "BindPaths": [],
+        "BindReadOnlyPaths": [],
+        "BindsTo": [],
+        "BlockIOAccounting": false,
+        "BlockIODeviceWeight": [],
+        "BlockIOReadBandwidth": [],
+        "BlockIOWeight": 18446744073709551615,
+        "BlockIOWriteBandwidth": [],
+        "BoundBy": [],
+        "BusName": "",
+        "CPUAccounting": true,
+        "CPUAffinity": "",
+        "CPUAffinityFromNUMA": false,
+        "CPUQuotaPerSecUSec": 18446744073709551615,
+        "CPUQuotaPeriodUSec": 18446744073709551615,
+        "CPUSchedulingPolicy": 0,
+        "CPUSchedulingPriority": 0,
+        "CPUSchedulingResetOnFork": false,
+        "CPUShares": 18446744073709551615,
+        "CPUUsageNSec": 18446744073709551615,
+        "CPUWeight": 18446744073709551615,
+        "CacheDirectory": [],
+        "CacheDirectoryMode": 493,
+        "CanClean": [],
+        "CanFreeze": true,
+        "CanIsolate": false,
+        "CanReload": false,
+        "CanStart": false,
+        "CanStop": true,
+        "CapabilityBoundingSet": 18446744073709551615,
+        "CleanResult": "success",
+        "CollectMode": "inactive",
+        "ConditionResult": false,
+        "ConditionTimestamp": 0,
+        "ConditionTimestampMonotonic": 0,
+        "Conditions": [],
+        "ConfigurationDirectory": [],
+        "ConfigurationDirectoryMode": 493,
+        "ConflictedBy": [],
+        "Conflicts": [],
+        "ConsistsOf": [],
+        "ControlGroup": "",
+        "ControlPID": 0,
+        "CoredumpFilter": 51,
+        "DefaultDependencies": true,
+        "DefaultMemoryLow": 0,
+        "DefaultMemoryMin": 0,
+        "Delegate": false,
+        "DelegateControllers": [],
+        "Description": "kubelet.service",
+        "DeviceAllow": [],
+        "DevicePolicy": "auto",
+        "DisableControllers": [],
+        "Documentation": [],
+        "DropInPaths": [],
+        "DynamicUser": false,
+        "EffectiveCPUs": "",
+        "EffectiveMemoryNodes": "",
+        "Environment": [],
+        "EnvironmentFiles": [],
+        "ExecCondition": [],
+        "ExecConditionEx": [],
+        "ExecMainCode": 0,
+        "ExecMainExitTimestamp": 0,
+        "ExecMainExitTimestampMonotonic": 0,
+        "ExecMainPID": 0,
+        "ExecMainStartTimestamp": 0,
+        "ExecMainStartTimestampMonotonic": 0,
+        "ExecMainStatus": 0,
+        "ExecPaths": [],
+        "ExecReload": [],
+        "ExecReloadEx": [],
+        "ExecStart": [],
+        "ExecStartEx": [],
+        "ExecStartPost": [],
+        "ExecStartPostEx": [],
+        "ExecStartPre": [],
+        "ExecStartPreEx": [],
+        "ExecStop": [],
+        "ExecStopEx": [],
+        "ExecStopPost": [],
+        "ExecStopPostEx": [],
+        "ExtensionImages": [],
+        "FailureAction": "none",
+        "FailureActionExitStatus": -1,
+        "FileDescriptorStoreMax": 0,
+        "FinalKillSignal": 9,
+        "Following": "",
+        "FragmentPath": "",
+        "FreezerState": "running",
+        "GID": 4294967295,
+        "Group": "",
+        "GuessMainPID": true,
+        "IOAccounting": false,
+        "IODeviceLatencyTargetUSec": [],
+        "IODeviceWeight": [],
+        "IOReadBandwidthMax": [],
+        "IOReadBytes": 18446744073709551615,
+        "IOReadIOPSMax": [],
+        "IOReadOperations": 18446744073709551615,
+        "IOSchedulingClass": 2,
+        "IOSchedulingPriority": 4,
+        "IOWeight": 18446744073709551615,
+        "IOWriteBandwidthMax": [],
+        "IOWriteBytes": 18446744073709551615,
+        "IOWriteIOPSMax": [],
+        "IOWriteOperations": 18446744073709551615,
+        "IPAccounting": false,
+        "IPAddressAllow": [],
+        "IPAddressDeny": [],
+        "IPCNamespacePath": "",
+        "IPEgressBytes": 18446744073709551615,
+        "IPEgressFilterPath": [],
+        "IPEgressPackets": 18446744073709551615,
+        "IPIngressBytes": 18446744073709551615,
+        "IPIngressFilterPath": [],
+        "IPIngressPackets": 18446744073709551615,
+        "Id": "kubelet.service",
+        "IgnoreOnIsolate": false,
+        "IgnoreSIGPIPE": true,
+        "InaccessiblePaths": [],
+        "InactiveEnterTimestamp": 0,
+        "InactiveEnterTimestampMonotonic": 0,
+        "InactiveExitTimestamp": 0,
+        "InactiveExitTimestampMonotonic": 0,
+        "InvocationID": "",
+        "Job": [
+          0,
+          "/"
+        ],
+        "JobRunningTimeoutUSec": 18446744073709551615,
+        "JobTimeoutAction": "none",
+        "JobTimeoutRebootArgument": "",
+        "JobTimeoutUSec": 18446744073709551615,
+        "JoinsNamespaceOf": [],
+        "KeyringMode": "private",
+        "KillMode": "control-group",
+        "KillSignal": 15,
+        "LimitAS": 18446744073709551615,
+        "LimitASSoft": 18446744073709551615,
+        "LimitCORE": 18446744073709551615,
+        "LimitCORESoft": 0,
+        "LimitCPU": 18446744073709551615,
+        "LimitCPUSoft": 18446744073709551615,
+        "LimitDATA": 18446744073709551615,
+        "LimitDATASoft": 18446744073709551615,
+        "LimitFSIZE": 18446744073709551615,
+        "LimitFSIZESoft": 18446744073709551615,
+        "LimitLOCKS": 18446744073709551615,
+        "LimitLOCKSSoft": 18446744073709551615,
+        "LimitMEMLOCK": 124437454848,
+        "LimitMEMLOCKSoft": 124437454848,
+        "LimitMSGQUEUE": 819200,
+        "LimitMSGQUEUESoft": 819200,
+        "LimitNICE": 0,
+        "LimitNICESoft": 0,
+        "LimitNOFILE": 1048576,
+        "LimitNOFILESoft": 1048576,
+        "LimitNPROC": 3789289,
+        "LimitNPROCSoft": 3789289,
+        "LimitRSS": 18446744073709551615,
+        "LimitRSSSoft": 18446744073709551615,
+        "LimitRTPRIO": 0,
+        "LimitRTPRIOSoft": 0,
+        "LimitRTTIME": 18446744073709551615,
+        "LimitRTTIMESoft": 18446744073709551615,
+        "LimitSIGPENDING": 3789289,
+        "LimitSIGPENDINGSoft": 3789289,
+        "LimitSTACK": 18446744073709551615,
+        "LimitSTACKSoft": 8388608,
+        "LoadCredential": [],
+        "LoadError": [
+          "org.freedesktop.systemd1.NoSuchUnit",
+          "Unit kubelet.service not found."
+        ],
+        "LoadState": "not-found",
+        "LockPersonality": false,
+        "LogExtraFields": [],
+        "LogLevelMax": -1,
+        "LogNamespace": "",
+        "LogRateLimitBurst": 0,
+        "LogRateLimitIntervalUSec": 0,
+        "LogsDirectory": [],
+        "LogsDirectoryMode": 493,
+        "MainPID": 0,
+        "ManagedOOMMemoryPressure": "auto",
+        "ManagedOOMMemoryPressureLimit": 0,
+        "ManagedOOMPreference": "none",
+        "ManagedOOMSwap": "auto",
+        "Markers": [],
+        "MemoryAccounting": true,
+        "MemoryAvailable": 18446744073709551615,
+        "MemoryCurrent": 18446744073709551615,
+        "MemoryDenyWriteExecute": false,
+        "MemoryHigh": 18446744073709551615,
+        "MemoryLimit": 18446744073709551615,
+        "MemoryLow": 0,
+        "MemoryMax": 18446744073709551615,
+        "MemoryMin": 0,
+        "MemorySwapMax": 18446744073709551615,
+        "MountAPIVFS": false,
+        "MountFlags": 0,
+        "MountImages": [],
+        "NFileDescriptorStore": 0,
+        "NRestarts": 0,
+        "NUMAMask": "",
+        "NUMAPolicy": -1,
+        "Names": [
+          "kubelet.service"
+        ],
+        "NeedDaemonReload": false,
+        "NetworkNamespacePath": "",
+        "Nice": 0,
+        "NoExecPaths": [],
+        "NoNewPrivileges": false,
+        "NonBlocking": false,
+        "NotifyAccess": "none",
+        "OOMPolicy": "",
+        "OOMScoreAdjust": 0,
+        "OnFailure": [],
+        "OnFailureJobMode": "replace",
+        "OnFailureOf": [],
+        "OnSuccess": [],
+        "OnSuccessJobMode": "fail",
+        "OnSuccessOf": [],
+        "PAMName": "",
+        "PIDFile": "",
+        "PartOf": [],
+        "PassEnvironment": [],
+        "Perpetual": false,
+        "Personality": "",
+        "PrivateDevices": false,
+        "PrivateIPC": false,
+        "PrivateMounts": false,
+        "PrivateNetwork": false,
+        "PrivateTmp": false,
+        "PrivateUsers": false,
+        "ProcSubset": "all",
+        "PropagatesReloadTo": [],
+        "PropagatesStopTo": [],
+        "ProtectClock": false,
+        "ProtectControlGroups": false,
+        "ProtectHome": "no",
+        "ProtectHostname": false,
+        "ProtectKernelLogs": false,
+        "ProtectKernelModules": false,
+        "ProtectKernelTunables": false,
+        "ProtectProc": "default",
+        "ProtectSystem": "no",
+        "ReadOnlyPaths": [],
+        "ReadWritePaths": [],
+        "RebootArgument": "",
+        "Refs": [],
+        "RefuseManualStart": false,
+        "RefuseManualStop": false,
+        "ReloadPropagatedFrom": [],
+        "ReloadResult": "success",
+        "RemainAfterExit": false,
+        "RemoveIPC": false,
+        "RequiredBy": [],
+        "Requires": [],
+        "RequiresMountsFor": [],
+        "Requisite": [],
+        "RequisiteOf": [],
+        "Restart": "no",
+        "RestartForceExitStatus": [
+          [],
+          []
+        ],
+        "RestartKillSignal": 15,
+        "RestartPreventExitStatus": [
+          [],
+          []
+        ],
+        "RestartUSec": 100000,
+        "RestrictAddressFamilies": [
+          false,
+          []
+        ],
+        "RestrictNamespaces": 18446744073709551615,
+        "RestrictRealtime": false,
+        "RestrictSUIDSGID": false,
+        "Result": "success",
+        "RootDirectory": "",
+        "RootDirectoryStartOnly": false,
+        "RootHash": "",
+        "RootHashPath": "",
+        "RootHashSignature": "",
+        "RootHashSignaturePath": "",
+        "RootImage": "",
+        "RootImageOptions": [],
+        "RootVerity": "",
+        "RuntimeDirectory": [],
+        "RuntimeDirectoryMode": 493,
+        "RuntimeDirectoryPreserve": "no",
+        "RuntimeMaxUSec": 18446744073709551615,
+        "SELinuxContext": [
+          false,
+          ""
+        ],
+        "SameProcessGroup": false,
+        "SecureBits": 0,
+        "SendSIGHUP": false,
+        "SendSIGKILL": true,
+        "SetCredential": [],
+        "Slice": "",
+        "SliceOf": [],
+        "SmackProcessLabel": [
+          false,
+          ""
+        ],
+        "SocketBindAllow": [],
+        "SocketBindDeny": [],
+        "SourcePath": "",
+        "StandardError": "inherit",
+        "StandardErrorFileDescriptorName": "",
+        "StandardInput": "null",
+        "StandardInputData": "",
+        "StandardInputFileDescriptorName": "",
+        "StandardOutput": "inherit",
+        "StandardOutputFileDescriptorName": "",
+        "StartLimitAction": "none",
+        "StartLimitBurst": 5,
+        "StartLimitIntervalUSec": 10000000,
+        "StartupBlockIOWeight": 18446744073709551615,
+        "StartupCPUShares": 18446744073709551615,
+        "StartupCPUWeight": 18446744073709551615,
+        "StartupIOWeight": 18446744073709551615,
+        "StateChangeTimestamp": 0,
+        "StateChangeTimestampMonotonic": 0,
+        "StateDirectory": [],
+        "StateDirectoryMode": 493,
+        "StatusErrno": 0,
+        "StatusText": "",
+        "StopPropagatedFrom": [],
+        "StopWhenUnneeded": false,
+        "SubState": "dead",
+        "SuccessAction": "none",
+        "SuccessActionExitStatus": -1,
+        "SuccessExitStatus": [
+          [],
+          []
+        ],
+        "SupplementaryGroups": [],
+        "SyslogFacility": 3,
+        "SyslogIdentifier": "",
+        "SyslogLevel": 6,
+        "SyslogLevelPrefix": true,
+        "SyslogPriority": 30,
+        "SystemCallArchitectures": [],
+        "SystemCallErrorNumber": 2147483646,
+        "SystemCallFilter": [
+          false,
+          []
+        ],
+        "SystemCallLog": [
+          false,
+          []
+        ],
+        "TTYPath": "",
+        "TTYReset": false,
+        "TTYVHangup": false,
+        "TTYVTDisallocate": false,
+        "TasksAccounting": true,
+        "TasksCurrent": 18446744073709551615,
+        "TasksMax": 629145,
+        "TemporaryFileSystem": [],
+        "TimeoutAbortUSec": 90000000,
+        "TimeoutCleanUSec": 18446744073709551615,
+        "TimeoutStartFailureMode": "terminate",
+        "TimeoutStartUSec": 90000000,
+        "TimeoutStopFailureMode": "terminate",
+        "TimeoutStopUSec": 90000000,
+        "TimerSlackNSec": 50000,
+        "Transient": false,
+        "TriggeredBy": [],
+        "Triggers": [],
+        "Type": "",
+        "UID": 4294967295,
+        "UMask": 18,
+        "USBFunctionDescriptors": "",
+        "USBFunctionStrings": "",
+        "UnitFilePreset": "",
+        "UnitFileState": "",
+        "UnsetEnvironment": [],
+        "User": "",
+        "UtmpIdentifier": "",
+        "UtmpMode": "init",
+        "WantedBy": [],
+        "Wants": [],
+        "WatchdogSignal": 6,
+        "WatchdogTimestamp": 0,
+        "WatchdogTimestampMonotonic": 0,
+        "WatchdogUSec": 18446744073709551615,
+        "WorkingDirectory": ""
+      }
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/abi/cp15_barrier",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/abi/setend",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/abi/sve_default_vector_length",
+      "Value": "16"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/abi/swp",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/abi/tagged_addr_disabled",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/debug/exception-trace",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/dev/cdrom/autoclose",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/dev/cdrom/autoeject",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/dev/cdrom/check_media",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/dev/cdrom/debug",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/dev/cdrom/info",
+      "Value": "CD-ROM information, Id: cdrom.c 3.20 2003/12/17\n\ndrive name:\t\ndrive speed:\t\ndrive # of slots:\nCan close tray:\t\nCan open tray:\t\nCan lock tray:\t\nCan change speed:\nCan select disk:\nCan read multisession:\nCan read MCN:\t\nReports media changed:\nCan play audio:\t\nCan write CD-R:\t\nCan write CD-RW:\nCan read DVD:\t\nCan write DVD-R:\nCan write DVD-RAM:\nCan read MRW:\t\nCan write MRW:\t\nCan write RAM:"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/dev/cdrom/lock",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/dev/raid/speed_limit_max",
+      "Value": "200000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/dev/raid/speed_limit_min",
+      "Value": "1000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/dev/scsi/logging_level",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/dev/tty/ldisc_autoload",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/dev/tty/legacy_tiocsti",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/aio-max-nr",
+      "Value": "65536"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/aio-nr",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/binfmt_misc/python3.10",
+      "Value": "enabled\ninterpreter /usr/bin/python3.10\nflags: \noffset 0\nmagic 6f0d0d0a"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/binfmt_misc/status",
+      "Value": "enabled"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/dentry-state",
+      "Value": "1712563\t1611990\t45\t0\t601440\t0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/dir-notify-enable",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/epoll/max_user_watches",
+      "Value": "216410223"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/fanotify/max_queued_events",
+      "Value": "16384"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/fanotify/max_user_groups",
+      "Value": "128"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/fanotify/max_user_marks",
+      "Value": "1048576"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/file-max",
+      "Value": "9223372036854775807"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/file-nr",
+      "Value": "4608\t0\t9223372036854775807"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/inode-nr",
+      "Value": "1107998\t435"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/inode-state",
+      "Value": "1107998\t435\t0\t0\t0\t0\t0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/inotify/max_queued_events",
+      "Value": "16384"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/inotify/max_user_instances",
+      "Value": "65535"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/inotify/max_user_watches",
+      "Value": "524288"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/lease-break-time",
+      "Value": "45"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/leases-enable",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/mount-max",
+      "Value": "100000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/mqueue/msg_default",
+      "Value": "10"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/mqueue/msg_max",
+      "Value": "10"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/mqueue/msgsize_default",
+      "Value": "8192"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/mqueue/msgsize_max",
+      "Value": "8192"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/mqueue/queues_max",
+      "Value": "256"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/nr_open",
+      "Value": "1048576"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/overflowgid",
+      "Value": "65534"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/overflowuid",
+      "Value": "65534"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/pipe-max-size",
+      "Value": "1048576"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/pipe-user-pages-hard",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/pipe-user-pages-soft",
+      "Value": "16384"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/protected_fifos",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/protected_hardlinks",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/protected_regular",
+      "Value": "2"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/protected_symlinks",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/quota/allocated_dquots",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/quota/cache_hits",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/quota/drops",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/quota/free_dquots",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/quota/lookups",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/quota/reads",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/quota/syncs",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/quota/writes",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/suid_dumpable",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/verity/require_signatures",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/error_level",
+      "Value": "3"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/filestream_centisecs",
+      "Value": "3000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/inherit_noatime",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/inherit_nodefrag",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/inherit_nodump",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/inherit_nosymlinks",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/inherit_sync",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/irix_sgid_inherit",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/irix_symlink_mode",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/panic_mask",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/rotorstep",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/speculative_cow_prealloc_lifetime",
+      "Value": "300"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/speculative_prealloc_lifetime",
+      "Value": "300"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/stats_clear",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/fs/xfs/xfssyncd_centisecs",
+      "Value": "3000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/acct",
+      "Value": "4\t2\t30"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/apparmor_display_secid_mode",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/apparmor_restrict_unprivileged_io_uring",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/apparmor_restrict_unprivileged_unconfined",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/apparmor_restrict_unprivileged_userns",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/apparmor_restrict_unprivileged_userns_complain",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/apparmor_restrict_unprivileged_userns_force",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/arch",
+      "Value": "aarch64"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/auto_msgmni",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/bpf_stats_enabled",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/cad_pid",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/cap_last_cap",
+      "Value": "40"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/core_pattern",
+      "Value": "core"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/core_pipe_limit",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/core_uses_pid",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/ctrl-alt-del",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/dmesg_restrict",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/domainname",
+      "Value": "(none)"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/firmware_config/force_sysfs_fallback",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/firmware_config/ignore_sysfs_fallback",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/ftrace_dump_on_oops",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/ftrace_enabled",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/hardlockup_all_cpu_backtrace",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/hardlockup_panic",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/hostname",
+      "Value": "ip-10-0-139-232"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/hotplug",
+      "Value": ""
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/hung_task_all_cpu_backtrace",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/hung_task_check_count",
+      "Value": "4194304"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/hung_task_check_interval_secs",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/hung_task_panic",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/hung_task_timeout_secs",
+      "Value": "120"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/hung_task_warnings",
+      "Value": "10"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/io_uring_disabled",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/io_uring_group",
+      "Value": "-1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/kexec_load_disabled",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/kexec_load_limit_panic",
+      "Value": "-1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/kexec_load_limit_reboot",
+      "Value": "-1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/keys/gc_delay",
+      "Value": "300"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/keys/maxbytes",
+      "Value": "20000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/keys/maxkeys",
+      "Value": "200"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/keys/persistent_keyring_expiry",
+      "Value": "259200"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/keys/root_maxbytes",
+      "Value": "25000000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/keys/root_maxkeys",
+      "Value": "1000000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/kptr_restrict",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/latencytop",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/max_lock_depth",
+      "Value": "1024"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/max_rcu_stall_to_panic",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/modprobe",
+      "Value": "/sbin/modprobe"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/modules_disabled",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/msg_next_id",
+      "Value": "-1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/msgmax",
+      "Value": "8192"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/msgmnb",
+      "Value": "16384"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/msgmni",
+      "Value": "32000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/ngroups_max",
+      "Value": "65536"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/nmi_watchdog",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/ns_last_pid",
+      "Value": "3886975"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/numa_balancing",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/numa_balancing_promote_rate_limit_MBps",
+      "Value": "65536"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/oops_all_cpu_backtrace",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/oops_limit",
+      "Value": "10000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/osrelease",
+      "Value": "6.8.0-1028-aws"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/ostype",
+      "Value": "Linux"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/overflowgid",
+      "Value": "65534"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/overflowuid",
+      "Value": "65534"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/panic",
+      "Value": "10"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/panic_on_oops",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/panic_on_rcu_stall",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/panic_on_warn",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/panic_print",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/perf_cpu_time_max_percent",
+      "Value": "25"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/perf_event_max_contexts_per_stack",
+      "Value": "8"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/perf_event_max_sample_rate",
+      "Value": "100000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/perf_event_max_stack",
+      "Value": "127"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/perf_event_mlock_kb",
+      "Value": "516"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/perf_event_paranoid",
+      "Value": "4"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/perf_user_access",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/pid_max",
+      "Value": "4194304"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/poweroff_cmd",
+      "Value": "/sbin/poweroff"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/print-fatal-signals",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/printk",
+      "Value": "4\t4\t1\t7"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/printk_delay",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/printk_devkmsg",
+      "Value": "on"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/printk_ratelimit",
+      "Value": "5"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/printk_ratelimit_burst",
+      "Value": "10"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/pty/max",
+      "Value": "4096"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/pty/nr",
+      "Value": "2"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/pty/reserve",
+      "Value": "1024"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/random/boot_id",
+      "Value": "fbb68f1f-2317-4b1b-8f5d-9b12b2c71fb2"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/random/entropy_avail",
+      "Value": "256"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/random/poolsize",
+      "Value": "256"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/random/urandom_min_reseed_secs",
+      "Value": "60"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/random/uuid",
+      "Value": "0b316875-b007-4646-b263-68c4d28ba8c8"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/random/write_wakeup_threshold",
+      "Value": "256"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/randomize_va_space",
+      "Value": "2"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/real-root-dev",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sched_autogroup_enabled",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sched_cfs_bandwidth_slice_us",
+      "Value": "5000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sched_deadline_period_max_us",
+      "Value": "4194304"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sched_deadline_period_min_us",
+      "Value": "100"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sched_energy_aware",
+      "Value": ""
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sched_rr_timeslice_ms",
+      "Value": "100"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sched_rt_period_us",
+      "Value": "1000000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sched_rt_runtime_us",
+      "Value": "950000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sched_schedstats",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sched_util_clamp_max",
+      "Value": "1024"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sched_util_clamp_min",
+      "Value": "1024"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sched_util_clamp_min_rt_default",
+      "Value": "1024"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/seccomp/actions_avail",
+      "Value": "kill_process kill_thread trap errno user_notif trace log allow"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/seccomp/actions_logged",
+      "Value": "kill_process kill_thread trap errno user_notif trace log"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sem",
+      "Value": "32000\t1024000000\t500\t32000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sem_next_id",
+      "Value": "-1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/shm_next_id",
+      "Value": "-1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/shm_rmid_forced",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/shmall",
+      "Value": "18446744073692774399"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/shmmax",
+      "Value": "18446744073692774399"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/shmmni",
+      "Value": "4096"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/soft_watchdog",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/softlockup_all_cpu_backtrace",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/softlockup_panic",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/stack_tracer_enabled",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sysctl_writes_strict",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/sysrq",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/tainted",
+      "Value": "12288"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/task_delayacct",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/threads-max",
+      "Value": "16512444"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/timer_migration",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/traceoff_on_warning",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/tracepoint_printk",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/unprivileged_bpf_disabled",
+      "Value": "2"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/unprivileged_userns_apparmor_policy",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/unprivileged_userns_clone",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/user_events_max",
+      "Value": "32768"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/usermodehelper/bset",
+      "Value": "4294967295\t511"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/usermodehelper/inheritable",
+      "Value": "4294967295\t511"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/version",
+      "Value": "#30~22.04.1-Ubuntu SMP Sun Apr 20 05:49:17 UTC 2025"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/warn_limit",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/watchdog",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/watchdog_cpumask",
+      "Value": "0-143"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/watchdog_thresh",
+      "Value": "10"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/kernel/yama/ptrace_scope",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/max_resvport",
+      "Value": "1023"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/min_resvport",
+      "Value": "665"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/nfs_debug",
+      "Value": "0x0000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/nfsd_debug",
+      "Value": "0x0000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/nlm_debug",
+      "Value": "0x0000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/rdma_inline_write_padding",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/rdma_max_inline_read",
+      "Value": "4096"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/rdma_max_inline_write",
+      "Value": "4096"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/rdma_memreg_strategy",
+      "Value": "5"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/rdma_pad_optimize",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/rdma_slot_table_entries",
+      "Value": "128"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/rpc_debug",
+      "Value": "0x0000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/svc_rdma/max_outbound_read_requests",
+      "Value": "16"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/svc_rdma/max_req_size",
+      "Value": "4096"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/svc_rdma/max_requests",
+      "Value": "64"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/svc_rdma/rdma_stat_read",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/svc_rdma/rdma_stat_recv",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/svc_rdma/rdma_stat_rq_poll",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/svc_rdma/rdma_stat_rq_prod",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/svc_rdma/rdma_stat_rq_starve",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/svc_rdma/rdma_stat_sq_poll",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/svc_rdma/rdma_stat_sq_prod",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/svc_rdma/rdma_stat_sq_starve",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/svc_rdma/rdma_stat_write",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/tcp_fin_timeout",
+      "Value": "15"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/tcp_max_slot_table_entries",
+      "Value": "65536"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/tcp_slot_table_entries",
+      "Value": "2"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/transports",
+      "Value": "tcp 1048576\nudp 32768\nrdma 1048576"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/sunrpc/udp_slot_table_entries",
+      "Value": "16"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/user/max_cgroup_namespaces",
+      "Value": "3789289"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/user/max_fanotify_groups",
+      "Value": "128"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/user/max_fanotify_marks",
+      "Value": "1048576"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/user/max_inotify_instances",
+      "Value": "65535"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/user/max_inotify_watches",
+      "Value": "524288"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/user/max_ipc_namespaces",
+      "Value": "3789289"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/user/max_mnt_namespaces",
+      "Value": "3789289"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/user/max_net_namespaces",
+      "Value": "3789289"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/user/max_pid_namespaces",
+      "Value": "3789289"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/user/max_time_namespaces",
+      "Value": "3789289"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/user/max_user_namespaces",
+      "Value": "3789289"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/user/max_uts_namespaces",
+      "Value": "3789289"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/admin_reserve_kbytes",
+      "Value": "8192"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/compact_unevictable_allowed",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/compaction_proactiveness",
+      "Value": "20"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/dirty_background_bytes",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/dirty_background_ratio",
+      "Value": "10"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/dirty_bytes",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/dirty_expire_centisecs",
+      "Value": "3000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/dirty_ratio",
+      "Value": "20"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/dirty_writeback_centisecs",
+      "Value": "500"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/dirtytime_expire_seconds",
+      "Value": "43200"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/extfrag_threshold",
+      "Value": "500"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/hugetlb_shm_group",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/laptop_mode",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/legacy_va_layout",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/lowmem_reserve_ratio",
+      "Value": "256\t256\t32\t0\t0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/max_map_count",
+      "Value": "262144"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/memfd_noexec",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/memory_failure_early_kill",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/memory_failure_recovery",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/min_free_kbytes",
+      "Value": "65536"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/min_slab_ratio",
+      "Value": "5"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/min_unmapped_ratio",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/mmap_min_addr",
+      "Value": "32768"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/mmap_rnd_bits",
+      "Value": "33"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/mmap_rnd_compat_bits",
+      "Value": "16"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/nr_hugepages",
+      "Value": "15841"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/nr_hugepages_mempolicy",
+      "Value": "15841"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/nr_overcommit_hugepages",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/numa_stat",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/numa_zonelist_order",
+      "Value": "Node"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/oom_dump_tasks",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/oom_kill_allocating_task",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/overcommit_kbytes",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/overcommit_memory",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/overcommit_ratio",
+      "Value": "50"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/page-cluster",
+      "Value": "3"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/page_lock_unfairness",
+      "Value": "5"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/panic_on_oom",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/percpu_pagelist_high_fraction",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/stat_interval",
+      "Value": "1"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/stat_refresh",
+      "Value": ""
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/swappiness",
+      "Value": "60"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/unprivileged_userfaultfd",
+      "Value": "0"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/user_reserve_kbytes",
+      "Value": "131072"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/vfs_cache_pressure",
+      "Value": "100"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/watermark_boost_factor",
+      "Value": "15000"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/watermark_scale_factor",
+      "Value": "10"
+    }
+  },
+  {
+    "Type": "Sysctl",
+    "Data": {
+      "Key": "/proc/sys/vm/zone_reclaim_mode",
+      "Value": "0"
+    }
+  }
+]

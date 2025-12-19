@@ -17,8 +17,8 @@ const SystemDType string = "SystemD"
 
 // SystemDConfig represents the configuration data collected from a systemd service.
 type SystemDConfig struct {
-	Unit       string
-	Properties map[string]any
+	Unit       string         `json:"unit" yaml:"unit"`
+	Properties map[string]any `json:"properties" yaml:"properties"`
 }
 
 // Collect gathers configuration data from specified systemd services.

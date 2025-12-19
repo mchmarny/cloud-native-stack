@@ -16,13 +16,6 @@ type GrubCollector struct {
 // GrubType is the type identifier for GRUB configurations
 const GrubType string = "Grub"
 
-// GrubConfig represents a single GRUB bootloader configuration parameter
-// with its key and value
-type GrubConfig struct {
-	Key   string
-	Value string
-}
-
 // Collect retrieves the GRUB bootloader parameters from /proc/cmdline
 // and parses them into GrubConfig structures
 func (s *GrubCollector) Collect(ctx context.Context) ([]Configuration, error) {
@@ -32,8 +25,6 @@ func (s *GrubCollector) Collect(ctx context.Context) ([]Configuration, error) {
 	}
 
 	root := "/proc/cmdline"
-	res := make([]Configuration, 0, 20)
-
 	cmdline, err := os.ReadFile(root)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read grub config: %w", err)
@@ -51,6 +42,7 @@ func (s *GrubCollector) Collect(ctx context.Context) ([]Configuration, error) {
 	}
 
 	params := strings.Split(string(cmdline), " ")
+	props := make(map[string]any)
 
 	for _, param := range params {
 		p := strings.TrimSpace(param)
@@ -68,13 +60,15 @@ func (s *GrubCollector) Collect(ctx context.Context) ([]Configuration, error) {
 			val = s[1]
 		}
 
-		res = append(res, Configuration{
+		props[key] = val
+
+	}
+
+	res := []Configuration{
+		{
 			Type: GrubType,
-			Data: GrubConfig{
-				Key:   key,
-				Value: val,
-			},
-		})
+			Data: props,
+		},
 	}
 
 	return res, nil
