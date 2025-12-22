@@ -7,7 +7,6 @@ type CollectorFactory interface {
 	CreateSystemDCollector() Collector
 	CreateGrubCollector() Collector
 	CreateSysctlCollector() Collector
-	CreateHelmCollector() Collector
 	CreateKubernetesCollector() Collector
 	CreateImageCollector() Collector
 	CreateSMICollector() Collector
@@ -52,11 +51,6 @@ func (f *DefaultCollectorFactory) CreateGrubCollector() Collector {
 // CreateSysctlCollector creates a sysctl collector.
 func (f *DefaultCollectorFactory) CreateSysctlCollector() Collector {
 	return &SysctlCollector{}
-}
-
-// CreateHelmCollector creates a Helm collector.
-func (f *DefaultCollectorFactory) CreateHelmCollector() Collector {
-	return &HelmCollector{}
 }
 
 // CreateKubernetesCollector creates a Kubernetes API collector.

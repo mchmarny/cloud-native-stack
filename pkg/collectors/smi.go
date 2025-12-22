@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+
+	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
 // SMICollector collects NVIDIA SMI configurations from nvidia-smi command output in XML format
@@ -18,7 +20,7 @@ const SMIType string = "SMI"
 
 // Collect retrieves the NVIDIA SMI information by executing nvidia-smi command and
 // parses the XML output into NVSMIDevice structures
-func (s *SMICollector) Collect(ctx context.Context) ([]Measurement, error) {
+func (s *SMICollector) Collect(ctx context.Context) ([]measurement.Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -33,7 +35,7 @@ func (s *SMICollector) Collect(ctx context.Context) ([]Measurement, error) {
 		return nil, fmt.Errorf("failed to parse nvidia-smi output: %w", err)
 	}
 
-	res := []Measurement{
+	res := []measurement.Measurement{
 		{
 			Type: SMIType,
 			Data: smiDevice,

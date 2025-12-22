@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
 // GrubCollector collects information about GRUB bootloader configurations from /proc/cmdline
@@ -18,7 +20,7 @@ const GrubType string = "Grub"
 
 // Collect retrieves the GRUB bootloader parameters from /proc/cmdline
 // and parses them into GrubConfig structures
-func (s *GrubCollector) Collect(ctx context.Context) ([]Measurement, error) {
+func (s *GrubCollector) Collect(ctx context.Context) ([]measurement.Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -63,7 +65,7 @@ func (s *GrubCollector) Collect(ctx context.Context) ([]Measurement, error) {
 		props[key] = val
 	}
 
-	res := []Measurement{
+	res := []measurement.Measurement{
 		{
 			Type: GrubType,
 			Data: props,

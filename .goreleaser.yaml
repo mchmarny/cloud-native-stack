@@ -81,6 +81,8 @@ release:
 kos:
   - id: eidos
     build: eidos
+    repositories:
+      - ghcr.io/mchmarny/eidos
     base_image: nvcr.io/nvidia/cuda:13.1.0-runtime-ubuntu24.04
     platforms:
       - linux/amd64
@@ -94,6 +96,8 @@ kos:
 
   - id: server
     build: server
+    repositories:
+      - ghcr.io/mchmarny/eidos-server
     platforms:
       - linux/amd64
       - linux/arm64

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/client"
+	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
 // KubernetesCollector collects information about the Kubernetes cluster.
@@ -17,7 +18,7 @@ const KubernetesType string = "Kubernetes"
 
 // Collect retrieves Kubernetes cluster version information from the API server.
 // This provides cluster version details for comparison across environments.
-func (k *KubernetesCollector) Collect(ctx context.Context) ([]Measurement, error) {
+func (k *KubernetesCollector) Collect(ctx context.Context) ([]measurement.Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -44,7 +45,7 @@ func (k *KubernetesCollector) Collect(ctx context.Context) ([]Measurement, error
 
 	slog.Debug("collected kubernetes version", slog.String("version", serverVersion.GitVersion))
 
-	res := []Measurement{
+	res := []measurement.Measurement{
 		{
 			Type: KubernetesType,
 			Data: versionInfo,

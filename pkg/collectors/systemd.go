@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/coreos/go-systemd/v22/dbus"
 )
 
@@ -23,12 +24,12 @@ type SystemDConfig struct {
 
 // Collect gathers configuration data from specified systemd services.
 // It implements the Collector interface.
-func (s *SystemDCollector) Collect(ctx context.Context) ([]Measurement, error) {
+func (s *SystemDCollector) Collect(ctx context.Context) ([]measurement.Measurement, error) {
 	services := s.Services
 	if len(services) == 0 {
 		services = []string{"containerd.service"}
 	}
-	res := make([]Measurement, 0, len(services)*10)
+	res := make([]measurement.Measurement, 0, len(services)*10)
 
 	conn, err := dbus.NewSystemdConnectionContext(ctx)
 	if err != nil {
@@ -50,7 +51,7 @@ func (s *SystemDCollector) Collect(ctx context.Context) ([]Measurement, error) {
 		})
 	}
 
-	res = append(res, Measurement{
+	res = append(res, measurement.Measurement{
 		Type: SystemDType,
 		Data: list,
 	})

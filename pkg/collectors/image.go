@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/client"
+	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +23,7 @@ const ImageType string = "Image"
 
 // Collect retrieves unique container images from all pods in the cluster.
 // This provides a snapshot of deployed images for cluster comparison.
-func (i *ImageCollector) Collect(ctx context.Context) ([]Measurement, error) {
+func (i *ImageCollector) Collect(ctx context.Context) ([]measurement.Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -38,7 +39,7 @@ func (i *ImageCollector) Collect(ctx context.Context) ([]Measurement, error) {
 		return nil, err
 	}
 
-	res := []Measurement{
+	res := []measurement.Measurement{
 		{
 			Type: ImageType,
 			Data: images,

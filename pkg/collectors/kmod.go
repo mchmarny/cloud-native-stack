@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
 // KModCollector collects information about loaded kernel modules from /proc/modules
@@ -17,7 +19,7 @@ const KModType string = "KMod"
 
 // Collect retrieves the list of loaded kernel modules from /proc/modules
 // and parses them into KModConfig structures
-func (s *KModCollector) Collect(ctx context.Context) ([]Measurement, error) {
+func (s *KModCollector) Collect(ctx context.Context) ([]measurement.Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -43,7 +45,7 @@ func (s *KModCollector) Collect(ctx context.Context) ([]Measurement, error) {
 		modules = append(modules, mod[0])
 	}
 
-	res := []Measurement{
+	res := []measurement.Measurement{
 		{
 			Type: KModType,
 			Data: modules,

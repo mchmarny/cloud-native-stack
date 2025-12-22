@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
 // SysctlCollector collects sysctl configurations from /proc/sys
@@ -19,7 +21,7 @@ const SysctlType string = "Sysctl"
 
 // Collect gathers sysctl configurations from /proc/sys, excluding /proc/sys/net
 // and returns them as a single Configuration with a map of all parameters.
-func (s *SysctlCollector) Collect(ctx context.Context) ([]Measurement, error) {
+func (s *SysctlCollector) Collect(ctx context.Context) ([]measurement.Measurement, error) {
 	root := "/proc/sys"
 	params := make(map[string]any)
 
@@ -65,7 +67,7 @@ func (s *SysctlCollector) Collect(ctx context.Context) ([]Measurement, error) {
 		return nil, fmt.Errorf("failed to capture sysctl config: %w", err)
 	}
 
-	res := []Measurement{
+	res := []measurement.Measurement{
 		{
 			Type: SysctlType,
 			Data: params,

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/collectors"
+	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/node"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializers"
 
@@ -15,10 +16,10 @@ import (
 )
 
 type Snapshot struct {
-	Kind         string                   `json:"kind,omitempty" yaml:"kind,omitempty"`
-	APIVersion   string                   `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
-	Metadata     map[string]string        `json:"metadata,omitempty" yaml:"metadata,omitempty"`
-	Measurements []collectors.Measurement `json:"measurements" yaml:"measurements"`
+	Kind         string                    `json:"kind,omitempty" yaml:"kind,omitempty"`
+	APIVersion   string                    `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
+	Metadata     map[string]string         `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Measurements []measurement.Measurement `json:"measurements" yaml:"measurements"`
 }
 
 // NodeSnapshotter is a snapshotter that collects configuration from the current node.
@@ -50,7 +51,7 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 		Kind:         "Snapshot",
 		APIVersion:   "snapshot.dgxc.io/v1",
 		Metadata:     make(map[string]string),
-		Measurements: make([]collectors.Measurement, 0),
+		Measurements: make([]measurement.Measurement, 0),
 	}
 
 	// Collect node metadata
@@ -67,22 +68,6 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 		snap.Metadata["snapshot-timestamp"] = time.Now().UTC().Format(time.RFC1123Z)
 		mu.Unlock()
 		n.Logger.Debug("obtained node metadata", slog.String("name", nd.Name), slog.String("namespace", nd.Namespace))
-		return nil
-	})
-
-	// Collect helm components
-	g.Go(func() error {
-		n.Logger.Debug("collecting helm components")
-		hc := n.Factory.CreateHelmCollector()
-		helmComps, err := hc.Collect(ctx)
-		if err != nil {
-			n.Logger.Error("failed to collect helm components", slog.String("error", err.Error()))
-			return fmt.Errorf("failed to collect helm components: %w", err)
-		}
-		mu.Lock()
-		snap.Measurements = append(snap.Measurements, helmComps...)
-		mu.Unlock()
-		n.Logger.Debug("collected helm components", slog.Int("count", len(helmComps)))
 		return nil
 	})
 
