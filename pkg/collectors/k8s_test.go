@@ -14,7 +14,7 @@ func TestKubernetesCollector_Collect(t *testing.T) {
 
 	// This test requires a kubernetes cluster to be available
 	// It will fail if no cluster is accessible
-	measurements, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 
 	// If no cluster is available, we expect an error
 	if err != nil {
@@ -25,20 +25,19 @@ func TestKubernetesCollector_Collect(t *testing.T) {
 
 	// If cluster is available, validate the measurement
 	assert.NoError(t, err)
-	assert.Len(t, measurements, 1)
-	assert.Equal(t, measurement.TypeK8s, measurements[0].Type)
-	assert.NotNil(t, measurements[0].Data)
-
-	// Data should be a map with version info
-	data, ok := measurements[0].Data.(map[string]string)
-	assert.True(t, ok, "Data should be a map[string]string")
+	assert.NotNil(t, m)
+	assert.Equal(t, measurement.TypeK8s, m.Type)
+	assert.Len(t, m.Subtypes, 1)
+	assert.NotNil(t, m.Subtypes[0].Data)
 
 	// Check that required fields are present
+	data := m.Subtypes[0].Data
 	assert.Contains(t, data, "version")
 	assert.Contains(t, data, "platform")
 	assert.Contains(t, data, "goVersion")
 
-	t.Logf("Kubernetes version: %s", data["version"])
+	version, _ := m.Subtypes[0].GetString("version")
+	t.Logf("Kubernetes version: %s", version)
 }
 
 func TestKubernetesCollector_CollectWithCancelledContext(t *testing.T) {
@@ -46,8 +45,9 @@ func TestKubernetesCollector_CollectWithCancelledContext(t *testing.T) {
 	cancel() // Cancel immediately
 
 	collector := &KubernetesCollector{}
-	_, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 
 	assert.Error(t, err)
+	assert.Nil(t, m)
 	assert.Equal(t, context.Canceled, err)
 }

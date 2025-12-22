@@ -10,5 +10,5 @@ import (
 // Implementations of this interface can collect data from various sources
 // such as system modules, services, or settings.
 type Collector interface {
-	Collect(ctx context.Context) ([]measurement.Measurement, error)
+	Collect(ctx context.Context) (*measurement.Measurement, error)
 }

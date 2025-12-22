@@ -14,7 +14,7 @@ func TestImageCollector_Collect(t *testing.T) {
 
 	// This test requires a kubernetes cluster to be available
 	// It will fail if no cluster is accessible
-	measurements, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 
 	// If no cluster is available, we expect an error
 	if err != nil {
@@ -25,13 +25,14 @@ func TestImageCollector_Collect(t *testing.T) {
 
 	// If cluster is available, validate the measurement
 	assert.NoError(t, err)
-	assert.Len(t, measurements, 1)
-	assert.Equal(t, measurement.TypeImage, measurements[0].Type)
-	assert.NotNil(t, measurements[0].Data)
+	assert.NotNil(t, m)
+	assert.Equal(t, measurement.TypeImage, m.Type)
+	assert.Len(t, m.Subtypes, 1)
+	assert.NotNil(t, m.Subtypes[0].Data)
 
 	// Data should be a map
-	data, ok := measurements[0].Data.(map[string]any)
-	assert.True(t, ok, "Data should be a map[string]any")
+	data := m.Subtypes[0].Data
+	assert.NotEmpty(t, data)
 
 	t.Logf("Found %d unique container images", len(data))
 }
@@ -41,9 +42,10 @@ func TestImageCollector_CollectWithCancelledContext(t *testing.T) {
 	cancel() // Cancel immediately
 
 	collector := &ImageCollector{}
-	_, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 
 	assert.Error(t, err)
+	assert.Nil(t, m)
 	assert.Equal(t, context.Canceled, err)
 }
 

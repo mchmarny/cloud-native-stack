@@ -16,14 +16,14 @@ type KModCollector struct {
 
 // Collect retrieves the list of loaded kernel modules from /proc/modules
 // and parses them into KModConfig structures
-func (s *KModCollector) Collect(ctx context.Context) ([]measurement.Measurement, error) {
+func (s *KModCollector) Collect(ctx context.Context) (*measurement.Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 
 	root := "/proc/modules"
-	modules := make([]string, 0, 100)
+	modules := make([]string, 0)
 
 	cmdline, err := os.ReadFile(root)
 	if err != nil {
@@ -42,10 +42,17 @@ func (s *KModCollector) Collect(ctx context.Context) ([]measurement.Measurement,
 		modules = append(modules, mod[0])
 	}
 
-	res := []measurement.Measurement{
-		{
-			Type: measurement.TypeKMod,
-			Data: modules,
+	readings := make(map[string]measurement.Reading)
+	for _, mod := range modules {
+		readings[mod] = measurement.Bool(true)
+	}
+
+	res := &measurement.Measurement{
+		Type: measurement.TypeKMod,
+		Subtypes: []measurement.Subtype{
+			{
+				Data: readings,
+			},
 		},
 	}
 

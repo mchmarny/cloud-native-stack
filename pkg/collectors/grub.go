@@ -17,7 +17,7 @@ type GrubCollector struct {
 
 // Collect retrieves the GRUB bootloader parameters from /proc/cmdline
 // and parses them into GrubConfig structures
-func (s *GrubCollector) Collect(ctx context.Context) ([]measurement.Measurement, error) {
+func (s *GrubCollector) Collect(ctx context.Context) (*measurement.Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (s *GrubCollector) Collect(ctx context.Context) ([]measurement.Measurement,
 	}
 
 	params := strings.Split(string(cmdline), " ")
-	props := make(map[string]any)
+	props := make(map[string]measurement.Reading, 0)
 
 	for _, param := range params {
 		p := strings.TrimSpace(param)
@@ -59,13 +59,15 @@ func (s *GrubCollector) Collect(ctx context.Context) ([]measurement.Measurement,
 			val = s[1]
 		}
 
-		props[key] = val
+		props[key] = measurement.Str(val)
 	}
 
-	res := []measurement.Measurement{
-		{
-			Type: measurement.TypeGrub,
-			Data: props,
+	res := &measurement.Measurement{
+		Type: measurement.TypeGrub,
+		Subtypes: []measurement.Subtype{
+			{
+				Data: props,
+			},
 		},
 	}
 

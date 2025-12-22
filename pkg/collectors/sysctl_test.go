@@ -22,11 +22,16 @@ func TestSysctlCollector_Collect_ContextCancellation(t *testing.T) {
 		cancel()
 	}()
 
-	_, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 
 	// Context cancellation during walk should return context error
-	if err != nil && !errors.Is(err, context.Canceled) {
-		t.Logf("Got error: %v (expected context.Canceled or nil)", err)
+	if err != nil {
+		if m != nil {
+			t.Error("Expected nil measurement on error")
+		}
+		if !errors.Is(err, context.Canceled) {
+			t.Logf("Got error: %v (expected context.Canceled or nil)", err)
+		}
 	}
 }
 
@@ -38,7 +43,7 @@ func TestSysctlCollector_Integration(t *testing.T) {
 	ctx := context.Background()
 	collector := &collectors.SysctlCollector{}
 
-	configs, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 	if err != nil {
 		// /proc/sys might not exist on all systems
 		if errors.Is(err, os.ErrNotExist) {
@@ -48,24 +53,24 @@ func TestSysctlCollector_Integration(t *testing.T) {
 		t.Fatalf("Collect() failed: %v", err)
 	}
 
-	// Should return exactly one configuration
-	if len(configs) != 1 {
-		t.Errorf("Expected 1 config, got %d", len(configs))
+	// Should return exactly one measurement with one subtype
+	if m == nil {
+		t.Fatal("Expected non-nil measurement")
 	}
 
-	if len(configs) == 0 {
+	if m.Type != measurement.TypeSysctl {
+		t.Errorf("Expected type %s, got %s", measurement.TypeSysctl, m.Type)
+	}
+
+	if len(m.Subtypes) != 1 {
+		t.Errorf("Expected 1 subtype, got %d", len(m.Subtypes))
 		return
 	}
 
-	cfg := configs[0]
-	if cfg.Type != measurement.TypeSysctl {
-		t.Errorf("Expected type %s, got %s", measurement.TypeSysctl, cfg.Type)
-	}
-
 	// Validate that Data is a map
-	params, ok := cfg.Data.(map[string]any)
-	if !ok {
-		t.Errorf("Expected map[string]any, got %T", cfg.Data)
+	params := m.Subtypes[0].Data
+	if params == nil {
+		t.Error("Expected non-nil Data map")
 		return
 	}
 
@@ -96,7 +101,7 @@ func TestSysctlCollector_ExcludesNet(t *testing.T) {
 	ctx := context.Background()
 	collector := &collectors.SysctlCollector{}
 
-	configs, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			t.Skip("/proc/sys not available on this system")
@@ -105,11 +110,11 @@ func TestSysctlCollector_ExcludesNet(t *testing.T) {
 		t.Fatalf("Collect() failed: %v", err)
 	}
 
-	if len(configs) == 0 {
+	if m == nil || len(m.Subtypes) == 0 {
 		return
 	}
 
-	params := configs[0].Data.(map[string]any)
+	params := m.Subtypes[0].Data
 
 	// Ensure no network parameters are included
 	for key := range params {

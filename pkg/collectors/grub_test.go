@@ -15,11 +15,15 @@ func TestGrubCollector_Collect_ContextCancellation(t *testing.T) {
 	cancel() // Cancel immediately
 
 	collector := &collectors.GrubCollector{}
-	_, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 
 	if err == nil {
 		// On some systems, the read may complete before context check
 		t.Skip("Context cancellation timing dependent")
+	}
+
+	if m != nil {
+		t.Error("Expected nil measurement on error")
 	}
 
 	if !errors.Is(err, context.Canceled) {
@@ -35,7 +39,7 @@ func TestGrubCollector_Integration(t *testing.T) {
 	ctx := context.Background()
 	collector := &collectors.GrubCollector{}
 
-	configs, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 	if err != nil {
 		// /proc/cmdline might not exist on all systems
 		if errors.Is(err, os.ErrNotExist) {
@@ -45,24 +49,24 @@ func TestGrubCollector_Integration(t *testing.T) {
 		t.Fatalf("Collect() failed: %v", err)
 	}
 
-	// Should have exactly one configuration with all boot parameters
-	if len(configs) != 1 {
-		t.Errorf("Expected exactly 1 config, got %d", len(configs))
+	// Should have exactly one measurement with one subtype containing all boot parameters
+	if m == nil {
+		t.Fatal("Expected non-nil measurement")
 	}
 
-	if len(configs) == 0 {
+	if m.Type != measurement.TypeGrub {
+		t.Errorf("Expected type %s, got %s", measurement.TypeGrub, m.Type)
+	}
+
+	if len(m.Subtypes) != 1 {
+		t.Errorf("Expected exactly 1 subtype, got %d", len(m.Subtypes))
 		return
 	}
 
-	cfg := configs[0]
-	if cfg.Type != measurement.TypeGrub {
-		t.Errorf("Expected type %s, got %s", measurement.TypeGrub, cfg.Type)
-	}
-
 	// Validate that Data is a map
-	props, ok := cfg.Data.(map[string]any)
-	if !ok {
-		t.Errorf("Expected map[string]any, got %T", cfg.Data)
+	props := m.Subtypes[0].Data
+	if props == nil {
+		t.Error("Expected non-nil Data map")
 		return
 	}
 
@@ -82,7 +86,7 @@ func TestGrubCollector_ValidatesParsing(t *testing.T) {
 	ctx := context.Background()
 	collector := &collectors.GrubCollector{}
 
-	configs, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			t.Skip("/proc/cmdline not available on this system")
@@ -91,11 +95,11 @@ func TestGrubCollector_ValidatesParsing(t *testing.T) {
 		t.Fatalf("Collect() failed: %v", err)
 	}
 
-	if len(configs) == 0 {
-		t.Fatal("Expected at least one config")
+	if m == nil || len(m.Subtypes) == 0 {
+		t.Fatal("Expected at least one subtype")
 	}
 
-	props := configs[0].Data.(map[string]any)
+	props := m.Subtypes[0].Data
 
 	// Check that we can parse both key-only and key=value formats
 	hasKeyOnly := false
@@ -107,12 +111,13 @@ func TestGrubCollector_ValidatesParsing(t *testing.T) {
 			continue
 		}
 
-		if value == "" {
+		strVal := value.Any()
+		if strVal == "" {
 			hasKeyOnly = true
 			t.Logf("Key-only param: %s", key)
 		} else {
 			hasKeyValue = true
-			t.Logf("Key=value param: %s=%v", key, value)
+			t.Logf("Key=value param: %s=%v", key, strVal)
 		}
 	}
 

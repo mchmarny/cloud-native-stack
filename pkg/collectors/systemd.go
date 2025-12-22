@@ -13,20 +13,14 @@ type SystemDCollector struct {
 	Services []string
 }
 
-// SystemDConfig represents the configuration data collected from a systemd service.
-type SystemDConfig struct {
-	Unit       string         `json:"unit" yaml:"unit"`
-	Properties map[string]any `json:"properties" yaml:"properties"`
-}
-
 // Collect gathers configuration data from specified systemd services.
 // It implements the Collector interface.
-func (s *SystemDCollector) Collect(ctx context.Context) ([]measurement.Measurement, error) {
+func (s *SystemDCollector) Collect(ctx context.Context) (*measurement.Measurement, error) {
 	services := s.Services
 	if len(services) == 0 {
 		services = []string{"containerd.service"}
 	}
-	res := make([]measurement.Measurement, 0, len(services)*10)
+	subs := make([]measurement.Subtype, 0)
 
 	conn, err := dbus.NewSystemdConnectionContext(ctx)
 	if err != nil {
@@ -34,24 +28,27 @@ func (s *SystemDCollector) Collect(ctx context.Context) ([]measurement.Measureme
 	}
 	defer conn.Close()
 
-	list := make([]SystemDConfig, 0)
-
 	for _, service := range services {
 		data, err := conn.GetAllPropertiesContext(ctx, service)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get unit properties: %w", err)
 		}
 
-		list = append(list, SystemDConfig{
-			Unit:       service,
-			Properties: data,
+		readings := make(map[string]measurement.Reading)
+		for k, v := range data {
+			readings[k] = measurement.ToReading(v)
+		}
+
+		subs = append(subs, measurement.Subtype{
+			Name: service,
+			Data: readings,
 		})
 	}
 
-	res = append(res, measurement.Measurement{
-		Type: measurement.TypeSystemD,
-		Data: list,
-	})
+	res := &measurement.Measurement{
+		Type:     measurement.TypeSystemD,
+		Subtypes: subs,
+	}
 
 	return res, nil
 }

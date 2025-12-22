@@ -109,6 +109,29 @@ func (s Scalar[T]) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.V)
 }
 
+// ToReading creates a Reading from any allowed scalar type.
+// If the type is not allowed, it returns a string representation.
+func ToReading(v any) Reading {
+	switch val := v.(type) {
+	case int:
+		return Int(val)
+	case int64:
+		return Int64(val)
+	case uint:
+		return Uint(val)
+	case uint64:
+		return Uint64(val)
+	case float64:
+		return Float64(val)
+	case bool:
+		return Bool(val)
+	case string:
+		return Str(val)
+	default:
+		return Str(fmt.Sprintf("%v", val))
+	}
+}
+
 // UnmarshalJSON unmarshals a JSON value into the underlying scalar.
 func (s *Scalar[T]) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &s.V)

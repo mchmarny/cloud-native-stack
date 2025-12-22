@@ -15,8 +15,11 @@ func TestKModCollector_Collect(t *testing.T) {
 	collector := &collectors.KModCollector{}
 
 	// This test validates the interface works correctly
-	_, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 	if err != nil {
+		if m != nil {
+			t.Error("Expected nil measurement on error")
+		}
 		if errors.Is(err, os.ErrNotExist) {
 			t.Skip("/proc/modules not available on this system")
 			return
@@ -32,11 +35,15 @@ func TestKModCollector_Collect_ContextCancellation(t *testing.T) {
 	cancel() // Cancel immediately
 
 	collector := &collectors.KModCollector{}
-	_, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 
 	if err == nil {
 		// On some systems, the read may complete before context check
 		t.Skip("Context cancellation timing dependent")
+	}
+
+	if m != nil {
+		t.Error("Expected nil measurement on error")
 	}
 
 	if !errors.Is(err, context.Canceled) {
@@ -52,7 +59,7 @@ func TestKModCollector_Integration(t *testing.T) {
 	ctx := context.Background()
 	collector := &collectors.KModCollector{}
 
-	configs, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 	if err != nil {
 		// /proc/modules might not exist on all systems
 		if errors.Is(err, os.ErrNotExist) {
@@ -62,31 +69,31 @@ func TestKModCollector_Integration(t *testing.T) {
 		t.Fatalf("Collect() failed: %v", err)
 	}
 
-	// Should return exactly one configuration
-	if len(configs) != 1 {
-		t.Errorf("Expected 1 config, got %d", len(configs))
+	// Should return exactly one measurement with one subtype
+	if m == nil {
+		t.Fatal("Expected non-nil measurement")
 	}
 
-	if len(configs) == 0 {
+	if m.Type != measurement.TypeKMod {
+		t.Errorf("Expected type %s, got %s", measurement.TypeKMod, m.Type)
+	}
+
+	if len(m.Subtypes) != 1 {
+		t.Errorf("Expected 1 subtype, got %d", len(m.Subtypes))
 		return
 	}
 
-	cfg := configs[0]
-	if cfg.Type != measurement.TypeKMod {
-		t.Errorf("Expected type %s, got %s", measurement.TypeKMod, cfg.Type)
-	}
-
-	// Validate that Data is a string slice
-	modules, ok := cfg.Data.([]string)
-	if !ok {
-		t.Errorf("Expected []string, got %T", cfg.Data)
+	// Validate that Data contains module names
+	data := m.Subtypes[0].Data
+	if data == nil {
+		t.Error("Expected non-nil Data map")
 		return
 	}
 
 	// Most systems have at least a few kernel modules loaded
-	if len(modules) == 0 {
+	if len(data) == 0 {
 		t.Error("Expected at least one kernel module")
 	}
 
-	t.Logf("Found %d kernel modules", len(modules))
+	t.Logf("Found %d loaded kernel modules", len(data))
 }

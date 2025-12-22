@@ -16,12 +16,17 @@ func TestSystemDCollector_Collect_ContextCancellation(t *testing.T) {
 	collector := &collectors.SystemDCollector{
 		Services: []string{"containerd.service"},
 	}
-	_, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 
 	// Should fail with context canceled
-	if err != nil && !errors.Is(err, context.Canceled) {
-		// D-Bus connection might fail for other reasons
-		t.Logf("Got error: %v", err)
+	if err != nil {
+		if m != nil {
+			t.Error("Expected nil measurement on error")
+		}
+		if !errors.Is(err, context.Canceled) {
+			// D-Bus connection might fail for other reasons
+			t.Logf("Got error: %v", err)
+		}
 	}
 }
 
@@ -35,8 +40,11 @@ func TestSystemDCollector_DefaultServices(t *testing.T) {
 	// Test with nil services (should use default)
 	collector := &collectors.SystemDCollector{}
 
-	_, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 	if err != nil {
+		if m != nil {
+			t.Error("Expected nil measurement on error")
+		}
 		// D-Bus might not be available or service might not exist
 		t.Logf("Expected possible error for systemd access: %v", err)
 		return
@@ -54,7 +62,7 @@ func TestSystemDCollector_CustomServices(t *testing.T) {
 		Services: []string{"containerd.service", "docker.service"},
 	}
 
-	configs, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 	if err != nil {
 		// Services might not exist or D-Bus unavailable
 		t.Logf("Expected possible error: %v", err)
@@ -62,23 +70,26 @@ func TestSystemDCollector_CustomServices(t *testing.T) {
 	}
 
 	// If successful, verify structure
-	for _, cfg := range configs {
-		if cfg.Type != measurement.TypeSystemD {
-			t.Errorf("Expected type %s, got %s", measurement.TypeSystemD, cfg.Type)
+	if m == nil {
+		t.Fatal("Expected non-nil measurement")
+	}
+
+	if m.Type != measurement.TypeSystemD {
+		t.Errorf("Expected type %s, got %s", measurement.TypeSystemD, m.Type)
+	}
+
+	// Should have subtypes for the services we requested
+	if len(m.Subtypes) == 0 {
+		t.Error("Expected at least one subtype")
+	}
+
+	for _, subtype := range m.Subtypes {
+		if subtype.Name == "" {
+			t.Error("Expected non-empty subtype name (service name)")
 		}
 
-		systemdCfg, ok := cfg.Data.(collectors.SystemDConfig)
-		if !ok {
-			t.Errorf("Expected SystemDConfig, got %T", cfg.Data)
-			continue
-		}
-
-		if systemdCfg.Unit == "" {
-			t.Error("Expected non-empty unit name")
-		}
-
-		if systemdCfg.Properties == nil {
-			t.Error("Expected non-nil properties map")
+		if subtype.Data == nil {
+			t.Error("Expected non-nil Data map")
 		}
 	}
 }
@@ -94,18 +105,13 @@ func TestSystemDCollector_Integration(t *testing.T) {
 		Services: []string{"containerd.service"},
 	}
 
-	configs, err := collector.Collect(ctx)
+	m, err := collector.Collect(ctx)
 	if err != nil {
 		// SystemD might not be available on this system
 		t.Skipf("SystemD not available or service not found: %v", err)
 	}
 
-	t.Logf("Successfully collected %d systemd configurations", len(configs))
-
-	// Validate collected data
-	if len(configs) > 0 {
-		cfg := configs[0]
-		systemdCfg := cfg.Data.(collectors.SystemDConfig)
-		t.Logf("Service: %s, Properties: %d", systemdCfg.Unit, len(systemdCfg.Properties))
+	if m != nil && len(m.Subtypes) > 0 {
+		t.Logf("Successfully collected %d systemd service configurations", len(m.Subtypes))
 	}
 }

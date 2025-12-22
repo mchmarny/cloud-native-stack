@@ -20,7 +20,7 @@ type ImageCollector struct {
 
 // Collect retrieves unique container images from all pods in the cluster.
 // This provides a snapshot of deployed images for cluster comparison.
-func (i *ImageCollector) Collect(ctx context.Context) ([]measurement.Measurement, error) {
+func (i *ImageCollector) Collect(ctx context.Context) (*measurement.Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -36,10 +36,12 @@ func (i *ImageCollector) Collect(ctx context.Context) ([]measurement.Measurement
 		return nil, err
 	}
 
-	res := []measurement.Measurement{
-		{
-			Type: measurement.TypeImage,
-			Data: images,
+	res := &measurement.Measurement{
+		Type: measurement.TypeImage,
+		Subtypes: []measurement.Subtype{
+			{
+				Data: images,
+			},
 		},
 	}
 
@@ -47,13 +49,13 @@ func (i *ImageCollector) Collect(ctx context.Context) ([]measurement.Measurement
 }
 
 // collectContainerImages extracts unique container images from all pods.
-func (i *ImageCollector) collectContainerImages(ctx context.Context, k8sClient *kubernetes.Clientset) (map[string]any, error) {
+func (i *ImageCollector) collectContainerImages(ctx context.Context, k8sClient *kubernetes.Clientset) (map[string]measurement.Reading, error) {
 	pods, err := k8sClient.CoreV1().Pods("").List(ctx, v1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list pods: %w", err)
 	}
 
-	images := make(map[string]any)
+	images := make(map[string]measurement.Reading)
 	for _, pod := range pods.Items {
 		// Check for context cancellation
 		if err := ctx.Err(); err != nil {
@@ -72,10 +74,7 @@ func (i *ImageCollector) collectContainerImages(ctx context.Context, k8sClient *
 
 			// Store with image name as key
 			if _, exists := images[imageName]; !exists {
-				images[imageName] = map[string]string{
-					"tag":       imageTag,
-					"fullImage": container.Image,
-				}
+				images[imageName] = measurement.Str(imageTag)
 			}
 		}
 	}

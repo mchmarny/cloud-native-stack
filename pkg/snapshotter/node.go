@@ -16,10 +16,10 @@ import (
 )
 
 type Snapshot struct {
-	Kind         string                    `json:"kind,omitempty" yaml:"kind,omitempty"`
-	APIVersion   string                    `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
-	Metadata     map[string]string         `json:"metadata,omitempty" yaml:"metadata,omitempty"`
-	Measurements []measurement.Measurement `json:"measurements" yaml:"measurements"`
+	Kind         string                     `json:"kind,omitempty" yaml:"kind,omitempty"`
+	APIVersion   string                     `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
+	Metadata     map[string]string          `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Measurements []*measurement.Measurement `json:"measurements" yaml:"measurements"`
 }
 
 // NodeSnapshotter is a snapshotter that collects configuration from the current node.
@@ -51,7 +51,7 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 		Kind:         "Snapshot",
 		APIVersion:   "snapshot.dgxc.io/v1",
 		Metadata:     make(map[string]string),
-		Measurements: make([]measurement.Measurement, 0),
+		Measurements: make([]*measurement.Measurement, 0),
 	}
 
 	// Collect node metadata
@@ -81,9 +81,8 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 			return fmt.Errorf("failed to collect container images: %w", err)
 		}
 		mu.Lock()
-		snap.Measurements = append(snap.Measurements, images...)
+		snap.Measurements = append(snap.Measurements, images)
 		mu.Unlock()
-		n.Logger.Debug("collected container images", slog.Int("count", len(images)))
 		return nil
 	})
 
@@ -97,9 +96,8 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 			return fmt.Errorf("failed to collect kubernetes resources: %w", err)
 		}
 		mu.Lock()
-		snap.Measurements = append(snap.Measurements, k8sResources...)
+		snap.Measurements = append(snap.Measurements, k8sResources)
 		mu.Unlock()
-		n.Logger.Debug("collected kubernetes resources", slog.Int("count", len(k8sResources)))
 		return nil
 	})
 
@@ -113,9 +111,8 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 			return fmt.Errorf("failed to collect kMod info: %w", err)
 		}
 		mu.Lock()
-		snap.Measurements = append(snap.Measurements, kMod...)
+		snap.Measurements = append(snap.Measurements, kMod)
 		mu.Unlock()
-		n.Logger.Debug("collected kernel modules", slog.Int("count", len(kMod)))
 		return nil
 	})
 
@@ -129,9 +126,8 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 			return fmt.Errorf("failed to collect systemd info: %w", err)
 		}
 		mu.Lock()
-		snap.Measurements = append(snap.Measurements, systemd...)
+		snap.Measurements = append(snap.Measurements, systemd)
 		mu.Unlock()
-		n.Logger.Debug("collected systemd services", slog.Int("count", len(systemd)))
 		return nil
 	})
 
@@ -145,9 +141,8 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 			return fmt.Errorf("failed to collect grub info: %w", err)
 		}
 		mu.Lock()
-		snap.Measurements = append(snap.Measurements, grub...)
+		snap.Measurements = append(snap.Measurements, grub)
 		mu.Unlock()
-		n.Logger.Debug("collected grub parameters", slog.Int("count", len(grub)))
 		return nil
 	})
 
@@ -161,9 +156,8 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 			return fmt.Errorf("failed to collect sysctl info: %w", err)
 		}
 		mu.Lock()
-		snap.Measurements = append(snap.Measurements, sysctl...)
+		snap.Measurements = append(snap.Measurements, sysctl)
 		mu.Unlock()
-		n.Logger.Debug("collected sysctl parameters", slog.Int("count", len(sysctl)))
 		return nil
 	})
 
@@ -177,9 +171,8 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 			return fmt.Errorf("failed to collect SMI info: %w", err)
 		}
 		mu.Lock()
-		snap.Measurements = append(snap.Measurements, smiConfigs...)
+		snap.Measurements = append(snap.Measurements, smiConfigs)
 		mu.Unlock()
-		n.Logger.Debug("collected SMI configurations", slog.Int("count", len(smiConfigs)))
 		return nil
 	})
 

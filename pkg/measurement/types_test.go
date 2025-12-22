@@ -5,6 +5,12 @@ import (
 	"testing"
 )
 
+const (
+	testSubtypeCluster = "cluster"
+	testSubtypeNode    = "node"
+	testSubtypePod     = "pod"
+)
+
 func TestType_String(t *testing.T) {
 	tests := []struct {
 		name string
@@ -46,6 +52,37 @@ func TestParseType(t *testing.T) {
 			got, gotOk := ParseType(tt.input)
 			if got != tt.want || gotOk != tt.wantOk {
 				t.Errorf("ParseType(%q) = (%v, %v), want (%v, %v)", tt.input, got, gotOk, tt.want, tt.wantOk)
+			}
+		})
+	}
+}
+
+func TestToReading(t *testing.T) {
+	tests := []struct {
+		name      string
+		value     any
+		wantValue any
+		wantType  string
+	}{
+		{"int", 42, 42, "int"},
+		{"int64", int64(9223372036854775807), int64(9223372036854775807), "int64"},
+		{"uint", uint(42), uint(42), "uint"},
+		{"uint64", uint64(18446744073709551615), uint64(18446744073709551615), "uint64"},
+		{"float64", 3.14, 3.14, "float64"},
+		{"bool true", true, true, "bool"},
+		{"bool false", false, false, "bool"},
+		{"string", "hello", "hello", "string"},
+		{"empty string", "", "", "string"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ToReading(tt.value)
+			if got == nil {
+				t.Fatal("ToReading() returned nil")
+			}
+			gotValue := got.Any()
+			if gotValue != tt.wantValue {
+				t.Errorf("ToReading(%v).Any() = %v (%T), want %v (%T)", tt.value, gotValue, gotValue, tt.wantValue, tt.wantValue)
 			}
 		})
 	}
@@ -121,7 +158,7 @@ func TestMeasurement_Validate(t *testing.T) {
 				Type: TypeK8s,
 				Subtypes: []Subtype{
 					{
-						Name: "cluster",
+						Name: testSubtypeCluster,
 						Data: map[string]Reading{
 							"version": Str("1.28.0"),
 						},
@@ -136,7 +173,7 @@ func TestMeasurement_Validate(t *testing.T) {
 				Type: "",
 				Subtypes: []Subtype{
 					{
-						Name: "cluster",
+						Name: testSubtypeCluster,
 						Data: map[string]Reading{
 							"version": Str("1.28.0"),
 						},
@@ -167,7 +204,7 @@ func TestMeasurement_Validate(t *testing.T) {
 				Type: TypeK8s,
 				Subtypes: []Subtype{
 					{
-						Name: "cluster",
+						Name: testSubtypeCluster,
 						Data: map[string]Reading{},
 					},
 				},
@@ -190,13 +227,13 @@ func TestMeasurement_GetSubtype(t *testing.T) {
 		Type: TypeK8s,
 		Subtypes: []Subtype{
 			{
-				Name: "cluster",
+				Name: testSubtypeCluster,
 				Data: map[string]Reading{
 					"version": Str("1.28.0"),
 				},
 			},
 			{
-				Name: "node",
+				Name: testSubtypeNode,
 				Data: map[string]Reading{
 					"count": Int(3),
 				},
@@ -205,11 +242,11 @@ func TestMeasurement_GetSubtype(t *testing.T) {
 	}
 
 	t.Run("existing subtype", func(t *testing.T) {
-		st := m.GetSubtype("cluster")
+		st := m.GetSubtype(testSubtypeCluster)
 		if st == nil {
 			t.Fatal("GetSubtype() returned nil")
 		}
-		if st.Name != "cluster" {
+		if st.Name != testSubtypeCluster {
 			t.Errorf("GetSubtype() name = %v, want cluster", st.Name)
 		}
 	})
@@ -226,8 +263,8 @@ func TestMeasurement_HasSubtype(t *testing.T) {
 	m := &Measurement{
 		Type: TypeK8s,
 		Subtypes: []Subtype{
-			{Name: "cluster", Data: map[string]Reading{"version": Str("1.28.0")}},
-			{Name: "node", Data: map[string]Reading{"count": Int(3)}},
+			{Name: testSubtypeCluster, Data: map[string]Reading{"version": Str("1.28.0")}},
+			{Name: testSubtypeNode, Data: map[string]Reading{"count": Int(3)}},
 		},
 	}
 
@@ -236,8 +273,8 @@ func TestMeasurement_HasSubtype(t *testing.T) {
 		st   string
 		want bool
 	}{
-		{"existing cluster", "cluster", true},
-		{"existing node", "node", true},
+		{"existing cluster", testSubtypeCluster, true},
+		{"existing node", testSubtypeNode, true},
 		{"non-existing", "missing", false},
 		{"empty", "", false},
 	}
@@ -254,9 +291,9 @@ func TestMeasurement_SubtypeNames(t *testing.T) {
 	m := &Measurement{
 		Type: TypeK8s,
 		Subtypes: []Subtype{
-			{Name: "cluster", Data: map[string]Reading{"version": Str("1.28.0")}},
-			{Name: "node", Data: map[string]Reading{"count": Int(3)}},
-			{Name: "pod", Data: map[string]Reading{"ready": Bool(true)}},
+			{Name: testSubtypeCluster, Data: map[string]Reading{"version": Str("1.28.0")}},
+			{Name: testSubtypeNode, Data: map[string]Reading{"count": Int(3)}},
+			{Name: testSubtypePod, Data: map[string]Reading{"ready": Bool(true)}},
 		},
 	}
 
@@ -265,7 +302,7 @@ func TestMeasurement_SubtypeNames(t *testing.T) {
 		t.Fatalf("SubtypeNames() returned %d names, want 3", len(names))
 	}
 
-	expectedNames := []string{"cluster", "node", "pod"}
+	expectedNames := []string{testSubtypeCluster, testSubtypeNode, testSubtypePod}
 	for i, expected := range expectedNames {
 		if names[i] != expected {
 			t.Errorf("SubtypeNames()[%d] = %v, want %v", i, names[i], expected)
@@ -572,7 +609,7 @@ func TestMeasurement_JSON(t *testing.T) {
 		Type: TypeK8s,
 		Subtypes: []Subtype{
 			{
-				Name: "cluster",
+				Name: testSubtypeCluster,
 				Data: map[string]Reading{
 					"version": Str("1.28.0"),
 					"nodes":   Int(3),
@@ -615,7 +652,7 @@ func TestMeasurement_JSON(t *testing.T) {
 		if !ok {
 			t.Fatalf("JSON subtype[0] is not a map")
 		}
-		if st["subtype"] != "cluster" {
+		if st["subtype"] != testSubtypeCluster {
 			t.Errorf("JSON subtype[0].subtype = %v, want cluster", st["subtype"])
 		}
 

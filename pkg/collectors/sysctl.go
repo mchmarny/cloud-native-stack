@@ -18,9 +18,9 @@ type SysctlCollector struct {
 
 // Collect gathers sysctl configurations from /proc/sys, excluding /proc/sys/net
 // and returns them as a single Configuration with a map of all parameters.
-func (s *SysctlCollector) Collect(ctx context.Context) ([]measurement.Measurement, error) {
+func (s *SysctlCollector) Collect(ctx context.Context) (*measurement.Measurement, error) {
 	root := "/proc/sys"
-	params := make(map[string]any)
+	params := make(map[string]measurement.Reading)
 
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -56,7 +56,7 @@ func (s *SysctlCollector) Collect(ctx context.Context) ([]measurement.Measuremen
 			return nil
 		}
 
-		params[path] = strings.TrimSpace(string(c))
+		params[path] = measurement.Str(strings.TrimSpace(string(c)))
 
 		return nil
 	})
@@ -64,10 +64,12 @@ func (s *SysctlCollector) Collect(ctx context.Context) ([]measurement.Measuremen
 		return nil, fmt.Errorf("failed to capture sysctl config: %w", err)
 	}
 
-	res := []measurement.Measurement{
-		{
-			Type: measurement.TypeSysctl,
-			Data: params,
+	res := &measurement.Measurement{
+		Type: measurement.TypeSysctl,
+		Subtypes: []measurement.Subtype{
+			{
+				Data: params,
+			},
 		},
 	}
 

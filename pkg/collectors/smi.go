@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os/exec"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
@@ -17,7 +18,7 @@ type SMICollector struct {
 
 // Collect retrieves the NVIDIA SMI information by executing nvidia-smi command and
 // parses the XML output into NVSMIDevice structures
-func (s *SMICollector) Collect(ctx context.Context) ([]measurement.Measurement, error) {
+func (s *SMICollector) Collect(ctx context.Context) (*measurement.Measurement, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -27,19 +28,53 @@ func (s *SMICollector) Collect(ctx context.Context) ([]measurement.Measurement, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute nvidia-smi command: %w", err)
 	}
+	smiReadings, err := getSMIReadings(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse nvidia-smi output: %w", err)
+	}
+
+	res := &measurement.Measurement{
+		Type: measurement.TypeSMI,
+		Subtypes: []measurement.Subtype{
+			{
+				Data: smiReadings,
+			},
+		},
+	}
+
+	return res, nil
+}
+
+func getSMIReadings(data []byte) (map[string]measurement.Reading, error) {
 	smiDevice, err := parseSMIDevice(data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse nvidia-smi output: %w", err)
 	}
 
-	res := []measurement.Measurement{
-		{
-			Type: measurement.TypeSMI,
-			Data: smiDevice,
-		},
+	smiData := make(map[string]measurement.Reading)
+
+	smiData["driver-version"] = measurement.Str(smiDevice.DriverVersion)
+	smiData["cuda-version"] = measurement.Str(smiDevice.CudaVersion)
+
+	if len(smiDevice.GPUs) < 1 {
+		slog.Warn("No GPUs found in nvidia-smi output")
+		return smiData, nil
 	}
 
-	return res, nil
+	gpuData := smiDevice.GPUs[0] // Collect data for the first GPU only
+
+	smiData["gpu-product-name"] = measurement.Str(gpuData.ProductName)
+	smiData["product-architecture"] = measurement.Str(gpuData.ProductArchitecture)
+	smiData["display-mode"] = measurement.Str(gpuData.DisplayMode)
+	smiData["display-active"] = measurement.Str(gpuData.DisplayActive)
+	smiData["persistence-mode"] = measurement.Str(gpuData.PersistenceMode)
+	smiData["addressing-mode"] = measurement.Str(gpuData.AddressingMode)
+	smiData["vbios-version"] = measurement.Str(gpuData.VbiosVersion)
+	smiData["gsp-firmware-version"] = measurement.Str(gpuData.GspFirmwareVersion)
+
+	// TODO: Add more fields as needed
+
+	return smiData, nil
 }
 
 func executeCommand(ctx context.Context, name string, args ...string) ([]byte, error) {
@@ -69,7 +104,7 @@ type NVSMIDevice struct {
 	Timestamp     string `xml:"timestamp" json:"timestamp" yaml:"timestamp"`
 	DriverVersion string `xml:"driver_version" json:"driverVersion" yaml:"driverVersion"`
 	CudaVersion   string `xml:"cuda_version" json:"cudaVersion" yaml:"cudaVersion"`
-	AttachedGpus  string `xml:"attached_gpus" json:"attachedGPUs" yaml:"attachedGPUs"`
+	AttachedGpus  int    `xml:"attached_gpus" json:"attachedGPUs" yaml:"attachedGPUs"`
 	GPUs          []GPU  `xml:"gpu" json:"gpu" yaml:"gpu"`
 }
 
