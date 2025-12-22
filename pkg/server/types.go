@@ -4,40 +4,10 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"golang.org/x/time/rate"
 )
 
 // Domain types matching OpenAPI spec schemas
-
-// RecommendationRequest represents the input parameters for recommendation queries
-type RecommendationRequest struct {
-	OSFamily                string  `json:"osFamily"`
-	OSVersion               string  `json:"osVersion"`
-	Kernel                  string  `json:"kernel"`
-	Environment             string  `json:"environment"`
-	Kubernetes              string  `json:"kubernetes"`
-	GPU                     string  `json:"gpu"`
-	Intent                  string  `json:"intent"`
-	PayloadVersionRequested *string `json:"payloadVersionRequested"`
-}
-
-// CNSReleaseRecommendation represents a CNS release with components
-type CNSReleaseRecommendation struct {
-	CNSVersion   string                     `json:"cnsVersion"`
-	Platforms    []string                   `json:"platforms,omitempty"`
-	SupportedOS  []string                   `json:"supportedOS,omitempty"`
-	Measurements []*measurement.Measurement `json:"measurements"`
-}
-
-// RecommendationResponse is the main API response type
-type RecommendationResponse struct {
-	Request        RecommendationRequest      `json:"request"`
-	MatchedRuleID  string                     `json:"matchedRuleId,omitempty"`
-	PayloadVersion string                     `json:"payloadVersion"`
-	GeneratedAt    time.Time                  `json:"generatedAt"`
-	Measurements   []*measurement.Measurement `json:"measurements"`
-}
 
 // ErrorResponse represents error responses as per OpenAPI spec
 type ErrorResponse struct {

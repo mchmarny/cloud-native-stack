@@ -3,6 +3,8 @@ package server
 import (
 	"net/http"
 	"time"
+
+	"github.com/NVIDIA/cloud-native-stack/pkg/serializers"
 )
 
 // handleHealth handles GET /health
@@ -17,7 +19,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		Timestamp: time.Now(),
 	}
 
-	s.writeJSON(w, http.StatusOK, resp)
+	serializers.RespondJSON(w, http.StatusOK, resp)
 }
 
 // handleReady handles GET /ready
@@ -38,7 +40,7 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
 			Reason:    "service is initializing",
 		}
 		w.WriteHeader(http.StatusServiceUnavailable)
-		s.writeJSON(w, http.StatusServiceUnavailable, resp)
+		serializers.RespondJSON(w, http.StatusServiceUnavailable, resp)
 		return
 	}
 
@@ -47,5 +49,5 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
 		Timestamp: time.Now(),
 	}
 
-	s.writeJSON(w, http.StatusOK, resp)
+	serializers.RespondJSON(w, http.StatusOK, resp)
 }

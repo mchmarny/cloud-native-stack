@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -12,6 +11,9 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/NVIDIA/cloud-native-stack/pkg/recommendation"
+	"github.com/NVIDIA/cloud-native-stack/pkg/serializers"
 
 	"github.com/google/uuid"
 	"golang.org/x/sync/errgroup"
@@ -66,13 +68,13 @@ func DefaultConfig() *Config {
 
 // Server represents the HTTP server
 type Server struct {
-	config      *Config
-	httpServer  *http.Server
-	rateLimiter *rate.Limiter
-	mu          sync.RWMutex
-	ready       bool
-	logger      Logger
-	validator   *Validator
+	config                *Config
+	httpServer            *http.Server
+	rateLimiter           *rate.Limiter
+	mu                    sync.RWMutex
+	recommendationHandler http.HandlerFunc
+	ready                 bool
+	logger                Logger
 }
 
 // NewServer creates a new server instance
@@ -85,8 +87,13 @@ func NewServer(config *Config) *Server {
 		config:      config,
 		rateLimiter: rate.NewLimiter(config.RateLimit, config.RateLimitBurst),
 		logger:      NewLogger(slog.LevelInfo),
-		validator:   NewValidator(),
 	}
+
+	// Initialize recommendation handler
+	rb := &recommendation.Builder{
+		CacheTTL: time.Duration(config.CacheMaxAge) * time.Second,
+	}
+	s.recommendationHandler = rb.Handle
 
 	// Setup HTTP server
 	mux := s.setupRoutes()
@@ -110,18 +117,9 @@ func (s *Server) setupRoutes() http.Handler {
 	mux.HandleFunc("/ready", s.handleReady)
 
 	// API endpoints with middleware
-	mux.HandleFunc("/v1/recommendations", s.withMiddleware(s.handleGetRecommendations))
+	mux.HandleFunc("/v1/recommendations", s.withMiddleware(s.recommendationHandler))
 
 	return mux
-}
-
-// writeJSON writes JSON response
-func (s *Server) writeJSON(w http.ResponseWriter, statusCode int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to encode JSON response: %v\n", err)
-	}
 }
 
 // writeError writes error response
@@ -142,7 +140,7 @@ func (s *Server) writeError(w http.ResponseWriter, r *http.Request, statusCode i
 		Retryable: retryable,
 	}
 
-	s.writeJSON(w, statusCode, errResp)
+	serializers.RespondJSON(w, statusCode, errResp)
 }
 
 // SetReady marks the server as ready to serve traffic
@@ -236,15 +234,4 @@ func RunWithConfig(config *Config) error {
 
 	slog.Info("server stopped gracefully")
 	return nil
-}
-
-// Utility functions
-
-const defaultQueryValue = "ALL"
-
-func getQueryParamOrDefault(q map[string][]string, key string) string {
-	if values, ok := q[key]; ok && len(values) > 0 && values[0] != "" {
-		return values[0]
-	}
-	return defaultQueryValue
 }

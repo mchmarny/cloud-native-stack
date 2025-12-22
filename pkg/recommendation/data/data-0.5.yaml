@@ -4,7 +4,6 @@ recommendation:
       subtypes:
         - data:
             ecc: true  # GPU error detection and correction
-            efa: true  # AWS high-performance networking for GPU clusters
             gdrdrv: true  # GPUDirect RDMA for zero-copy GPU-NIC transfers
             gpu_sched: true  # GPU workload scheduling and resource management
             ib_cm: true  # InfiniBand connection management for RDMA
@@ -23,7 +22,7 @@ recommendation:
     - type: Grub
       subtypes:
         - data:
-            BOOT_IMAGE: /boot/vmlinuz-6.8.0-1028-aws  # Kernel image version
+            BOOT_IMAGE: /boot/vmlinuz-6.8.0-1028  # Kernel image version
             apparmor: "1"  # Security module (minimal GPU impact)
             audit: "1"  # System auditing (minimal GPU impact)
             audit_backlog_limit: "8192"  # Audit queue size (minimal GPU impact)
@@ -85,7 +84,6 @@ recommendation:
     - type: Image
       subtypes:
         - data:
-            aws-efa-k8s-device-plugin: v0.5.3  # EFA device plugin for high-speed GPU-to-GPU networking
             container-toolkit: v1.17.8  # NVIDIA container runtime for GPU access in containers
             dcgm: 4.3.1-1  # Data Center GPU Manager for GPU health monitoring and diagnostics
             dcgm-exporter: "4.3.1"  # Prometheus exporter for GPU metrics and utilization
@@ -110,3 +108,22 @@ recommendation:
             gsp-firmware-version: "580.82.07"  # GPU System Processor firmware managing GPU scheduling and resource allocation
             persistence-mode: Disabled  # Controls GPU state retention (enabled mode reduces initialization latency)
             vbios-version: 97.00.B9.00.69  # GPU BIOS firmware version determining hardware initialization and clock settings
+  overlays:
+    - key: "aws-eks"
+      types:
+        - type: KMod
+          subtypes:
+            - data:
+                efa: true  # AWS EFA support for GPU clusters
+        - type: Grub
+          subtypes:
+            - data:
+                BOOT_IMAGE: /boot/vmlinuz-6.8.0-1028-aws  # AWS-optimized kernel image version
+        - type: K8s
+          subtypes:
+            - data:
+                version: v1.33.5-eks  # AWS EKS Kubernetes version for GPU orchestration
+        - type: Image
+          subtypes:
+            - data:
+                aws-efa-k8s-device-plugin: v0.5.3  # EFA device plugin for high-speed GPU-to-GPU networking
