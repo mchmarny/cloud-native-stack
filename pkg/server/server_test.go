@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -177,127 +176,12 @@ func TestGetRecommendations(t *testing.T) {
 				err := json.NewDecoder(w.Body).Decode(&resp)
 				require.NoError(t, err)
 				assert.NotEmpty(t, resp.PayloadVersion)
-				assert.NotEmpty(t, resp.CNSReleases)
+				assert.NotEmpty(t, resp.Measurements)
 				assert.False(t, resp.GeneratedAt.IsZero())
 				assert.NotEmpty(t, w.Header().Get("Cache-Control"))
 				assert.NotEmpty(t, w.Header().Get("X-RateLimit-Limit"))
 				assert.NotEmpty(t, w.Header().Get("X-RateLimit-Remaining"))
 				assert.NotEmpty(t, w.Header().Get("X-RateLimit-Reset"))
-			}
-		})
-	}
-}
-
-func TestBulkResolve(t *testing.T) {
-	server := NewServer(DefaultConfig())
-
-	tests := []struct {
-		name       string
-		body       interface{}
-		wantStatus int
-		wantError  bool
-	}{
-		{
-			name: "valid single request",
-			body: BulkResolveRequest{
-				Requests: []RecommendationRequest{
-					{
-						OSFamily:    "Ubuntu",
-						OSVersion:   "24.04",
-						Kernel:      defaultQueryValue,
-						Environment: defaultQueryValue,
-						Kubernetes:  "1.33",
-						GPU:         defaultQueryValue,
-						Intent:      defaultQueryValue,
-					},
-				},
-			},
-			wantStatus: http.StatusOK,
-			wantError:  false,
-		},
-		{
-			name: "valid multiple requests",
-			body: BulkResolveRequest{
-				Requests: []RecommendationRequest{
-					{
-						OSFamily:    "Ubuntu",
-						OSVersion:   "24.04",
-						Kernel:      defaultQueryValue,
-						Environment: defaultQueryValue,
-						Kubernetes:  defaultQueryValue,
-						GPU:         defaultQueryValue,
-						Intent:      defaultQueryValue,
-					},
-					{
-						OSFamily:    "RHEL",
-						OSVersion:   "9.3",
-						Kernel:      defaultQueryValue,
-						Environment: defaultQueryValue,
-						Kubernetes:  defaultQueryValue,
-						GPU:         defaultQueryValue,
-						Intent:      defaultQueryValue,
-					},
-				},
-			},
-			wantStatus: http.StatusOK,
-			wantError:  false,
-		},
-		{
-			name: "empty requests array",
-			body: BulkResolveRequest{
-				Requests: []RecommendationRequest{},
-			},
-			wantStatus: http.StatusBadRequest,
-			wantError:  true,
-		},
-		{
-			name: "invalid request in array",
-			body: BulkResolveRequest{
-				Requests: []RecommendationRequest{
-					{OSFamily: "Windows"},
-				},
-			},
-			wantStatus: http.StatusBadRequest,
-			wantError:  true,
-		},
-		{
-			name:       "invalid json",
-			body:       "not json",
-			wantStatus: http.StatusBadRequest,
-			wantError:  true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var body bytes.Buffer
-			if str, ok := tt.body.(string); ok {
-				body.WriteString(str)
-			} else {
-				err := json.NewEncoder(&body).Encode(tt.body)
-				require.NoError(t, err)
-			}
-
-			req := httptest.NewRequest(http.MethodPost, "/v1/recommendations/resolve", &body)
-			req.Header.Set("Content-Type", "application/json")
-			w := httptest.NewRecorder()
-
-			handler := server.withMiddleware(server.handleBulkResolve)
-			handler.ServeHTTP(w, req)
-
-			assert.Equal(t, tt.wantStatus, w.Code)
-
-			if tt.wantError {
-				var errResp ErrorResponse
-				err := json.NewDecoder(w.Body).Decode(&errResp)
-				require.NoError(t, err)
-				assert.NotEmpty(t, errResp.Code)
-			} else {
-				var resp BulkResolveResponse
-				err := json.NewDecoder(w.Body).Decode(&resp)
-				require.NoError(t, err)
-				assert.NotEmpty(t, resp.Results)
-				assert.Equal(t, len(resp.Results), resp.TotalCount)
 			}
 		})
 	}
@@ -541,42 +425,6 @@ func TestServerLifecycle(t *testing.T) {
 	assert.False(t, server.ready)
 }
 
-func TestMaxBulkRequestsLimit(t *testing.T) {
-	config := DefaultConfig()
-	config.MaxBulkRequests = 2
-
-	server := NewServer(config)
-
-	requests := make([]RecommendationRequest, 3)
-	for i := range requests {
-		requests[i] = RecommendationRequest{
-			OSFamily: defaultQueryValue,
-		}
-	}
-
-	bulkReq := BulkResolveRequest{
-		Requests: requests,
-	}
-
-	var body bytes.Buffer
-	err := json.NewEncoder(&body).Encode(bulkReq)
-	require.NoError(t, err)
-
-	req := httptest.NewRequest(http.MethodPost, "/v1/recommendations/resolve", &body)
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	handler := server.withMiddleware(server.handleBulkResolve)
-	handler.ServeHTTP(w, req)
-
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-
-	var errResp ErrorResponse
-	err = json.NewDecoder(w.Body).Decode(&errResp)
-	require.NoError(t, err)
-	assert.Equal(t, "INVALID_PARAMETER", errResp.Code)
-}
-
 func TestGenerateRecommendation(t *testing.T) {
 	server := NewServer(DefaultConfig())
 
@@ -594,17 +442,8 @@ func TestGenerateRecommendation(t *testing.T) {
 	assert.NotEmpty(t, resp.PayloadVersion)
 	assert.NotEmpty(t, resp.MatchedRuleID)
 	assert.False(t, resp.GeneratedAt.IsZero())
-	assert.NotEmpty(t, resp.CNSReleases)
-
-	assert.Greater(t, len(resp.CNSReleases), 0)
-	release := resp.CNSReleases[0]
-	assert.NotEmpty(t, release.CNSVersion)
-	assert.NotEmpty(t, release.Components)
-
-	for _, component := range release.Components {
-		assert.NotEmpty(t, component.Name)
-		assert.NotNil(t, component.Version)
-	}
+	assert.NotEmpty(t, resp.Measurements)
+	assert.Greater(t, len(resp.Measurements), 0)
 }
 
 func TestPayloadVersionValidation(t *testing.T) {

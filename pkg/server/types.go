@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"golang.org/x/time/rate"
 )
 
@@ -21,19 +22,12 @@ type RecommendationRequest struct {
 	PayloadVersionRequested *string `json:"payloadVersionRequested"`
 }
 
-// ComponentRecommendation represents a single component with version
-type ComponentRecommendation struct {
-	Name    string  `json:"name"`
-	Version *string `json:"version"`
-	Notes   *string `json:"notes,omitempty"`
-}
-
 // CNSReleaseRecommendation represents a CNS release with components
 type CNSReleaseRecommendation struct {
-	CNSVersion  string                    `json:"cnsVersion"`
-	Platforms   []string                  `json:"platforms,omitempty"`
-	SupportedOS []string                  `json:"supportedOS,omitempty"`
-	Components  []ComponentRecommendation `json:"components"`
+	CNSVersion   string                     `json:"cnsVersion"`
+	Platforms    []string                   `json:"platforms,omitempty"`
+	SupportedOS  []string                   `json:"supportedOS,omitempty"`
+	Measurements []*measurement.Measurement `json:"measurements"`
 }
 
 // RecommendationResponse is the main API response type
@@ -42,21 +36,7 @@ type RecommendationResponse struct {
 	MatchedRuleID  string                     `json:"matchedRuleId,omitempty"`
 	PayloadVersion string                     `json:"payloadVersion"`
 	GeneratedAt    time.Time                  `json:"generatedAt"`
-	CNSReleases    []CNSReleaseRecommendation `json:"cnsReleases"`
-}
-
-// BulkResolveRequest represents bulk recommendation request
-type BulkResolveRequest struct {
-	Requests          []RecommendationRequest `json:"requests"`
-	PageSize          int                     `json:"pageSize,omitempty"`
-	ContinuationToken string                  `json:"continuationToken,omitempty"`
-}
-
-// BulkResolveResponse represents bulk recommendation response
-type BulkResolveResponse struct {
-	Results               []RecommendationResponse `json:"results"`
-	NextContinuationToken *string                  `json:"nextContinuationToken"`
-	TotalCount            int                      `json:"totalCount,omitempty"`
+	Measurements   []*measurement.Measurement `json:"measurements"`
 }
 
 // ErrorResponse represents error responses as per OpenAPI spec

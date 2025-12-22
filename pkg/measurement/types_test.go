@@ -3,6 +3,8 @@ package measurement
 import (
 	"encoding/json"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -698,5 +700,78 @@ func TestConvenienceConstructors(t *testing.T) {
 				t.Errorf("Marshal() error = %v", err)
 			}
 		})
+	}
+}
+
+func TestMeasurement_YAML(t *testing.T) {
+	original := &Measurement{
+		Type: TypeK8s,
+		Subtypes: []Subtype{
+			{
+				Name: testSubtypeCluster,
+				Data: map[string]Reading{
+					"version": Str("1.28.0"),
+					"nodes":   Int(3),
+					"ready":   Bool(true),
+				},
+			},
+		},
+	}
+
+	// Marshal to YAML
+	yamlData, err := yaml.Marshal(original)
+	if err != nil {
+		t.Fatalf("Marshal() error = %v", err)
+	}
+
+	t.Logf("YAML output:\n%s", string(yamlData))
+
+	// Unmarshal back
+	var restored Measurement
+	if err := yaml.Unmarshal(yamlData, &restored); err != nil {
+		t.Fatalf("Unmarshal() error = %v", err)
+	}
+
+	// Verify type
+	if restored.Type != original.Type {
+		t.Errorf("Type = %v, want %v", restored.Type, original.Type)
+	}
+
+	// Verify subtypes length
+	if len(restored.Subtypes) != len(original.Subtypes) {
+		t.Errorf("Subtypes length = %d, want %d", len(restored.Subtypes), len(original.Subtypes))
+	}
+
+	// Verify values are not wrapped in "v" structure
+	if len(restored.Subtypes) > 0 {
+		// Check string value
+		version, err := restored.Subtypes[0].GetString("version")
+		if err != nil {
+			t.Errorf("Failed to get version string: %v", err)
+		} else if version != "1.28.0" {
+			t.Errorf("version = %v, want 1.28.0", version)
+		}
+
+		// Check int value
+		nodes, err := restored.Subtypes[0].GetInt64("nodes")
+		if err != nil {
+			t.Errorf("Failed to get nodes int: %v", err)
+		} else if nodes != 3 {
+			t.Errorf("nodes = %v, want 3", nodes)
+		}
+
+		// Check bool value
+		ready, err := restored.Subtypes[0].GetBool("ready")
+		if err != nil {
+			t.Errorf("Failed to get ready bool: %v", err)
+		} else if !ready {
+			t.Errorf("ready = %v, want true", ready)
+		}
+
+		// Verify data map doesn't contain nested "v" structures
+		for key, value := range restored.Subtypes[0].Data {
+			anyVal := value.Any()
+			t.Logf("Key: %s, Value: %v, Type: %T", key, anyVal, anyVal)
+		}
 	}
 }

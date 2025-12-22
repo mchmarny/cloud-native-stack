@@ -25,6 +25,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Type string
@@ -76,6 +78,29 @@ type Subtype struct {
 	Data map[string]Reading `json:"data" yaml:"data"`
 }
 
+// UnmarshalYAML custom unmarshaler for Subtype to handle Reading interface
+func (st *Subtype) UnmarshalYAML(node *yaml.Node) error {
+	// Create a temporary struct with raw data
+	var tmp struct {
+		Name string         `yaml:"subtype"`
+		Data map[string]any `yaml:"data"`
+	}
+
+	if err := node.Decode(&tmp); err != nil {
+		return err
+	}
+
+	st.Name = tmp.Name
+	st.Data = make(map[string]Reading)
+
+	// Convert each value to a Reading using ToReading
+	for k, v := range tmp.Data {
+		st.Data[k] = ToReading(v)
+	}
+
+	return nil
+}
+
 // AllowedScalar is a constraint (compile-time) for what we allow as readings.
 type AllowedScalar interface {
 	~int | ~int8 | ~int16 | ~int32 | ~int64 |
@@ -92,6 +117,8 @@ type Reading interface {
 
 	json.Marshaler
 	json.Unmarshaler
+	yaml.Marshaler
+	yaml.Unmarshaler
 }
 
 // Scalar wraps an allowed scalar type.
@@ -107,6 +134,11 @@ func (s Scalar[T]) Any() any { return s.V }
 // MarshalJSON makes the JSON value be the underlying scalar (not an object wrapper).
 func (s Scalar[T]) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.V)
+}
+
+// MarshalYAML makes the YAML value be the underlying scalar (not an object wrapper).
+func (s Scalar[T]) MarshalYAML() (interface{}, error) {
+	return s.V, nil
 }
 
 // ToReading creates a Reading from any allowed scalar type.
@@ -135,6 +167,11 @@ func ToReading(v any) Reading {
 // UnmarshalJSON unmarshals a JSON value into the underlying scalar.
 func (s *Scalar[T]) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &s.V)
+}
+
+// UnmarshalYAML unmarshals a YAML value into the underlying scalar.
+func (s *Scalar[T]) UnmarshalYAML(node *yaml.Node) error {
+	return node.Decode(&s.V)
 }
 
 // Convenience constructors for each allowed scalar type.

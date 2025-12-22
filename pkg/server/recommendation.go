@@ -1,10 +1,11 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
 // Handler implementations
@@ -36,67 +37,6 @@ func (s *Server) handleGetRecommendations(w http.ResponseWriter, r *http.Request
 	s.writeJSON(w, http.StatusOK, resp)
 }
 
-// handleBulkResolve handles POST /v1/recommendations/resolve
-func (s *Server) handleBulkResolve(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		s.writeError(w, r, http.StatusMethodNotAllowed, ErrCodeMethodNotAllowed,
-			"Method not allowed", false, nil)
-		return
-	}
-
-	var bulkReq BulkResolveRequest
-	if err := json.NewDecoder(r.Body).Decode(&bulkReq); err != nil {
-		s.writeError(w, r, http.StatusBadRequest, ErrCodeInvalidJSON,
-			"Invalid JSON payload", false, map[string]interface{}{
-				"error": err.Error(),
-			})
-		return
-	}
-
-	// Validate bulk request
-	if len(bulkReq.Requests) == 0 {
-		s.writeError(w, r, http.StatusBadRequest, ErrCodeInvalidParameter,
-			"requests array cannot be empty", false, nil)
-		return
-	}
-
-	if len(bulkReq.Requests) > s.config.MaxBulkRequests {
-		s.writeError(w, r, http.StatusBadRequest, ErrCodeInvalidParameter,
-			fmt.Sprintf("requests array exceeds maximum of %d", s.config.MaxBulkRequests),
-			false, map[string]interface{}{
-				"maxAllowed": s.config.MaxBulkRequests,
-				"provided":   len(bulkReq.Requests),
-			})
-		return
-	}
-
-	// Validate each request
-	for i, req := range bulkReq.Requests {
-		if err := s.validator.ValidateRecommendationRequest(&req); err != nil {
-			s.writeError(w, r, http.StatusBadRequest, ErrCodeInvalidParameter,
-				fmt.Sprintf("invalid request at index %d: %s", i, err.Error()),
-				false, map[string]interface{}{
-					"index":   i,
-					"request": req,
-				})
-			return
-		}
-	}
-
-	// Process bulk request
-	results := make([]RecommendationResponse, len(bulkReq.Requests))
-	for i, req := range bulkReq.Requests {
-		results[i] = s.generateRecommendation(&req)
-	}
-
-	resp := BulkResolveResponse{
-		Results:    results,
-		TotalCount: len(results),
-	}
-
-	s.writeJSON(w, http.StatusOK, resp)
-}
-
 // Helper methods
 
 // parseRecommendationRequest extracts query parameters into request struct
@@ -122,31 +62,25 @@ func (s *Server) parseRecommendationRequest(r *http.Request) *RecommendationRequ
 
 // generateRecommendation creates a recommendation response (stub implementation)
 func (s *Server) generateRecommendation(req *RecommendationRequest) RecommendationResponse {
-	// This is a stub implementation. In production, this would:
-	// 1. Query a database or rule engine
-	// 2. Match rules based on request parameters
-	// 3. Return appropriate CNS release recommendations
-
+	// TODO: Implement real recommendation logic
 	version := "2025.12.0"
-	components := []ComponentRecommendation{
-		{Name: "containerd", Version: stringPtr("2.1.3")},
-		{Name: "nvidia-container-toolkit", Version: stringPtr("1.17.8")},
-		{Name: "kubernetes", Version: stringPtr("1.33.2")},
-		{Name: "nvidia-gpu-operator", Version: stringPtr("25.3.4")},
-		{Name: "nvidia-data-center-driver", Version: stringPtr("580.82.07")},
-	}
 
 	return RecommendationResponse{
 		Request:        *req,
 		MatchedRuleID:  "default-rule",
 		PayloadVersion: version,
 		GeneratedAt:    time.Now().UTC(),
-		CNSReleases: []CNSReleaseRecommendation{
-			{
-				CNSVersion:  "16.0",
-				Platforms:   []string{"NVIDIA Certified Server (x86 & arm64)", "DGX Server"},
-				SupportedOS: []string{"Ubuntu 24.04 LTS"},
-				Components:  components,
+		Measurements: []*measurement.Measurement{
+			{Type: "example",
+				Subtypes: []measurement.Subtype{
+					{
+						Name: "sample",
+						Data: map[string]measurement.Reading{
+							"key1": measurement.Str("value1"),
+							"key2": measurement.Int(42),
+						},
+					},
+				},
 			},
 		},
 	}

@@ -111,7 +111,6 @@ func (s *Server) setupRoutes() http.Handler {
 
 	// API endpoints with middleware
 	mux.HandleFunc("/v1/recommendations", s.withMiddleware(s.handleGetRecommendations))
-	mux.HandleFunc("/v1/recommendations/resolve", s.withMiddleware(s.handleBulkResolve))
 
 	return mux
 }
