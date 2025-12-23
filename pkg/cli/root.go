@@ -32,6 +32,9 @@ var (
 
 	cfgFile  string
 	logLevel string
+
+	output string
+	format string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -73,7 +76,7 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initConfig, initLogger)
 
 	// Define command groups
 	rootCmd.AddGroup(
@@ -86,15 +89,6 @@ func init() {
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.eidos.yaml)")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level (debug, info, warn, error)")
-
-	// Initialize logger
-	logging.SetDefaultStructuredLoggerWithLevel(name, version, logLevel)
-	slog.Info("starting",
-		"name", name,
-		"version", version,
-		"commit", commit,
-		"date", date,
-		"logLevel", logLevel)
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -131,4 +125,16 @@ func initConfig() {
 
 	// If a config file is found, read it in (optional)
 	_ = viper.ReadInConfig()
+}
+
+// initLogger configures slog after Cobra parses flags/config so overrides like
+// --log-level take effect before any command executes.
+func initLogger() {
+	logging.SetDefaultStructuredLoggerWithLevel(name, version, logLevel)
+	slog.Info("starting",
+		"name", name,
+		"version", version,
+		"commit", commit,
+		"date", date,
+		"logLevel", logLevel)
 }

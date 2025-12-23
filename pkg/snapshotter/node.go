@@ -36,7 +36,7 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 		n.Factory = collectors.NewDefaultCollectorFactory()
 	}
 
-	slog.Info("starting node snapshot")
+	slog.Debug("starting node snapshot")
 
 	// Pre-allocate with estimated capacity
 	var mu sync.Mutex
@@ -177,11 +177,11 @@ func (n *NodeSnapshotter) Run(ctx context.Context) error {
 		return err
 	}
 
-	slog.Info("snapshot collection complete", slog.Int("total_configs", len(snap.Measurements)))
+	slog.Debug("snapshot collection complete", slog.Int("total_configs", len(snap.Measurements)))
 
 	// Serialize output
 	if n.Serializer == nil {
-		n.Serializer = serializers.NewWriter(serializers.FormatJSON, nil)
+		n.Serializer = serializers.NewStdoutWriter(serializers.FormatJSON)
 	}
 
 	if err := n.Serializer.Serialize(snap); err != nil {

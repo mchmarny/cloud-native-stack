@@ -5,6 +5,8 @@ SPDX-License-Identifier: Apache-2.0
 package cli
 
 import (
+	"fmt"
+
 	"github.com/NVIDIA/cloud-native-stack/pkg/collectors"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializers"
 	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
@@ -13,7 +15,6 @@ import (
 )
 
 var (
-	outputFormat    string
 	systemdServices []string
 )
 
@@ -34,11 +35,9 @@ The snapshot can be output in JSON, YAML, or table format.`,
 		ctx := cmd.Context()
 
 		// Parse output format
-		format := serializers.Format(outputFormat)
-		if format != serializers.FormatJSON &&
-			format != serializers.FormatYAML &&
-			format != serializers.FormatTable {
-			format = serializers.FormatJSON
+		outFormat := serializers.Format(format)
+		if outFormat.IsUnknown() {
+			return fmt.Errorf("unknown output format: %q", outFormat)
 		}
 
 		// Create factory with configured services
@@ -50,7 +49,7 @@ The snapshot can be output in JSON, YAML, or table format.`,
 		ns := snapshotter.NodeSnapshotter{
 			Version:    version,
 			Factory:    factory,
-			Serializer: serializers.NewWriter(format, nil),
+			Serializer: serializers.NewFileWriterOrStdout(outFormat, output),
 		}
 
 		return ns.Run(ctx)
@@ -60,8 +59,11 @@ The snapshot can be output in JSON, YAML, or table format.`,
 func init() {
 	rootCmd.AddCommand(snapshotCmd)
 
-	snapshotCmd.Flags().StringVarP(&outputFormat, "output", "o", "json",
-		"output format (json, yaml, table)")
+	// Define output format flag
+	snapshotCmd.Flags().StringVarP(&output, "output", "", "", "output file path (default: stdout)")
+	snapshotCmd.Flags().StringVarP(&format, "format", "", "json", "output format (json, yaml, table)")
+
+	// Define systemd services to snapshot
 	snapshotCmd.Flags().StringSliceVar(&systemdServices, "systemd-services",
 		[]string{"containerd.service", "docker.service", "kubelet.service"},
 		"systemd services to snapshot")

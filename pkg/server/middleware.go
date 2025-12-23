@@ -48,12 +48,13 @@ func (s *Server) requestIDMiddleware(next http.HandlerFunc) http.HandlerFunc {
 func (s *Server) rateLimitMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !s.rateLimiter.Allow() {
+			retryAfterSeconds := "1"
+			w.Header().Set("Retry-After", retryAfterSeconds)
 			s.writeError(w, r, http.StatusTooManyRequests, ErrCodeRateLimitExceeded,
 				"Rate limit exceeded", true, map[string]interface{}{
 					"limit": s.config.RateLimit,
 					"burst": s.config.RateLimitBurst,
 				})
-			w.Header().Set("Retry-After", "1")
 			return
 		}
 
@@ -71,8 +72,15 @@ func (s *Server) panicRecoveryMiddleware(next http.HandlerFunc) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
+				var errMsg string
+				switch v := err.(type) {
+				case error:
+					errMsg = v.Error()
+				default:
+					errMsg = fmt.Sprintf("%v", v)
+				}
 				slog.Error("panic recovered",
-					"error", err.(error).Error(),
+					"error", errMsg,
 					"requestID", r.Context().Value(contextKeyRequestID),
 					"path", r.URL.Path,
 					"method", r.Method,
@@ -91,7 +99,7 @@ func (s *Server) loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		start := time.Now()
 		requestID := r.Context().Value(contextKeyRequestID)
 
-		slog.Info("request started",
+		slog.Debug("request started",
 			"requestID", requestID,
 			"method", r.Method,
 			"path", r.URL.Path,
@@ -100,7 +108,7 @@ func (s *Server) loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		next.ServeHTTP(w, r)
 
 		duration := time.Since(start)
-		slog.Info("request completed",
+		slog.Debug("request completed",
 			"requestID", requestID,
 			"method", r.Method,
 			"path", r.URL.Path,

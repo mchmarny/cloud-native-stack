@@ -38,7 +38,7 @@ type Server struct {
 	httpServer            *http.Server
 	rateLimiter           *rate.Limiter
 	mu                    sync.RWMutex
-	recommendationHandler http.HandlerFunc
+	recommendationBuilder *recommendation.Builder
 	ready                 bool
 }
 
@@ -57,7 +57,7 @@ func NewServer(config *Config) *Server {
 	rb := &recommendation.Builder{
 		CacheTTL: time.Duration(config.CacheMaxAge) * time.Second,
 	}
-	s.recommendationHandler = rb.Handle
+	s.recommendationBuilder = rb
 
 	// Setup HTTP server
 	mux := s.setupRoutes()
@@ -131,7 +131,7 @@ func RunWithConfig(config *Config) error {
 
 	// Initialize logger
 	logging.SetDefaultStructuredLoggerWithLevel(name, version, config.LogLevel)
-	slog.Info("starting",
+	slog.Debug("starting",
 		"name", name,
 		"version", version,
 		"commit", commit,
@@ -139,7 +139,7 @@ func RunWithConfig(config *Config) error {
 
 	server := NewServer(config)
 
-	slog.Info("server config",
+	slog.Debug("server config",
 		slog.String("address", server.httpServer.Addr),
 		slog.Int("port", config.Port),
 		slog.Any("rateLimit", config.RateLimit),
@@ -169,6 +169,6 @@ func RunWithConfig(config *Config) error {
 		return fmt.Errorf("server error: %w", err)
 	}
 
-	slog.Info("server stopped gracefully")
+	slog.Debug("server stopped gracefully")
 	return nil
 }

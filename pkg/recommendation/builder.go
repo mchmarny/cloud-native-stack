@@ -3,6 +3,7 @@ package recommendation
 import (
 	_ "embed"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
@@ -12,21 +13,43 @@ import (
 var (
 	//go:embed data/data-v1.yaml
 	recommendationData []byte
+
+	storeOnce   sync.Once
+	cachedStore *Store
+	storeErr    error
+
+	defaultBuilder = &Builder{}
 )
 
-// buildRecommendation creates a Recommendation based on the query.
-func buildRecommendation(q *Query) (*Recommendation, error) {
+// Builder produces recommendation payloads and optionally exposes cache metadata
+// (e.g., TTL) for higher layers like HTTP handlers.
+type Builder struct {
+	CacheTTL time.Duration
+}
+
+// BuildRecommendation creates a Recommendation based on the query using a shared
+// default Builder instance. Prefer using Builder directly when custom settings
+// like cache TTL are required.
+func BuildRecommendation(q *Query) (*Recommendation, error) {
+	return defaultBuilder.Build(q)
+}
+
+// Build creates a Recommendation payload for the provided query.
+func (b *Builder) Build(q *Query) (*Recommendation, error) {
+	if q == nil {
+		return nil, fmt.Errorf("query cannot be nil")
+	}
+
+	store, err := loadStore()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load recommendation store: %w", err)
+	}
+
 	r := &Recommendation{
 		Request:        q,
 		PayloadVersion: RecommendationAPIVersion,
 		MatchedRules:   make([]string, 0),
 		GeneratedAt:    time.Now().UTC(),
-	}
-
-	// Load data from embedded YAML
-	var store Store
-	if err := yaml.Unmarshal(recommendationData, &store); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal recommendation data: %w", err)
 	}
 
 	merged := cloneMeasurements(store.Base)
@@ -42,6 +65,18 @@ func buildRecommendation(q *Query) (*Recommendation, error) {
 
 	r.Measurements = merged
 	return r, nil
+}
+
+func loadStore() (*Store, error) {
+	storeOnce.Do(func() {
+		var store Store
+		if err := yaml.Unmarshal(recommendationData, &store); err != nil {
+			storeErr = fmt.Errorf("failed to unmarshal recommendation data: %w", err)
+			return
+		}
+		cachedStore = &store
+	})
+	return cachedStore, storeErr
 }
 
 // cloneMeasurements creates deep copies of all measurements so we never mutate

@@ -20,7 +20,7 @@ func (s *Server) setupRoutes() http.Handler {
 	mux.HandleFunc("/ready", s.handleReady)
 
 	// API endpoints with middleware
-	mux.HandleFunc("/v1/recommendations", s.withMiddleware(s.recommendationHandler))
+	mux.HandleFunc("/v1/recommendations", s.withMiddleware(s.handleRecommendations))
 
 	return mux
 }

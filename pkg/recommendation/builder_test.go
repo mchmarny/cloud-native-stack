@@ -1,6 +1,7 @@
 package recommendation
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
@@ -51,7 +52,7 @@ overlays:
 `))
 
 	query := &Query{Os: OSUbuntu, Service: ServiceEKS}
-	rec, err := buildRecommendation(query)
+	rec, err := BuildRecommendation(query)
 	if err != nil {
 		t.Fatalf("buildRecommendation() error = %v", err)
 	}
@@ -98,7 +99,7 @@ overlays:
 `))
 
 	query := &Query{Os: OSUbuntu, Service: ServiceEKS}
-	rec, err := buildRecommendation(query)
+	rec, err := BuildRecommendation(query)
 	if err != nil {
 		t.Fatalf("buildRecommendation() error = %v", err)
 	}
@@ -195,8 +196,14 @@ func setRecommendationData(t *testing.T, payload string) func() {
 	t.Helper()
 	original := recommendationData
 	recommendationData = []byte(payload)
+	storeOnce = sync.Once{}
+	cachedStore = nil
+	storeErr = nil
 	return func() {
 		recommendationData = original
+		storeOnce = sync.Once{}
+		cachedStore = nil
+		storeErr = nil
 	}
 }
 

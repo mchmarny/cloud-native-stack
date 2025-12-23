@@ -90,12 +90,12 @@ func TestWriter_SerializeTable(t *testing.T) {
 	output := buf.String()
 
 	// Verify output contains expected elements
-	if !strings.Contains(output, "Configuration Snapshot") {
-		t.Error("Expected header not found")
+	if !strings.Contains(output, "FIELD") || !strings.Contains(output, "VALUE") {
+		t.Error("Expected table header not found")
 	}
 
-	if !strings.Contains(output, "[1]") || !strings.Contains(output, "[2]") {
-		t.Error("Expected item numbers not found")
+	if !strings.Contains(output, "[0].Name") || !strings.Contains(output, "[1].Value") {
+		t.Error("Expected flattened keys not found")
 	}
 }
 
@@ -115,7 +115,7 @@ func TestWriter_UnsupportedFormat(t *testing.T) {
 
 func TestWriter_NilOutput(t *testing.T) {
 	// Should default to stdout
-	writer := serializers.NewWriter(serializers.FormatJSON, nil)
+	writer := serializers.NewStdoutWriter(serializers.FormatJSON)
 
 	if writer == nil {
 		t.Fatal("Expected non-nil writer")
@@ -125,7 +125,7 @@ func TestWriter_NilOutput(t *testing.T) {
 }
 
 func TestNewWriter_DefaultsToStdout(t *testing.T) {
-	writer := serializers.NewWriter(serializers.FormatJSON, nil)
+	writer := serializers.NewStdoutWriter(serializers.FormatJSON)
 	if writer == nil {
 		t.Fatal("Expected non-nil writer with nil output")
 	}

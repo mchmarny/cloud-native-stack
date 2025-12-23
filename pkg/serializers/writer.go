@@ -4,7 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
+	"reflect"
+	"sort"
+	"strings"
+	"text/tabwriter"
 
 	"gopkg.in/yaml.v3"
 )
@@ -21,6 +26,15 @@ const (
 	FormatTable Format = "table"
 )
 
+func (f Format) IsUnknown() bool {
+	switch f {
+	case FormatJSON, FormatYAML, FormatTable:
+		return false
+	default:
+		return true
+	}
+}
+
 // Writer handles serialization of configuration data to various formats.
 type Writer struct {
 	format Format
@@ -36,6 +50,34 @@ func NewWriter(format Format, output io.Writer) *Writer {
 	return &Writer{
 		format: format,
 		output: output,
+	}
+}
+
+// NewFileWriterOrPanic creates a new Writer that outputs to the specified file path in the given format.
+// It panics if the file cannot be created.
+func NewFileWriterOrStdout(format Format, path string) *Writer {
+	trimmed := strings.TrimSpace(path)
+	if trimmed == "" {
+		return NewStdoutWriter(format)
+	}
+
+	file, err := os.Create(trimmed)
+	if err != nil {
+		slog.Error("failed to create output file", "error", err, "path", trimmed)
+		return NewStdoutWriter(format)
+	}
+
+	return &Writer{
+		format: format,
+		output: file,
+	}
+}
+
+// NewStdoutWriter creates a new Writer that outputs to stdout in the specified format.
+func NewStdoutWriter(format Format) *Writer {
+	return &Writer{
+		format: format,
+		output: os.Stdout,
 	}
 }
 
@@ -72,19 +114,78 @@ func (w *Writer) serializeYAML(config any) error {
 }
 
 func (w *Writer) serializeTable(config any) error {
-	// Simple table implementation
-	fmt.Fprintln(w.output, "Configuration Snapshot:")
-	fmt.Fprintln(w.output, "----------------------")
-
-	// Type assertion to our expected structure
-	configs, ok := config.([]interface{})
-	if !ok {
-		return fmt.Errorf("unsupported config type for table format")
+	flat := make(map[string]any)
+	flattenValue(flat, reflect.ValueOf(config), "")
+	if len(flat) == 0 {
+		fmt.Fprintln(w.output, "<empty>")
+		return nil
 	}
 
-	for i, cfg := range configs {
-		fmt.Fprintf(w.output, "\n[%d] %+v\n", i+1, cfg)
+	keys := make([]string, 0, len(flat))
+	for k := range flat {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	tw := tabwriter.NewWriter(w.output, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "FIELD\tVALUE")
+	fmt.Fprintln(tw, "-----\t-----")
+	for _, key := range keys {
+		fmt.Fprintf(tw, "%s\t%v\n", key, flat[key])
+	}
+	return tw.Flush()
+}
+
+func flattenValue(out map[string]any, val reflect.Value, prefix string) {
+	if !val.IsValid() {
+		return
 	}
 
-	return nil
+	for val.Kind() == reflect.Pointer || val.Kind() == reflect.Interface {
+		if val.IsNil() {
+			if prefix != "" {
+				out[prefix] = nil
+			}
+			return
+		}
+		val = val.Elem()
+	}
+
+	switch val.Kind() {
+	case reflect.Struct:
+		typ := val.Type()
+		for i := 0; i < val.NumField(); i++ {
+			field := typ.Field(i)
+			if !field.IsExported() {
+				continue
+			}
+			key := joinKey(prefix, field.Name)
+			flattenValue(out, val.Field(i), key)
+		}
+	case reflect.Map:
+		for _, mapKey := range val.MapKeys() {
+			key := joinKey(prefix, fmt.Sprintf("%v", mapKey.Interface()))
+			flattenValue(out, val.MapIndex(mapKey), key)
+		}
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < val.Len(); i++ {
+			key := joinKey(prefix, fmt.Sprintf("[%d]", i))
+			flattenValue(out, val.Index(i), key)
+		}
+	default:
+		if prefix == "" {
+			prefix = "value"
+		}
+		out[prefix] = val.Interface()
+	}
+}
+
+func joinKey(prefix, suffix string) string {
+	if prefix == "" {
+		return suffix
+	}
+	if suffix == "" {
+		return prefix
+	}
+	return prefix + "." + suffix
 }

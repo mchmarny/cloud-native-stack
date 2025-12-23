@@ -13,6 +13,8 @@ const (
 	ErrCodeRateLimitExceeded  = "RATE_LIMIT_EXCEEDED"
 	ErrCodeInternalError      = "INTERNAL_ERROR"
 	ErrCodeServiceUnavailable = "SERVICE_UNAVAILABLE"
+	ErrCodeInvalidRequest     = "INVALID_REQUEST"
+	ErrCodeMethodNotAllowed   = "METHOD_NOT_ALLOWED"
 )
 
 // writeError writes error response
