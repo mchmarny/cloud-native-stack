@@ -1,24 +1,5 @@
 // Package measurement provides types and utilities for collecting and managing
 // system measurements from various sources (GRUB, Kubernetes, NVIDIA SMI, etc.).
-//
-// Example usage:
-//
-//	m := &measurement.Measurement{
-//	    Type: measurement.TypeK8s,
-//	    Subtypes: []measurement.Subtype{
-//	        {
-//	            Name: "cluster",
-//	            Data: map[string]measurement.Reading{
-//	                "version": measurement.Str("1.28.0"),
-//	                "nodes":   measurement.Int(3),
-//	            },
-//	        },
-//	    },
-//	}
-//	if m.Validate() == nil {
-//	    version, _ := m.Subtypes[0].GetString("version")
-//	    fmt.Println(version)
-//	}
 package measurement
 
 import (

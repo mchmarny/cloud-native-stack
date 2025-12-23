@@ -3,51 +3,16 @@ package recommendation
 import (
 	_ "embed"
 	"fmt"
-	"log/slog"
-	"net/http"
 	"time"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/serializers"
+	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
+	"gopkg.in/yaml.v3"
 )
 
 var (
-	//go:embed data/data-0.5.yaml
+	//go:embed data/data-v1.yaml
 	recommendationData []byte
 )
-
-// Builder handles recommendation requests and generates responses.
-type Builder struct {
-	CacheTTL time.Duration
-}
-
-func (b *Builder) Handle(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		slog.Error("method not allowed", "method", r.Method)
-		w.Header().Set("Allow", http.MethodGet)
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	q, err := ParseQuery(r)
-	if err != nil {
-		slog.Error("failed to parse query", "error", err)
-		http.Error(w, fmt.Sprintf("Bad Request: %v", err), http.StatusBadRequest)
-		return
-	}
-
-	// Generate recommendation (stub implementation)
-	resp, err := buildRecommendation(q)
-	if err != nil {
-		slog.Error("failed to build recommendation", "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	// Set cache headers
-	w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", b.CacheTTL))
-
-	serializers.RespondJSON(w, http.StatusOK, resp)
-}
 
 // buildRecommendation creates a Recommendation based on the query.
 func buildRecommendation(q *Query) (*Recommendation, error) {
@@ -57,10 +22,135 @@ func buildRecommendation(q *Query) (*Recommendation, error) {
 		GeneratedAt:    time.Now().UTC(),
 	}
 
-	// TODO:
-	// - create type to represent the recommendation with base and overlays
-	// - load data from embedded YAML
-	// - apply overlays based on query parameters
+	// Load data from embedded YAML
+	var store Store
+	if err := yaml.Unmarshal(recommendationData, &store); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal recommendation data: %w", err)
+	}
 
+	merged := cloneMeasurements(store.Base)
+	index := indexMeasurementsByType(merged)
+
+	for _, overlay := range store.Overlays {
+		// overlays use Query as key, so matching queries inherit overlay-specific measurements
+		if overlay.Key.IsMatch(q) {
+			merged, index = mergeOverlayMeasurements(merged, index, overlay.Types)
+		}
+	}
+
+	r.Measurements = merged
 	return r, nil
+}
+
+// cloneMeasurements creates deep copies of all measurements so we never mutate
+// the shared store payload while tailoring responses.
+func cloneMeasurements(list []*measurement.Measurement) []*measurement.Measurement {
+	if len(list) == 0 {
+		return nil
+	}
+	cloned := make([]*measurement.Measurement, 0, len(list))
+	for _, m := range list {
+		if m == nil {
+			continue
+		}
+		cloned = append(cloned, cloneMeasurement(m))
+	}
+	return cloned
+}
+
+// cloneMeasurement duplicates a single measurement including all of its
+// subtypes to protect original data from in-place updates.
+func cloneMeasurement(m *measurement.Measurement) *measurement.Measurement {
+	if m == nil {
+		return nil
+	}
+	clone := &measurement.Measurement{
+		Type:     m.Type,
+		Subtypes: make([]measurement.Subtype, len(m.Subtypes)),
+	}
+	for i := range m.Subtypes {
+		clone.Subtypes[i] = cloneSubtype(m.Subtypes[i])
+	}
+	return clone
+}
+
+// cloneSubtype duplicates an individual subtype and its key/value readings.
+func cloneSubtype(st measurement.Subtype) measurement.Subtype {
+	cloned := measurement.Subtype{
+		Name: st.Name,
+	}
+	if len(st.Data) == 0 {
+		return cloned
+	}
+	cloned.Data = make(map[string]measurement.Reading, len(st.Data))
+	for k, v := range st.Data {
+		cloned.Data[k] = v
+	}
+	return cloned
+}
+
+// indexMeasurementsByType builds an index for O(1) lookup when merging
+// overlays by measurement type.
+func indexMeasurementsByType(measurements []*measurement.Measurement) map[measurement.Type]*measurement.Measurement {
+	index := make(map[measurement.Type]*measurement.Measurement, len(measurements))
+	for _, m := range measurements {
+		if m == nil {
+			continue
+		}
+		index[m.Type] = m
+	}
+	return index
+}
+
+// mergeOverlayMeasurements folds overlay measurements into the base slice,
+// appending new types and delegating to subtype merging when the type already exists.
+func mergeOverlayMeasurements(base []*measurement.Measurement, index map[measurement.Type]*measurement.Measurement, overlays []*measurement.Measurement) ([]*measurement.Measurement, map[measurement.Type]*measurement.Measurement) {
+	if len(overlays) == 0 {
+		return base, index
+	}
+	for _, overlay := range overlays {
+		if overlay == nil {
+			continue
+		}
+		if target, ok := index[overlay.Type]; ok {
+			mergeMeasurementSubtypes(target, overlay)
+			continue
+		}
+		cloned := cloneMeasurement(overlay)
+		base = append(base, cloned)
+		index[cloned.Type] = cloned
+	}
+	return base, index
+}
+
+// mergeMeasurementSubtypes walks all subtypes so overlay data augments or
+// overrides existing subtype readings.
+func mergeMeasurementSubtypes(target, overlay *measurement.Measurement) {
+	if target == nil || overlay == nil {
+		return
+	}
+	subtypeIndex := make(map[string]*measurement.Subtype, len(target.Subtypes))
+	for i := range target.Subtypes {
+		st := &target.Subtypes[i]
+		subtypeIndex[st.Name] = st
+		if st.Data == nil {
+			st.Data = make(map[string]measurement.Reading)
+		}
+	}
+	for _, overlaySubtype := range overlay.Subtypes {
+		if overlaySubtype.Data == nil {
+			continue
+		}
+		if targetSubtype, ok := subtypeIndex[overlaySubtype.Name]; ok {
+			if targetSubtype.Data == nil {
+				targetSubtype.Data = make(map[string]measurement.Reading, len(overlaySubtype.Data))
+			}
+			for key, reading := range overlaySubtype.Data {
+				targetSubtype.Data[key] = reading
+			}
+			continue
+		}
+		target.Subtypes = append(target.Subtypes, cloneSubtype(overlaySubtype))
+		subtypeIndex[overlaySubtype.Name] = &target.Subtypes[len(target.Subtypes)-1]
+	}
 }

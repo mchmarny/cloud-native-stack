@@ -1,0 +1,134 @@
+base:
+  - type: KMod
+    subtypes:
+      - data:
+          ecc: true  # GPU error detection and correction
+          gdrdrv: true  # GPUDirect RDMA for zero-copy GPU-NIC transfers
+          gpu_sched: true  # GPU workload scheduling and resource management
+          ib_cm: true  # InfiniBand connection management for RDMA
+          ib_core: true  # InfiniBand core stack for high-speed interconnect
+          ib_iser: true  # iSCSI over RDMA for fast storage access
+          ib_uverbs: true  # InfiniBand userspace verbs for direct hardware access
+          iw_cm: true  # iWARP connection management for RDMA over Ethernet
+          nvidia: true  # Core NVIDIA GPU driver
+          nvidia_modeset: true  # NVIDIA display mode setting for GPU configuration
+          nvidia_uvm: true  # Unified Virtual Memory for CPU-GPU shared memory
+          rdma_cm: true  # RDMA connection manager for efficient GPU communication
+          rdma_ucm: true  # RDMA userspace connection manager
+          rpcrdma: true  # RPC over RDMA for distributed GPU workloads
+          sunrpc: true  # RPC framework for networked GPU operations
+          ttm: true  # Translation Table Manager for GPU memory management
+  - type: Grub
+    subtypes:
+      - data:
+          BOOT_IMAGE: /boot/vmlinuz-6.8.0-1028  # Kernel image version
+          apparmor: "1"  # Security module (minimal GPU impact)
+          audit: "1"  # System auditing (minimal GPU impact)
+          audit_backlog_limit: "8192"  # Audit queue size (minimal GPU impact)
+          hugepages: "5128"  # Pre-allocated large memory pages for reduced TLB misses
+          hugepagesz: 2M  # 2MB page size for efficient GPU memory operations
+          init_on_alloc: "0"  # Disabled for faster memory allocation in GPU workflows
+          nokaslr: ""  # Deterministic kernel addressing for consistent GPU latency
+          numa_balancing: disable  # Disable auto-migration for predictable GPU memory locality
+          security: apparmor  # Security framework (minimal GPU impact)
+  - type: SystemD
+    subtypes:
+      - subtype: containerd.service
+        data:
+          CPUAccounting: true  # Enables CPU usage tracking for container workloads
+          CPUQuotaPerSecUSec: 18446744073709551615  # Unlimited CPU quota for GPU containers
+          CPUSchedulingPolicy: "0"  # Default scheduling policy
+          CPUShares: 18446744073709551615  # Unlimited CPU shares
+          CPUWeight: 18446744073709551615  # Unlimited CPU weight allows full CPU access for GPU containers
+          Delegate: true  # Allows container runtime to manage cgroups for GPU resource isolation
+          DelegateControllers: '[cpu cpuacct cpuset io blkio memory devices pids bpf-firewall bpf-devices bpf-foreign bpf-socket-bind]'  # Full cgroup delegation for GPU device and memory control
+          EffectiveCPUs: '[255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 0 0 0 0 0 0]'  # CPU affinity mask for containerd process
+          EffectiveMemoryNodes: '[3 0 0 0 0 0 0 0]'  # NUMA node assignment for optimal GPU-CPU memory access
+          IOSchedulingClass: "2"  # Best-effort I/O scheduling class
+          IOSchedulingPriority: "4"  # I/O priority for container storage operations
+          IOWeight: 18446744073709551615  # Unlimited I/O weight
+          LimitNOFILE: 18446744073709551615  # Unlimited file descriptors for container connections
+          LimitNPROC: 18446744073709551615  # Unlimited process count for GPU containers
+  - type: Sysctl
+    subtypes:
+      - data:
+          /proc/sys/fs/aio-max-nr: "65536"  # Maximum concurrent async I/O operations for GPU data transfers
+          /proc/sys/fs/file-max: "9223372036854775807"  # System-wide file descriptor limit for GPU container connections
+          /proc/sys/fs/inotify/max_user_watches: "524288"  # File watch limit for container monitoring and checkpointing
+          /proc/sys/fs/nr_open: "1048576"  # Per-process file descriptor limit for GPU applications
+          /proc/sys/kernel/numa_balancing: "0"  # Disabled for predictable GPU memory locality and reduced latency
+          /proc/sys/kernel/pid_max: "4194304"  # Maximum process IDs for containerized multi-GPU workloads
+          /proc/sys/kernel/sched_rt_period_us: "1000000"  # Real-time scheduling period for GPU driver threads
+          /proc/sys/kernel/sched_rt_runtime_us: "950000"  # Real-time CPU budget for GPU kernel operations
+          /proc/sys/kernel/shmall: "18446744073692774399"  # Total shared memory for IPC between GPU processes
+          /proc/sys/kernel/shmmax: "18446744073692774399"  # Maximum shared memory segment size for GPU data sharing
+          /proc/sys/kernel/threads-max: "16512444"  # Maximum threads for parallel GPU workloads
+          /proc/sys/sunrpc/rdma_max_inline_read: "4096"  # RDMA inline read size for GPU-to-GPU transfers
+          /proc/sys/sunrpc/rdma_max_inline_write: "4096"  # RDMA inline write size for efficient GPU communication
+          /proc/sys/sunrpc/rdma_slot_table_entries: "128"  # RDMA connection slots for multi-node GPU clusters
+          /proc/sys/sunrpc/tcp_max_slot_table_entries: "65536"  # TCP RPC connection slots for distributed GPU training
+          /proc/sys/sunrpc/transports/rdma: "1048576"  # RDMA transport buffer size for GPUDirect transfers
+          /proc/sys/sunrpc/transports/tcp: "1048576"  # TCP transport buffer size for RPC over network
+          /proc/sys/vm/dirty_background_ratio: "10"  # Background writeback threshold for GPU checkpoint files
+          /proc/sys/vm/dirty_ratio: "20"  # Foreground writeback threshold for GPU storage operations
+          /proc/sys/vm/max_map_count: "262144"  # Memory mapping limit for GPU memory allocations
+          /proc/sys/vm/nr_hugepages: "15841"  # Pre-allocated 2MB hugepages for reduced TLB misses in GPU memory
+          /proc/sys/vm/overcommit_memory: "1"  # Always allow memory overcommit for flexible GPU container allocation
+          /proc/sys/vm/swappiness: "60"  # Swap tendency (lower values keep GPU-related memory resident)
+          /proc/sys/vm/zone_reclaim_mode: "0"  # Disable NUMA zone reclaim for consistent cross-node GPU access
+  - type: K8s
+    subtypes:
+      - data:
+          version: v1.33.5  # Kubernetes version for GPU orchestration
+  - type: Image
+    subtypes:
+      - data:
+          container-toolkit: v1.17.8  # NVIDIA container runtime for GPU access in containers
+          dcgm: 4.3.1-1  # Data Center GPU Manager for GPU health monitoring and diagnostics
+          dcgm-exporter: "4.3.1"  # Prometheus exporter for GPU metrics and utilization
+          driver: "580.82.07"  # NVIDIA GPU driver for kernel-level GPU operations
+          gdrdrv: v2.5.1  # GPUDirect RDMA driver for zero-copy GPU-to-NIC transfers
+          gpu-operator: v25.3.3  # Orchestrates GPU stack components deployment and lifecycle
+          gpu-operator-validator: v25.3.3  # Validates GPU stack configuration for optimal performance
+          k8s-device-plugin: v0.17.4  # Kubernetes device plugin for GPU resource allocation and scheduling
+          k8s-dra-driver-gpu: v25.8.0  # Dynamic Resource Allocation driver for advanced GPU scheduling
+          k8s-driver-manager: v0.8.1  # Manages GPU driver updates and versioning
+          k8s-mig-manager: v0.12.3  # Multi-Instance GPU manager for GPU partitioning and sharing
+          mpi-operator: "0.6"  # MPI job orchestration for distributed multi-GPU training
+          node-feature-discovery: v0.17.3  # Discovers GPU hardware features for optimal workload placement
+          training-operator: v1  # Kubernetes operator for distributed ML training on GPUs
+  - type: GPU
+    subtypes:
+      - data:
+          addressing-mode: ATS  # Address Translation Services enables efficient GPU access to system memory via IOMMU
+          cuda-version: "13.1"  # CUDA toolkit version determining available GPU programming features and optimizations
+          display-active: Disabled  # GPU dedicated to compute workloads without display overhead
+          driver-version: "580.82.07"  # Kernel driver version providing GPU hardware access and performance optimizations
+          gsp-firmware-version: "580.82.07"  # GPU System Processor firmware managing GPU scheduling and resource allocation
+          persistence-mode: Disabled  # Controls GPU state retention (enabled mode reduces initialization latency)
+          vbios-version: 97.00.B9.00.69  # GPU BIOS firmware version determining hardware initialization and clock settings
+overlays:
+  - key:
+      service: eks
+      os: ubuntu
+    types:
+      - type: Grub
+        subtypes:
+          - data:
+              BOOT_IMAGE: /boot/vmlinuz-6.8.0-1028-aws  # AWS-optimized kernel image version
+  - key:
+      service: eks
+      gpu: gb200
+    types:
+      - type: K8s
+        subtypes:
+          - data:
+              version: v1.33.5-eks  # AWS EKS Kubernetes version for GPU orchestration
+      - type: KMod
+        subtypes:
+          - data:
+              efa: true  # AWS EFA support for GPU clusters
+      - type: Image
+        subtypes:
+          - data:
+              aws-efa-k8s-device-plugin: v0.5.3  # EFA device plugin for high-speed GPU-to-GPU networking

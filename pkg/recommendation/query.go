@@ -9,13 +9,17 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/version"
 )
 
+const (
+	anyValue = "any"
+)
+
 // Query represents a recommendation query with various context parameters.
 type Query struct {
 	// Os is the operating system family (e.g., ubuntu, cos)
 	Os OsFamily `json:"os,omitempty"`
 
 	// OsVersion is the operating system version (e.g., 22.04)
-	OsVersion version.Version `json:"osVersion,omitempty"`
+	OsVersion version.Version `json:"osv,omitempty"`
 
 	// Kernel is the running kernel version (e.g., 5.15.0)
 	Kernel version.Version `json:"kernel,omitempty"`
@@ -33,10 +37,98 @@ type Query struct {
 	Intent IntentType `json:"intent,omitempty"`
 }
 
+// IsMatch checks if the query matches another query, treating "any" values as wildcards.
+func (q *Query) IsMatch(other *Query) bool {
+	leftOS := q.Os
+	if leftOS == "" {
+		leftOS = OSAny
+	}
+	rightOS := other.Os
+	if rightOS == "" {
+		rightOS = OSAny
+	}
+	if leftOS != OSAny && rightOS != OSAny && leftOS != rightOS {
+		return false
+	}
+	if q.OsVersion.Precision != 0 && other.OsVersion.Precision != 0 && q.OsVersion != other.OsVersion {
+		return false
+	}
+	if q.Kernel.Precision != 0 && other.Kernel.Precision != 0 && q.Kernel != other.Kernel {
+		return false
+	}
+	leftService := q.Service
+	if leftService == "" {
+		leftService = ServiceAny
+	}
+	rightService := other.Service
+	if rightService == "" {
+		rightService = ServiceAny
+	}
+	if leftService != ServiceAny && rightService != ServiceAny && leftService != rightService {
+		return false
+	}
+	if q.K8s.Precision != 0 && other.K8s.Precision != 0 && q.K8s != other.K8s {
+		return false
+	}
+	leftGPU := q.GPU
+	if leftGPU == "" {
+		leftGPU = GPUAny
+	}
+	rightGPU := other.GPU
+	if rightGPU == "" {
+		rightGPU = GPUAny
+	}
+	if leftGPU != GPUAny && rightGPU != GPUAny && leftGPU != rightGPU {
+		return false
+	}
+	leftIntent := q.Intent
+	if leftIntent == "" {
+		leftIntent = IntentAny
+	}
+	rightIntent := other.Intent
+	if rightIntent == "" {
+		rightIntent = IntentAny
+	}
+	if leftIntent != IntentAny && rightIntent != IntentAny && leftIntent != rightIntent {
+		return false
+	}
+	return true
+}
+
 // String returns a human-readable representation of the query.
 func (q *Query) String() string {
 	return fmt.Sprintf("OS: %s %s, Kernel: %s, Service: %s, K8s: %s, GPU: %s, Intent: %s",
-		q.Os, q.OsVersion, q.Kernel, q.Service, q.K8s, q.GPU, q.Intent)
+		normalizeValue(q.Os),
+		normalizeVersionValue(q.OsVersion),
+		normalizeVersionValue(q.Kernel),
+		normalizeValue(q.Service),
+		normalizeVersionValue(q.K8s),
+		normalizeValue(q.GPU),
+		normalizeValue(q.Intent),
+	)
+}
+
+// normalizeValue normalizes a string value for key generation.
+// If the value is empty or only whitespace, it returns "any".
+func normalizeValue[T ~string](val T) string {
+	var zero T
+	if val == zero {
+		return anyValue
+	}
+	v := strings.TrimSpace(string(val))
+	if v == "" {
+		return anyValue
+	}
+	return strings.ToLower(v)
+}
+
+// normalizeVersionValue normalizes a version value for key generation.
+// If the version has zero precision, it returns "any".
+func normalizeVersionValue(val version.Version) string {
+	if val.Precision == 0 {
+		return anyValue
+	}
+	return normalizeValue(strings.TrimSpace(val.String()))
 }
 
 // QueryParameterType represents the type of query parameter.
@@ -54,7 +146,7 @@ const (
 type OsFamily string
 
 const (
-	OSAny    OsFamily = "any"
+	OSAny    OsFamily = anyValue
 	OSUbuntu OsFamily = "ubuntu"
 	OSCOS    OsFamily = "cos"
 )
@@ -101,7 +193,7 @@ func ParseOsFamily(list url.Values) (OsFamily, error) {
 type ServiceType string
 
 const (
-	ServiceSM  ServiceType = "self"
+	ServiceAny ServiceType = anyValue
 	ServiceEKS ServiceType = "eks"
 	ServiceGKE ServiceType = "gke"
 )
@@ -114,7 +206,7 @@ func (s ServiceType) String() string {
 // IsValid returns true if the service type is a valid supported value.
 func (s ServiceType) IsValid() bool {
 	switch s {
-	case ServiceSM, ServiceEKS, ServiceGKE:
+	case ServiceAny, ServiceEKS, ServiceGKE:
 		return true
 	default:
 		return false
@@ -123,14 +215,14 @@ func (s ServiceType) IsValid() bool {
 
 // SupportedServiceTypes returns all supported service type values.
 func SupportedServiceTypes() []ServiceType {
-	return []ServiceType{ServiceSM, ServiceEKS, ServiceGKE}
+	return []ServiceType{ServiceAny, ServiceEKS, ServiceGKE}
 }
 
 // ParseServiceType parses the service type from query parameters.
 func ParseServiceType(list url.Values) (ServiceType, error) {
 	svcStr := strings.ToLower(list.Get(QueryParamEnvironment))
 	if svcStr == "" {
-		return ServiceSM, nil
+		return ServiceAny, nil
 	}
 
 	svc := ServiceType(svcStr)
@@ -148,7 +240,7 @@ func ParseServiceType(list url.Values) (ServiceType, error) {
 type GPUType string
 
 const (
-	GPUAny  GPUType = "any"
+	GPUAny  GPUType = anyValue
 	GPUH100 GPUType = "h100"
 	GPUB200 GPUType = "gb200"
 )
@@ -195,7 +287,7 @@ func ParseGPUType(list url.Values) (GPUType, error) {
 type IntentType string
 
 const (
-	IntentAny       IntentType = "any"
+	IntentAny       IntentType = anyValue
 	IntentTraining  IntentType = "training"
 	IntentInference IntentType = "inference"
 )
