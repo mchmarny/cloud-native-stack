@@ -10,8 +10,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Type represents the type of measurement.
 type Type string
 
+// String returns the string representation of the Type.
 func (mt Type) String() string {
 	return string(mt)
 }

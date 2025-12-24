@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/client"
+	"github.com/NVIDIA/cloud-native-stack/pkg/k8s/client"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"k8s.io/client-go/kubernetes"
 )

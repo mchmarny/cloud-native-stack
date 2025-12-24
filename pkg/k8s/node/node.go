@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/client"
+	"github.com/NVIDIA/cloud-native-stack/pkg/k8s/client"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

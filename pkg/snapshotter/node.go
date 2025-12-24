@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector"
+	"github.com/NVIDIA/cloud-native-stack/pkg/k8s/node"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
-	"github.com/NVIDIA/cloud-native-stack/pkg/node"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 
 	"golang.org/x/sync/errgroup"
