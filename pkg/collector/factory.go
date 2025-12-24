@@ -22,6 +22,8 @@ func NewDefaultFactory() *DefaultFactory {
 	return &DefaultFactory{
 		SystemDServices: []string{
 			"containerd.service",
+			"docker.service",
+			"kubelet.service",
 		},
 	}
 }

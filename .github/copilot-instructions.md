@@ -44,4 +44,4 @@ NVIDIA Cloud Native Stack (CNS) is a reference architecture and toolkit for depl
 - To customize installation, modify playbooks in `docs/playbooks/` and hosts in `docs/playbooks/hosts`.
 
 ---
-For further details, see the main [README.md](../../README.md) and [docs/playbooks/README.md](../../docs/playbooks/readme.md).
+For further details, see the main [README.md](../README.md) and [docs/playbooks/README.md](../docs/playbooks/readme.md).

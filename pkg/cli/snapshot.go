@@ -5,64 +5,60 @@ SPDX-License-Identifier: Apache-2.0
 package cli
 
 import (
+	"context"
 	"fmt"
+
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
-
-	"github.com/spf13/cobra"
 )
 
-var (
-	systemdServices []string
-)
-
-// snapshotCmd represents the snapshot command
-var snapshotCmd = &cobra.Command{
-	Use:     "snapshot",
-	Aliases: []string{"snap"},
-	GroupID: "functional",
-	Short:   "Capture system configuration snapshot",
-	Long: `Capture a comprehensive snapshot of system configuration including:
-  - Loaded kernel modules
-  - SystemD service configurations
+func snapshotCmd() *cli.Command {
+	return &cli.Command{
+		Name:                  "snapshot",
+		Aliases:               []string{"snap"},
+		EnableShellCompletion: true,
+		Usage:                 "Capture system configuration snapshot",
+		Description: `Capture a comprehensive snapshot of system configuration including:
+  - CPU and GPU settings
   - GRUB boot parameters
+  - Kubernetes cluster configuration
+  - Loaded kernel modules
   - Sysctl kernel parameters
+  - SystemD service configurations
 
 The snapshot can be output in JSON, YAML, or table format.`,
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		ctx := cmd.Context()
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "output",
+				Usage: "output file path (default: stdout)",
+			},
+			&cli.StringFlag{
+				Name:  "format",
+				Value: "json",
+				Usage: "output format (json, yaml, table)",
+			},
+		},
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			// Parse output format
+			outFormat := serializer.Format(cmd.String("format"))
+			if outFormat.IsUnknown() {
+				return fmt.Errorf("unknown output format: %q", outFormat)
+			}
 
-		// Parse output format
-		outFormat := serializer.Format(format)
-		if outFormat.IsUnknown() {
-			return fmt.Errorf("unknown output format: %q", outFormat)
-		}
+			// Create factory with configured services
+			factory := collector.NewDefaultFactory()
 
-		// Create factory with configured services
-		factory := &collector.DefaultFactory{
-			SystemDServices: systemdServices,
-		}
+			// Create and run snapshotter
+			ns := snapshotter.NodeSnapshotter{
+				Version:    version,
+				Factory:    factory,
+				Serializer: serializer.NewFileWriterOrStdout(outFormat, cmd.String("output")),
+			}
 
-		// Create and run snapshotter
-		ns := snapshotter.NodeSnapshotter{
-			Version:    version,
-			Factory:    factory,
-			Serializer: serializer.NewFileWriterOrStdout(outFormat, output),
-		}
-
-		return ns.Run(ctx)
-	},
-}
-
-func init() {
-	// Define output format flag
-	snapshotCmd.Flags().StringVarP(&output, "output", "", "", "output file path (default: stdout)")
-	snapshotCmd.Flags().StringVarP(&format, "format", "", "json", "output format (json, yaml, table)")
-
-	// Define systemd services to snapshot
-	snapshotCmd.Flags().StringSliceVar(&systemdServices, "systemd-services",
-		[]string{"containerd.service", "docker.service", "kubelet.service"},
-		"systemd services to snapshot")
+			return ns.Run(ctx)
+		},
+	}
 }

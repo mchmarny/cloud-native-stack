@@ -9,12 +9,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/signal"
-	"strings"
-	"syscall"
 
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/logging"
 )
@@ -29,110 +25,64 @@ var (
 	version = versionDefault
 	commit  = "unknown"
 	date    = "unknown"
-
-	cfgFile  string
-	logLevel string
-
-	output string
-	format string
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   name,
-	Short: "eidos - Cloud Native Stack CLI",
-	Long: fmt.Sprintf(`eidos - Cloud Native Stack CLI (version: %s, commit: %s, built: %s)`,
-		version, commit, date),
-}
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// Execute starts the CLI application.
+// This is called by main.main().
 func Execute() {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	cmd := &cli.Command{
+		Name:                  name,
+		Usage:                 "Cloud Native Stack CLI",
+		Version:               fmt.Sprintf("%s (commit: %s, date: %s)", version, commit, date),
+		EnableShellCompletion: true,
+		HideHelpCommand:       true,
+		Metadata: map[string]interface{}{
+			"git-commit": commit,
+			"build-date": date,
+		},
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "debug",
+				Usage:   "enable debug logging",
+				Sources: cli.EnvVars("EIDOS_DEBUG"),
+			},
+		},
+		Before: func(ctx context.Context, c *cli.Command) (context.Context, error) {
+			isDebug := c.Bool("debug")
+			logLevel := "info"
+			if isDebug {
+				logLevel = "debug"
+			}
+			logging.SetDefaultStructuredLoggerWithLevel(name, version, logLevel)
+			slog.Debug("starting",
+				"name", name,
+				"version", version,
+				"commit", commit,
+				"date", date,
+				"logLevel", logLevel)
+			return ctx, nil
+		},
+		Commands: []*cli.Command{
+			snapshotCmd(),
+			recipeCmd(),
+		},
+		ShellComplete: commandLister,
+	}
 
-	// Handle SIGINT/SIGTERM for graceful shutdown
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
-
-	go func() {
-		<-sigCh
-		fmt.Fprintln(os.Stderr, "\nReceived interrupt signal, shutting down gracefully...")
-		cancel()
-	}()
-
-	if err := rootCmd.ExecuteContext(ctx); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	if err := cmd.Run(context.Background(), os.Args); err != nil {
+		slog.Error("command failed", "error", err)
 		os.Exit(1)
 	}
 }
 
-func init() {
-	cobra.OnInitialize(initConfig, initLogger)
-
-	// Define command groups
-	rootCmd.AddGroup(
-		&cobra.Group{
-			ID:    "functional",
-			Title: "Functional Commands:",
-		},
-	)
-
-	// Note: AddCommand must be done here rather than in individual init() functions
-	// to guarantee order since Go init() execution order is undefined across files
-	rootCmd.AddCommand(snapshotCmd)
-	rootCmd.AddCommand(recipeCmd)
-	rootCmd.AddCommand(versionCmd)
-
-	// Global flags
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.eidos.yaml)")
-	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level (debug, info, warn, error)")
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-
-		// Fail fast if user-specified config doesn't exist
-		if err := viper.ReadInConfig(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error reading config file %s: %v\n", cfgFile, err)
-			os.Exit(1)
+func commandLister(_ context.Context, cmd *cli.Command) {
+	if cmd == nil || cmd.Root() == nil {
+		return
+	}
+	for _, c := range cmd.Root().Commands {
+		if c.Hidden {
+			continue
 		}
-		return
+		fmt.Println(c.Name)
 	}
-
-	// Auto-discover config
-	home, err := os.UserHomeDir()
-	if err != nil {
-		// Gracefully degrade if home directory not available
-		return
-	}
-
-	// Search config in home directory and current directory
-	viper.AddConfigPath(home)
-	viper.AddConfigPath(".")
-	viper.SetConfigType("yaml")
-	viper.SetConfigName(".eidos")
-
-	// Automatic environment variable binding
-	viper.AutomaticEnv()
-	viper.SetEnvPrefix("EIDOS")
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-
-	// If a config file is found, read it in (optional)
-	_ = viper.ReadInConfig()
-}
-
-// initLogger configures slog after Cobra parses flags/config so overrides like
-// --log-level take effect before any command executes.
-func initLogger() {
-	logging.SetDefaultStructuredLoggerWithLevel(name, version, logLevel)
-	slog.Debug("starting",
-		"name", name,
-		"version", version,
-		"commit", commit,
-		"date", date,
-		"logLevel", logLevel)
 }
