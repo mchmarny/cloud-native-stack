@@ -29,7 +29,7 @@ func TestQueryString(t *testing.T) {
 				GPU:       GPUH100,
 				Intent:    IntentTraining,
 			},
-			want: "OS: ubuntu 22.4, Kernel: 5.15.0, Service: eks, K8s: 1.28.3, GPU: h100, Intent: training",
+			want: "OS: ubuntu 22.4, Kernel: 5.15.0, Service: eks, K8s: 1.28.3, GPU: h100, Intent: training, Context: false",
 		},
 		{
 			name: "overlay subset",
@@ -37,7 +37,7 @@ func TestQueryString(t *testing.T) {
 				Os:      OSUbuntu,
 				Service: ServiceEKS,
 			},
-			want: "OS: ubuntu any, Kernel: any, Service: eks, K8s: any, GPU: any, Intent: any",
+			want: "OS: ubuntu any, Kernel: any, Service: eks, K8s: any, GPU: any, Intent: any, Context: false",
 		},
 	}
 

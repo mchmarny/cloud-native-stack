@@ -1,0 +1,178 @@
+{
+  "request": {
+    "os": "ubuntu",
+    "osv": {
+      "Major": 0,
+      "Minor": 0,
+      "Patch": 0,
+      "Precision": 0
+    },
+    "kernel": {
+      "Major": 0,
+      "Minor": 0,
+      "Patch": 0,
+      "Precision": 0
+    },
+    "k8s": {
+      "Major": 0,
+      "Minor": 0,
+      "Patch": 0,
+      "Precision": 0
+    }
+  },
+  "matchedRuleId": [],
+  "payloadVersion": "v1",
+  "generatedAt": "2025-12-24T15:39:18.780661Z",
+  "measurements": [
+    {
+      "type": "KMod",
+      "subtypes": [
+        {
+          "data": {
+            "ecc": true,
+            "gdrdrv": true,
+            "gpu_sched": true,
+            "ib_cm": true,
+            "ib_core": true,
+            "ib_iser": true,
+            "ib_uverbs": true,
+            "iw_cm": true,
+            "nvidia": true,
+            "nvidia_modeset": true,
+            "nvidia_uvm": true,
+            "rdma_cm": true,
+            "rdma_ucm": true,
+            "rpcrdma": true,
+            "sunrpc": true,
+            "ttm": true
+          }
+        }
+      ]
+    },
+    {
+      "type": "Grub",
+      "subtypes": [
+        {
+          "data": {
+            "BOOT_IMAGE": "/boot/vmlinuz-6.8.0-1028",
+            "apparmor": "1",
+            "audit": "1",
+            "audit_backlog_limit": "8192",
+            "hugepages": "5128",
+            "hugepagesz": "2M",
+            "init_on_alloc": "0",
+            "nokaslr": "",
+            "numa_balancing": "disable",
+            "security": "apparmor"
+          }
+        }
+      ]
+    },
+    {
+      "type": "SystemD",
+      "subtypes": [
+        {
+          "subtype": "containerd.service",
+          "data": {
+            "CPUAccounting": true,
+            "CPUQuotaPerSecUSec": 18446744073709551615,
+            "CPUSchedulingPolicy": "0",
+            "CPUShares": 18446744073709551615,
+            "CPUWeight": 18446744073709551615,
+            "Delegate": true,
+            "DelegateControllers": "[cpu cpuacct cpuset io blkio memory devices pids bpf-firewall bpf-devices bpf-foreign bpf-socket-bind]",
+            "EffectiveCPUs": "[255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 255 0 0 0 0 0 0]",
+            "EffectiveMemoryNodes": "[3 0 0 0 0 0 0 0]",
+            "IOSchedulingClass": "2",
+            "IOSchedulingPriority": "4",
+            "IOWeight": 18446744073709551615,
+            "LimitNOFILE": 18446744073709551615,
+            "LimitNPROC": 18446744073709551615
+          }
+        }
+      ]
+    },
+    {
+      "type": "Sysctl",
+      "subtypes": [
+        {
+          "data": {
+            "/proc/sys/fs/aio-max-nr": "65536",
+            "/proc/sys/fs/file-max": "9223372036854775807",
+            "/proc/sys/fs/inotify/max_user_watches": "524288",
+            "/proc/sys/fs/nr_open": "1048576",
+            "/proc/sys/kernel/numa_balancing": "0",
+            "/proc/sys/kernel/pid_max": "4194304",
+            "/proc/sys/kernel/sched_rt_period_us": "1000000",
+            "/proc/sys/kernel/sched_rt_runtime_us": "950000",
+            "/proc/sys/kernel/shmall": "18446744073692774399",
+            "/proc/sys/kernel/shmmax": "18446744073692774399",
+            "/proc/sys/kernel/threads-max": "16512444",
+            "/proc/sys/sunrpc/rdma_max_inline_read": "4096",
+            "/proc/sys/sunrpc/rdma_max_inline_write": "4096",
+            "/proc/sys/sunrpc/rdma_slot_table_entries": "128",
+            "/proc/sys/sunrpc/tcp_max_slot_table_entries": "65536",
+            "/proc/sys/sunrpc/transports/rdma": "1048576",
+            "/proc/sys/sunrpc/transports/tcp": "1048576",
+            "/proc/sys/vm/dirty_background_ratio": "10",
+            "/proc/sys/vm/dirty_ratio": "20",
+            "/proc/sys/vm/max_map_count": "262144",
+            "/proc/sys/vm/nr_hugepages": "15841",
+            "/proc/sys/vm/overcommit_memory": "1",
+            "/proc/sys/vm/swappiness": "60",
+            "/proc/sys/vm/zone_reclaim_mode": "0"
+          }
+        }
+      ]
+    },
+    {
+      "type": "K8s",
+      "subtypes": [
+        {
+          "data": {
+            "version": "v1.33.5"
+          }
+        }
+      ]
+    },
+    {
+      "type": "Image",
+      "subtypes": [
+        {
+          "data": {
+            "container-toolkit": "v1.17.8",
+            "dcgm": "4.3.1-1",
+            "dcgm-exporter": "4.3.1",
+            "driver": "580.82.07",
+            "gdrdrv": "v2.5.1",
+            "gpu-operator": "v25.3.3",
+            "gpu-operator-validator": "v25.3.3",
+            "k8s-device-plugin": "v0.17.4",
+            "k8s-dra-driver-gpu": "v25.8.0",
+            "k8s-driver-manager": "v0.8.1",
+            "k8s-mig-manager": "v0.12.3",
+            "mpi-operator": "0.6",
+            "node-feature-discovery": "v0.17.3",
+            "training-operator": "v1"
+          }
+        }
+      ]
+    },
+    {
+      "type": "GPU",
+      "subtypes": [
+        {
+          "data": {
+            "addressing-mode": "ATS",
+            "cuda-version": "13.1",
+            "display-active": "Disabled",
+            "driver-version": "580.82.07",
+            "gsp-firmware-version": "580.82.07",
+            "persistence-mode": "Disabled",
+            "vbios-version": "97.00.B9.00.69"
+          }
+        }
+      ]
+    }
+  ]
+}

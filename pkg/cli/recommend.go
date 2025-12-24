@@ -1,7 +1,3 @@
-/*
-Copyright © 2025 NVIDIA Corporation
-SPDX-License-Identifier: Apache-2.0
-*/
 package cli
 
 import (
@@ -24,6 +20,7 @@ var (
 	recK8s       string
 	recGPU       string
 	recIntent    string
+	recContext   bool
 
 	mu sync.RWMutex
 )
@@ -75,6 +72,7 @@ func init() {
 	recommendCmd.Flags().StringVarP(&recK8s, "k8s", "", "", "Kubernetes cluster version (e.g., v1.25.4)")
 	recommendCmd.Flags().StringVarP(&recGPU, "gpu", "", "", "GPU type (e.g., H100, GB200)")
 	recommendCmd.Flags().StringVarP(&recIntent, "intent", "", "", "Workload intent (e.g., training or inference)")
+	recommendCmd.Flags().BoolVarP(&recContext, "context", "", false, "Include context metadata in the response")
 
 	// Define output format flag specific to recommend command
 	recommendCmd.Flags().StringVarP(&output, "output", "", "", "output file path (default: stdout)")
@@ -132,6 +130,8 @@ func buildQueryFromFlags() (*recommendation.Query, error) {
 			return nil, fmt.Errorf("intent: %q, supported values: %v", recIntent, recommendation.SupportedIntentTypes())
 		}
 	}
+
+	q.IncludeContext = recContext
 
 	return q, nil
 }

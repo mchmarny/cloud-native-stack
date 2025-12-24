@@ -35,6 +35,9 @@ type Query struct {
 
 	// Intent is the workload intent (e.g., training or inference)
 	Intent IntentType `json:"intent,omitempty" yaml:"intent,omitempty"`
+
+	// IncludeContext indicates whether to include context metadata in the response
+	IncludeContext bool `json:"withContext" yaml:"withContext"`
 }
 
 func (q *Query) IsEmpty() bool {
@@ -80,7 +83,7 @@ func (q *Query) IsMatch(other *Query) bool {
 
 // String returns a human-readable representation of the query.
 func (q *Query) String() string {
-	return fmt.Sprintf("OS: %s %s, Kernel: %s, Service: %s, K8s: %s, GPU: %s, Intent: %s",
+	return fmt.Sprintf("OS: %s %s, Kernel: %s, Service: %s, K8s: %s, GPU: %s, Intent: %s, Context: %t",
 		normalizeValue(q.Os),
 		normalizeVersionValue(q.OsVersion),
 		normalizeVersionValue(q.Kernel),
@@ -88,6 +91,7 @@ func (q *Query) String() string {
 		normalizeVersionValue(q.K8s),
 		normalizeValue(q.GPU),
 		normalizeValue(q.Intent),
+		q.IncludeContext,
 	)
 }
 
@@ -116,14 +120,15 @@ func normalizeVersionValue(val version.Version) string {
 
 // QueryParameterType represents the type of query parameter.
 const (
-	QueryParamOSFamily    string = "os"
-	QueryParamOSVersion   string = "osv"
-	QueryParamKernel      string = "kernel"
-	QueryParamService     string = "service"
-	QueryParamEnvironment string = "env"
-	QueryParamKubernetes  string = "k8s"
-	QueryParamGPU         string = "gpu"
-	QueryParamIntent      string = "intent"
+	QueryParamOSFamily       string = "os"
+	QueryParamOSVersion      string = "osv"
+	QueryParamKernel         string = "kernel"
+	QueryParamService        string = "service"
+	QueryParamEnvironment    string = "env"
+	QueryParamKubernetes     string = "k8s"
+	QueryParamGPU            string = "gpu"
+	QueryParamIntent         string = "intent"
+	QueryParamIncludeContext string = "context"
 )
 
 // OsFamily represents the operating system family.
@@ -363,6 +368,11 @@ func ParseQuery(r *http.Request) (*Query, error) {
 	// Parse intent type
 	if q.Intent, err = ParseIntentType(u); err != nil {
 		return nil, err
+	}
+
+	// Parse context inclusion flag
+	if contextStr := u.Get(QueryParamIncludeContext); contextStr != "" {
+		q.IncludeContext = contextStr == "true" || contextStr == "1"
 	}
 
 	return q, nil

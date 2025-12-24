@@ -66,7 +66,25 @@ func (b *Builder) Build(q *Query) (*Recommendation, error) {
 	}
 
 	r.Measurements = merged
+
+	// Strip context if not requested
+	if !q.IncludeContext {
+		stripContext(r.Measurements)
+	}
+
 	return r, nil
+}
+
+// stripContext removes context metadata from all measurements
+func stripContext(measurements []*measurement.Measurement) {
+	for _, m := range measurements {
+		if m == nil {
+			continue
+		}
+		for i := range m.Subtypes {
+			m.Subtypes[i].Context = nil
+		}
+	}
 }
 
 func loadStore() (*Store, error) {

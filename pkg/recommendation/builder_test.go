@@ -9,10 +9,11 @@ import (
 )
 
 const (
-	version1283    = "1.28.3"
-	version1290    = "1.29.0"
-	version550     = "550"
-	measurementKey = "version"
+	version1283       = "1.28.3"
+	version1290       = "1.29.0"
+	version550        = "550"
+	measurementKey    = "version"
+	containerdService = "containerd.service"
 )
 
 func TestBuildRecommendationMergesMatchingOverlay(t *testing.T) {
@@ -253,10 +254,10 @@ func TestBuildRecommendationPreservesContext(t *testing.T) {
 	t.Cleanup(setRecommendationData(t, `base:
   - type: SystemD
     subtypes:
-      - subtype: containerd.service
+      - subtype: `+containerdService+`
         context:
           source: systemctl
-          unit: containerd.service
+          unit: `+containerdService+`
         data:
           CPUAccounting: true
           Delegate: true
@@ -266,69 +267,119 @@ overlays:
     types:
       - type: SystemD
         subtypes:
-          - subtype: containerd.service
+          - subtype: `+containerdService+`
             context:
               extraInfo: overlay-data
             data:
               CPUShares: 2048
 `))
 
-	query := &Query{Os: OSUbuntu}
-	rec, err := BuildRecommendation(query)
-	if err != nil {
-		t.Fatalf("BuildRecommendation() error = %v", err)
-	}
-
-	// Find the SystemD measurement
-	var systemdMeasurement *measurement.Measurement
-	for _, m := range rec.Measurements {
-		if m != nil && m.Type == measurement.TypeSystemD {
-			systemdMeasurement = m
-			break
+	t.Run("with context enabled", func(t *testing.T) {
+		query := &Query{Os: OSUbuntu, IncludeContext: true}
+		rec, err := BuildRecommendation(query)
+		if err != nil {
+			t.Fatalf("BuildRecommendation() error = %v", err)
 		}
-	}
 
-	if systemdMeasurement == nil {
-		t.Fatal("SystemD measurement not found in response")
-	}
-
-	// Find containerd.service subtype
-	var containerdSubtype *measurement.Subtype
-	for i := range systemdMeasurement.Subtypes {
-		if systemdMeasurement.Subtypes[i].Name == "containerd.service" {
-			containerdSubtype = &systemdMeasurement.Subtypes[i]
-			break
+		// Find the SystemD measurement
+		var systemdMeasurement *measurement.Measurement
+		for _, m := range rec.Measurements {
+			if m != nil && m.Type == measurement.TypeSystemD {
+				systemdMeasurement = m
+				break
+			}
 		}
-	}
 
-	if containerdSubtype == nil {
-		t.Fatal("containerd.service subtype not found")
-	}
+		if systemdMeasurement == nil {
+			t.Fatal("SystemD measurement not found in response")
+		}
 
-	// Verify context from base is preserved
-	if containerdSubtype.Context == nil {
-		t.Fatal("expected context to be present, got nil")
-	}
+		// Find containerd.service subtype
+		var containerdSubtype *measurement.Subtype
+		for i := range systemdMeasurement.Subtypes {
+			if systemdMeasurement.Subtypes[i].Name == containerdService {
+				containerdSubtype = &systemdMeasurement.Subtypes[i]
+				break
+			}
+		}
 
-	if source, ok := containerdSubtype.Context["source"]; !ok || source != "systemctl" {
-		t.Errorf("expected context[source]=systemctl, got %v", source)
-	}
+		if containerdSubtype == nil {
+			t.Fatal("containerd.service subtype not found")
+		}
 
-	if unit, ok := containerdSubtype.Context["unit"]; !ok || unit != "containerd.service" {
-		t.Errorf("expected context[unit]=containerd.service, got %v", unit)
-	}
+		// Verify context from base is preserved
+		if containerdSubtype.Context == nil {
+			t.Fatal("expected context to be present, got nil")
+		}
 
-	// Verify overlay context is also present
-	if extraInfo, ok := containerdSubtype.Context["extraInfo"]; !ok || extraInfo != "overlay-data" {
-		t.Errorf("expected context[extraInfo]=overlay-data from overlay, got %v", extraInfo)
-	}
+		if source, ok := containerdSubtype.Context["source"]; !ok || source != "systemctl" {
+			t.Errorf("expected context[source]=systemctl, got %v", source)
+		}
 
-	// Verify data is also merged correctly
-	if _, ok := containerdSubtype.Data["CPUAccounting"]; !ok {
-		t.Error("expected CPUAccounting from base to be present")
-	}
+		if unit, ok := containerdSubtype.Context["unit"]; !ok || unit != containerdService {
+			t.Errorf("expected context[unit]=containerd.service, got %v", unit)
+		}
 
-	if _, ok := containerdSubtype.Data["CPUShares"]; !ok {
-		t.Error("expected CPUShares from overlay to be present")
-	}
+		// Verify overlay context is also present
+		if extraInfo, ok := containerdSubtype.Context["extraInfo"]; !ok || extraInfo != "overlay-data" {
+			t.Errorf("expected context[extraInfo]=overlay-data from overlay, got %v", extraInfo)
+		}
+
+		// Verify data is also merged correctly
+		if _, ok := containerdSubtype.Data["CPUAccounting"]; !ok {
+			t.Error("expected CPUAccounting from base to be present")
+		}
+
+		if _, ok := containerdSubtype.Data["CPUShares"]; !ok {
+			t.Error("expected CPUShares from overlay to be present")
+		}
+	})
+
+	t.Run("without context (default)", func(t *testing.T) {
+		query := &Query{Os: OSUbuntu, IncludeContext: false}
+		rec, err := BuildRecommendation(query)
+		if err != nil {
+			t.Fatalf("BuildRecommendation() error = %v", err)
+		}
+
+		// Find the SystemD measurement
+		var systemdMeasurement *measurement.Measurement
+		for _, m := range rec.Measurements {
+			if m != nil && m.Type == measurement.TypeSystemD {
+				systemdMeasurement = m
+				break
+			}
+		}
+
+		if systemdMeasurement == nil {
+			t.Fatal("SystemD measurement not found in response")
+		}
+
+		// Find containerd.service subtype
+		var containerdSubtype *measurement.Subtype
+		for i := range systemdMeasurement.Subtypes {
+			if systemdMeasurement.Subtypes[i].Name == containerdService {
+				containerdSubtype = &systemdMeasurement.Subtypes[i]
+				break
+			}
+		}
+
+		if containerdSubtype == nil {
+			t.Fatal("containerd.service subtype not found")
+		}
+
+		// Verify context is stripped
+		if containerdSubtype.Context != nil {
+			t.Errorf("expected context to be nil when not requested, got %v", containerdSubtype.Context)
+		}
+
+		// Verify data is still present
+		if _, ok := containerdSubtype.Data["CPUAccounting"]; !ok {
+			t.Error("expected CPUAccounting from base to be present")
+		}
+
+		if _, ok := containerdSubtype.Data["CPUShares"]; !ok {
+			t.Error("expected CPUShares from overlay to be present")
+		}
+	})
 }
