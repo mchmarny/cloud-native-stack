@@ -26,38 +26,26 @@ All deployment, operations, and troubleshooting material now lives in [docs/READ
 
 ### Server API
 
-1. Build the binary:
-	```bash
-	go build -o bin/eidos-server ./cmd/server
-	```
-2. Export configuration (defaults live in `pkg/server/config.go`):
-	```bash
-	export PORT=8080
-	export LOG_LEVEL=info
-	```
-3. Run the server:
-	```bash
-	./bin/eidos-server
-	```
-4. Request recipe:
-	```bash
-	curl "http://localhost:8080/v1/recipe?os=ubuntu&service=eks"
-	```
+```shell
+curl "https://cns.dgxc.io"
+```
+
+All
+
+```shell
+curl -sSf "https://cns.dgxc.io/v1/recipe" | jq -r .
+```
+
+With Parameters
+
+```shell
+curl -sSf "https://cns.dgxc.io/v1/recipe?os=ubuntu&gpu=gb200" | jq -r .
+```
+
 
 ### CLI (`eidos`)
 
-1. Build the CLI:
-	```bash
-	go build -o bin/eidos ./cmd/eidos
-	```
-2. Get help:
-	```bash
-	./bin/eidos --help
-	```
-3. Snapshot the local system (example):
-	```bash
-	./bin/eidos snapshot --output snapshot.json
-	```
+TODO: Describe CLI functionality
 
 ## Contributing
 
