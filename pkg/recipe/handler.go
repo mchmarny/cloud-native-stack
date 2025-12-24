@@ -35,7 +35,7 @@ func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := b.Build(q)
+	resp, err := b.Build(r.Context(), q)
 	if err != nil {
 		server.WriteError(w, r, http.StatusInternalServerError, server.ErrCodeInternalError,
 			"Failed to build recipe", true, map[string]interface{}{

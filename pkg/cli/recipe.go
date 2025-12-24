@@ -85,7 +85,7 @@ The recipe can be output in JSON, YAML, or table format.`,
 				return fmt.Errorf("error parsing recipe input parameter: %w", err)
 			}
 
-			rec, err := recipe.BuildRecipe(q)
+			rec, err := recipe.BuildRecipe(ctx, q)
 			if err != nil {
 				return fmt.Errorf("error building recipe: %w", err)
 			}

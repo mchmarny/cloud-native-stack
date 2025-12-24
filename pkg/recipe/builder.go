@@ -1,6 +1,7 @@
 package recipe
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"sync"
@@ -32,17 +33,17 @@ type Builder struct {
 // BuildRecipe creates a Recipe based on the query using a shared
 // default Builder instance. Prefer using Builder directly when custom settings
 // like cache TTL are required.
-func BuildRecipe(q *Query) (*Recipe, error) {
-	return defaultBuilder.Build(q)
+func BuildRecipe(ctx context.Context, q *Query) (*Recipe, error) {
+	return defaultBuilder.Build(ctx, q)
 }
 
 // Build creates a Recipe payload for the provided query.
-func (b *Builder) Build(q *Query) (*Recipe, error) {
+func (b *Builder) Build(ctx context.Context, q *Query) (*Recipe, error) {
 	if q == nil {
 		return nil, fmt.Errorf("query cannot be nil")
 	}
 
-	store, err := loadStore()
+	store, err := loadStore(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load recipe store: %w", err)
 	}
@@ -87,7 +88,7 @@ func stripContext(measurements []*measurement.Measurement) {
 	}
 }
 
-func loadStore() (*Store, error) {
+func loadStore(_ context.Context) (*Store, error) {
 	storeOnce.Do(func() {
 		var store Store
 		if err := yaml.Unmarshal(recipeData, &store); err != nil {
