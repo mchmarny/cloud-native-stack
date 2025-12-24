@@ -17,7 +17,7 @@ const (
 
 var (
 	// overridden during build with ldflags to reflect actual version info
-	// e.g., -X "github.com/NVIDIA/cloud-native-stack/pkg/server.version=1.0.0"
+	// e.g., -X "github.com/NVIDIA/cloud-native-stack/pkg/api.version=1.0.0"
 	version = versionDefault
 	commit  = "unknown"
 	date    = "unknown"

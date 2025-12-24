@@ -118,12 +118,17 @@ func cloneSubtype(st measurement.Subtype) measurement.Subtype {
 	cloned := measurement.Subtype{
 		Name: st.Name,
 	}
-	if len(st.Data) == 0 {
-		return cloned
+	if len(st.Data) > 0 {
+		cloned.Data = make(map[string]measurement.Reading, len(st.Data))
+		for k, v := range st.Data {
+			cloned.Data[k] = v
+		}
 	}
-	cloned.Data = make(map[string]measurement.Reading, len(st.Data))
-	for k, v := range st.Data {
-		cloned.Data[k] = v
+	if len(st.Context) > 0 {
+		cloned.Context = make(map[string]string, len(st.Context))
+		for k, v := range st.Context {
+			cloned.Context[k] = v
+		}
 	}
 	return cloned
 }
@@ -177,15 +182,22 @@ func mergeMeasurementSubtypes(target, overlay *measurement.Measurement) {
 		}
 	}
 	for _, overlaySubtype := range overlay.Subtypes {
-		if overlaySubtype.Data == nil {
-			continue
-		}
 		if targetSubtype, ok := subtypeIndex[overlaySubtype.Name]; ok {
+			// Merge data
 			if targetSubtype.Data == nil {
-				targetSubtype.Data = make(map[string]measurement.Reading, len(overlaySubtype.Data))
+				targetSubtype.Data = make(map[string]measurement.Reading)
 			}
-			for key, reading := range overlaySubtype.Data {
-				targetSubtype.Data[key] = reading
+			if overlaySubtype.Data != nil {
+				for key, reading := range overlaySubtype.Data {
+					targetSubtype.Data[key] = reading
+				}
+			}
+			// Merge context
+			if targetSubtype.Context == nil && len(overlaySubtype.Context) > 0 {
+				targetSubtype.Context = make(map[string]string)
+			}
+			for key, value := range overlaySubtype.Context {
+				targetSubtype.Context[key] = value
 			}
 			continue
 		}

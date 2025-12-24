@@ -248,3 +248,87 @@ func measurementValueOrNil(measurements []*measurement.Measurement, typ measurem
 	}
 	return nil
 }
+
+func TestBuildRecommendationPreservesContext(t *testing.T) {
+	t.Cleanup(setRecommendationData(t, `base:
+  - type: SystemD
+    subtypes:
+      - subtype: containerd.service
+        context:
+          source: systemctl
+          unit: containerd.service
+        data:
+          CPUAccounting: true
+          Delegate: true
+overlays:
+  - key:
+      os: ubuntu
+    types:
+      - type: SystemD
+        subtypes:
+          - subtype: containerd.service
+            context:
+              extraInfo: overlay-data
+            data:
+              CPUShares: 2048
+`))
+
+	query := &Query{Os: OSUbuntu}
+	rec, err := BuildRecommendation(query)
+	if err != nil {
+		t.Fatalf("BuildRecommendation() error = %v", err)
+	}
+
+	// Find the SystemD measurement
+	var systemdMeasurement *measurement.Measurement
+	for _, m := range rec.Measurements {
+		if m != nil && m.Type == measurement.TypeSystemD {
+			systemdMeasurement = m
+			break
+		}
+	}
+
+	if systemdMeasurement == nil {
+		t.Fatal("SystemD measurement not found in response")
+	}
+
+	// Find containerd.service subtype
+	var containerdSubtype *measurement.Subtype
+	for i := range systemdMeasurement.Subtypes {
+		if systemdMeasurement.Subtypes[i].Name == "containerd.service" {
+			containerdSubtype = &systemdMeasurement.Subtypes[i]
+			break
+		}
+	}
+
+	if containerdSubtype == nil {
+		t.Fatal("containerd.service subtype not found")
+	}
+
+	// Verify context from base is preserved
+	if containerdSubtype.Context == nil {
+		t.Fatal("expected context to be present, got nil")
+	}
+
+	if source, ok := containerdSubtype.Context["source"]; !ok || source != "systemctl" {
+		t.Errorf("expected context[source]=systemctl, got %v", source)
+	}
+
+	if unit, ok := containerdSubtype.Context["unit"]; !ok || unit != "containerd.service" {
+		t.Errorf("expected context[unit]=containerd.service, got %v", unit)
+	}
+
+	// Verify overlay context is also present
+	if extraInfo, ok := containerdSubtype.Context["extraInfo"]; !ok || extraInfo != "overlay-data" {
+		t.Errorf("expected context[extraInfo]=overlay-data from overlay, got %v", extraInfo)
+	}
+
+	// Verify data is also merged correctly
+	if _, ok := containerdSubtype.Data["CPUAccounting"]; !ok {
+		t.Error("expected CPUAccounting from base to be present")
+	}
+
+	if _, ok := containerdSubtype.Data["CPUShares"]; !ok {
+		t.Error("expected CPUShares from overlay to be present")
+	}
+}

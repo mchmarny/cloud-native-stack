@@ -64,8 +64,9 @@ type Subtype struct {
 func (st *Subtype) UnmarshalJSON(data []byte) error {
 	// Create a temporary struct with raw data
 	var tmp struct {
-		Name string         `json:"subtype"`
-		Data map[string]any `json:"data"`
+		Name    string            `json:"subtype"`
+		Data    map[string]any    `json:"data"`
+		Context map[string]string `json:"context"`
 	}
 
 	if err := json.Unmarshal(data, &tmp); err != nil {
@@ -73,6 +74,7 @@ func (st *Subtype) UnmarshalJSON(data []byte) error {
 	}
 
 	st.Name = tmp.Name
+	st.Context = tmp.Context
 	st.Data = make(map[string]Reading)
 
 	// Convert each value to a Reading using ToReading
@@ -87,8 +89,9 @@ func (st *Subtype) UnmarshalJSON(data []byte) error {
 func (st *Subtype) UnmarshalYAML(node *yaml.Node) error {
 	// Create a temporary struct with raw data
 	var tmp struct {
-		Name string         `yaml:"subtype"`
-		Data map[string]any `yaml:"data"`
+		Name    string            `yaml:"subtype"`
+		Data    map[string]any    `yaml:"data"`
+		Context map[string]string `yaml:"context"`
 	}
 
 	if err := node.Decode(&tmp); err != nil {
@@ -96,6 +99,7 @@ func (st *Subtype) UnmarshalYAML(node *yaml.Node) error {
 	}
 
 	st.Name = tmp.Name
+	st.Context = tmp.Context
 	st.Data = make(map[string]Reading)
 
 	// Convert each value to a Reading using ToReading
