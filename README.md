@@ -15,7 +15,7 @@ NVIDIA Cloud Native Stack (CNS) combines production-ready documentation with Go-
 Quickest (and easiest) way to install `eidos` CLI is to use the automated installer. Copy and run the following command:
 
 ```shell
-curl -sfL https://raw.githubusercontent.com/mchmarny/cloud-native-stack/refs/heads/main/installer | bash -s --
+curl -sfL https://raw.githubusercontent.com/mchmarny/cloud-native-stack/refs/heads/main/install | bash -s --
 ```
 
 ## Documentation
