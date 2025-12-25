@@ -89,35 +89,57 @@ func (k *Collector) collectClusterPolicies(ctx context.Context) (map[string]meas
 					return nil, err
 				}
 
-				// Create a unique key with group prefix to avoid conflicts
-				policyKey := fmt.Sprintf("%s/%s", gv.Group, policy.GetName())
-				if policy.GetNamespace() != "" {
-					policyKey = fmt.Sprintf("%s/%s/%s", gv.Group, policy.GetNamespace(), policy.GetName())
-				}
-
-				// Extract spec as JSON for detailed information
+				// Extract spec for detailed information
 				spec, found, err := unstructured.NestedMap(policy.Object, "spec")
 				if err != nil || !found {
 					slog.Warn("failed to extract spec from clusterpolicy",
-						slog.String("name", policyKey),
+						slog.String("name", policy.GetName()),
 						slog.String("error", fmt.Sprintf("%v", err)))
 					continue
 				}
 
-				// Convert spec to JSON string for storage
-				specJSON, err := json.Marshal(spec)
-				if err != nil {
-					slog.Warn("failed to marshal clusterpolicy spec",
-						slog.String("name", policyKey),
-						slog.String("error", err.Error()))
-					continue
-				}
-
-				policyData[policyKey] = measurement.Str(string(specJSON))
+				// Flatten the spec into individual key-value pairs
+				flattenSpec(spec, "", policyData)
 			}
 		}
 	}
 
 	slog.Debug("collected cluster policies", slog.Int("count", len(policyData)))
 	return policyData, nil
+}
+
+// flattenSpec recursively flattens a nested map into dot-notation keys.
+// Example: {"driver": {"version": "580.82.07"}} becomes "driver.version": "580.82.07"
+func flattenSpec(data map[string]interface{}, prefix string, result map[string]measurement.Reading) {
+	for key, value := range data {
+		fullKey := key
+		if prefix != "" {
+			fullKey = prefix + "." + key
+		}
+
+		switch v := value.(type) {
+		case map[string]interface{}:
+			// Recursively flatten nested maps
+			flattenSpec(v, fullKey, result)
+		case []interface{}:
+			// Convert arrays to JSON strings for readability
+			if len(v) > 0 {
+				jsonBytes, err := json.Marshal(v)
+				if err == nil {
+					result[fullKey] = measurement.Str(string(jsonBytes))
+				}
+			}
+		case string:
+			result[fullKey] = measurement.Str(v)
+		case bool:
+			result[fullKey] = measurement.Str(fmt.Sprintf("%t", v))
+		case float64:
+			result[fullKey] = measurement.Str(fmt.Sprintf("%v", v))
+		case int, int64:
+			result[fullKey] = measurement.Str(fmt.Sprintf("%d", v))
+		default:
+			// For any other type, convert to string
+			result[fullKey] = measurement.Str(fmt.Sprintf("%v", v))
+		}
+	}
 }
