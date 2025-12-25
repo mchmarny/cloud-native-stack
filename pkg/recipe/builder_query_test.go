@@ -38,7 +38,7 @@ func TestQueryBuilder_WithOSVersion(t *testing.T) {
 	}
 
 	expectedVersion, _ := version.ParseVersion("22.04")
-	if query.OsVersion != expectedVersion {
+	if query.OsVersion == nil || *query.OsVersion != expectedVersion {
 		t.Errorf("expected OsVersion %v, got %v", expectedVersion, query.OsVersion)
 	}
 }
@@ -49,7 +49,7 @@ func TestQueryBuilder_WithKernel(t *testing.T) {
 		Build()
 
 	expectedVersion, _ := version.ParseVersion("5.15.0")
-	if query.Kernel != expectedVersion {
+	if query.Kernel == nil || *query.Kernel != expectedVersion {
 		t.Errorf("expected Kernel %v, got %v", expectedVersion, query.Kernel)
 	}
 }
@@ -60,7 +60,7 @@ func TestQueryBuilder_WithK8s(t *testing.T) {
 		Build()
 
 	expectedVersion, _ := version.ParseVersion("1.28.3")
-	if query.K8s != expectedVersion {
+	if query.K8s == nil || *query.K8s != expectedVersion {
 		t.Errorf("expected K8s %v, got %v", expectedVersion, query.K8s)
 	}
 }
@@ -110,12 +110,12 @@ func TestQueryBuilder_Chaining(t *testing.T) {
 	}
 
 	osVersion, _ := version.ParseVersion("24.04")
-	if query.OsVersion != osVersion {
+	if query.OsVersion == nil || *query.OsVersion != osVersion {
 		t.Errorf("expected OsVersion %v, got %v", osVersion, query.OsVersion)
 	}
 
 	kernel, _ := version.ParseVersion("6.8.0")
-	if query.Kernel != kernel {
+	if query.Kernel == nil || *query.Kernel != kernel {
 		t.Errorf("expected Kernel %v, got %v", kernel, query.Kernel)
 	}
 
@@ -124,7 +124,7 @@ func TestQueryBuilder_Chaining(t *testing.T) {
 	}
 
 	k8s, _ := version.ParseVersion("1.29.0")
-	if query.K8s != k8s {
+	if query.K8s == nil || *query.K8s != k8s {
 		t.Errorf("expected K8s %v, got %v", k8s, query.K8s)
 	}
 
@@ -148,16 +148,15 @@ func TestQueryBuilder_InvalidVersionsIgnored(t *testing.T) {
 		WithK8s("not-a-version").
 		Build()
 
-	// Invalid versions should be ignored, leaving zero values
-	var zeroVersion version.Version
-	if query.OsVersion != zeroVersion {
-		t.Errorf("expected OsVersion to be zero value, got %v", query.OsVersion)
+	// Invalid versions should be ignored, leaving nil pointers
+	if query.OsVersion != nil {
+		t.Errorf("expected OsVersion to be nil, got %v", query.OsVersion)
 	}
-	if query.Kernel != zeroVersion {
-		t.Errorf("expected Kernel to be zero value, got %v", query.Kernel)
+	if query.Kernel != nil {
+		t.Errorf("expected Kernel to be nil, got %v", query.Kernel)
 	}
-	if query.K8s != zeroVersion {
-		t.Errorf("expected K8s to be zero value, got %v", query.K8s)
+	if query.K8s != nil {
+		t.Errorf("expected K8s to be nil, got %v", query.K8s)
 	}
 }
 

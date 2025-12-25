@@ -13,10 +13,10 @@ const (
 
 // Recipe represents the recipe response structure.
 type Recipe struct {
-	Request        Query                      `json:"request" yaml:"request"`
-	MatchedRules   []string                   `json:"matchedRuleId" yaml:"matchedRuleId"`
 	PayloadVersion string                     `json:"payloadVersion" yaml:"payloadVersion"`
 	GeneratedAt    time.Time                  `json:"generatedAt" yaml:"generatedAt"`
+	Request        *Query                     `json:"request,omitempty" yaml:"request,omitempty"`
+	MatchedRules   []string                   `json:"matchedRules,omitempty" yaml:"matchedRules,omitempty"`
 	Measurements   []*measurement.Measurement `json:"measurements" yaml:"measurements"`
 }
 

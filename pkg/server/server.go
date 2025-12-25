@@ -116,7 +116,7 @@ func (s *Server) setReady(ready bool) {
 func (s *Server) Start(ctx context.Context) error {
 	s.setReady(true)
 
-	fmt.Printf("starting server on %s\n", s.httpServer.Addr)
+	slog.Debug("server start", "port", s.httpServer.Addr)
 
 	// Start server in goroutine
 	errChan := make(chan error, 1)

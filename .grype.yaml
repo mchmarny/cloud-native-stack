@@ -1,6 +1,11 @@
 ignore:
-  - vulnerability: GHSA-qxp5-gwg8-xv66
+  - vulnerability: GHSA-j5w8-q4qc-rx2x
     package:
-      name: golang.org/x/net
-      version: v0.30.0
+      name: golang.org/x/crypto
+      version: v0.43.0
+    until: "2025-12-31"
+  - vulnerability: GHSA-f6x5-jh6r-wrfv
+    package:
+      name: golang.org/x/crypto
+      version: v0.43.0
     until: "2025-12-31"

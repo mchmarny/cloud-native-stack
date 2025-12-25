@@ -42,7 +42,7 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: eidos
-          image: ghcr.io/mchmarny/eidos-api-server:v0.5.16
+          image: ghcr.io/mchmarny/eidos-api-server:v0.6.0
           command: ["/bin/sh", "-c"]
           env:
             - name: NODE_NAME

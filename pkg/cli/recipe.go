@@ -99,7 +99,6 @@ The recipe can be output in JSON, YAML, or table format.`,
 // buildQueryFromCmd constructs a recipe.Query from CLI command.
 func buildQueryFromCmd(cmd *cli.Command) (*recipe.Query, error) {
 	q := &recipe.Query{}
-	var err error
 
 	if recOs := cmd.String("os"); recOs != "" {
 		q.Os = recipe.OsFamily(recOs)
@@ -108,22 +107,24 @@ func buildQueryFromCmd(cmd *cli.Command) (*recipe.Query, error) {
 		}
 	}
 	if recOsVersion := cmd.String("osv"); recOsVersion != "" {
-		q.OsVersion, err = ver.ParseVersion(recOsVersion)
+		v, err := ver.ParseVersion(recOsVersion)
 		if err != nil {
 			if errors.Is(err, ver.ErrNegativeComponent) {
 				return nil, fmt.Errorf("os version cannot contain negative numbers: %s", recOsVersion)
 			}
 			return nil, fmt.Errorf("invalid os version %q: %w", recOsVersion, err)
 		}
+		q.OsVersion = &v
 	}
 	if recKernel := cmd.String("kernel"); recKernel != "" {
-		q.Kernel, err = ver.ParseVersion(recKernel)
+		v, err := ver.ParseVersion(recKernel)
 		if err != nil {
 			if errors.Is(err, ver.ErrNegativeComponent) {
 				return nil, fmt.Errorf("kernel version cannot contain negative numbers: %s", recKernel)
 			}
 			return nil, fmt.Errorf("invalid kernel version %q: %w", recKernel, err)
 		}
+		q.Kernel = &v
 	}
 	if recService := cmd.String("service"); recService != "" {
 		q.Service = recipe.ServiceType(recService)
@@ -133,13 +134,14 @@ func buildQueryFromCmd(cmd *cli.Command) (*recipe.Query, error) {
 	}
 
 	if recK8s := cmd.String("k8s"); recK8s != "" {
-		q.K8s, err = ver.ParseVersion(recK8s)
+		v, err := ver.ParseVersion(recK8s)
 		if err != nil {
 			if errors.Is(err, ver.ErrNegativeComponent) {
 				return nil, fmt.Errorf("kubernetes version cannot contain negative numbers: %s", recK8s)
 			}
 			return nil, fmt.Errorf("invalid kubernetes version %q: %w", recK8s, err)
 		}
+		q.K8s = &v
 	}
 	if recGPU := cmd.String("gpu"); recGPU != "" {
 		q.GPU = recipe.GPUType(recGPU)

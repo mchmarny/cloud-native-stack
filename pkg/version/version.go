@@ -19,10 +19,12 @@ var (
 // Version represents a semantic version with Major, Minor, and Patch components.
 // Precision indicates how many components are significant (1=Major, 2=Major.Minor, 3=Major.Minor.Patch).
 type Version struct {
-	Major     int
-	Minor     int
-	Patch     int
-	Precision int // Number of version components specified (1, 2, or 3)
+	Major int `json:"major,omitempty" yaml:"major,omitempty"`
+	Minor int `json:"minor,omitempty" yaml:"minor,omitempty"`
+	Patch int `json:"patch,omitempty" yaml:"patch,omitempty"`
+
+	// Precision indicates how many components are significant (1, 2, or 3)
+	Precision int `json:"precision,omitempty" yaml:"precision,omitempty"`
 }
 
 // NewVersion creates a Version with all three components and precision 3.

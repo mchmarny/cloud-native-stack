@@ -49,7 +49,7 @@ func (b *Builder) Build(ctx context.Context, q *Query) (*Recipe, error) {
 	}
 
 	r := &Recipe{
-		Request:        *q,
+		Request:        q,
 		PayloadVersion: RecipeAPIVersion,
 		MatchedRules:   make([]string, 0),
 		GeneratedAt:    time.Now().UTC(),

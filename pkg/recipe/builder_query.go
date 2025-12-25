@@ -30,7 +30,7 @@ func (b *QueryBuilder) WithOSVersion(os OsFamily, osVersion string) *QueryBuilde
 	b.query.Os = os
 	if osVersion != "" {
 		if v, err := version.ParseVersion(osVersion); err == nil {
-			b.query.OsVersion = v
+			b.query.OsVersion = &v
 		}
 	}
 	return b
@@ -40,7 +40,7 @@ func (b *QueryBuilder) WithOSVersion(os OsFamily, osVersion string) *QueryBuilde
 func (b *QueryBuilder) WithKernel(kernel string) *QueryBuilder {
 	if kernel != "" {
 		if v, err := version.ParseVersion(kernel); err == nil {
-			b.query.Kernel = v
+			b.query.Kernel = &v
 		}
 	}
 	return b
@@ -56,7 +56,7 @@ func (b *QueryBuilder) WithService(service ServiceType) *QueryBuilder {
 func (b *QueryBuilder) WithK8s(k8sVersion string) *QueryBuilder {
 	if k8sVersion != "" {
 		if v, err := version.ParseVersion(k8sVersion); err == nil {
-			b.query.K8s = v
+			b.query.K8s = &v
 		}
 	}
 	return b

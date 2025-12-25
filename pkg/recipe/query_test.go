@@ -22,10 +22,10 @@ func TestQueryString(t *testing.T) {
 			name: "all fields",
 			query: Query{
 				Os:        OSUbuntu,
-				OsVersion: osv,
-				Kernel:    kernel,
+				OsVersion: &osv,
+				Kernel:    &kernel,
 				Service:   ServiceEKS,
-				K8s:       k8s,
+				K8s:       &k8s,
 				GPU:       GPUH100,
 				Intent:    IntentTraining,
 			},
@@ -50,6 +50,127 @@ func TestQueryString(t *testing.T) {
 	}
 }
 
+func TestQueryIsEmpty(t *testing.T) {
+	osv := version.MustParseVersion("22.04")
+	kernel := version.MustParseVersion("5.15.0")
+	k8s := version.MustParseVersion("1.28.3")
+
+	tests := []struct {
+		name  string
+		query Query
+		want  bool
+	}{
+		{
+			name:  "completely empty query",
+			query: Query{},
+			want:  true,
+		},
+		{
+			name: "all anyValue enums",
+			query: Query{
+				Os:      OSAny,
+				Service: ServiceAny,
+				GPU:     GPUAny,
+				Intent:  IntentAny,
+			},
+			want: true,
+		},
+		{
+			name: "mixed anyValue and empty enums",
+			query: Query{
+				Os:      OSAny,
+				Service: "",
+				GPU:     GPUAny,
+				Intent:  "",
+			},
+			want: true,
+		},
+		{
+			name: "has os family",
+			query: Query{
+				Os: OSUbuntu,
+			},
+			want: false,
+		},
+		{
+			name: "has os version",
+			query: Query{
+				OsVersion: &osv,
+			},
+			want: false,
+		},
+		{
+			name: "has kernel version",
+			query: Query{
+				Kernel: &kernel,
+			},
+			want: false,
+		},
+		{
+			name: "has service type",
+			query: Query{
+				Service: ServiceEKS,
+			},
+			want: false,
+		},
+		{
+			name: "has k8s version",
+			query: Query{
+				K8s: &k8s,
+			},
+			want: false,
+		},
+		{
+			name: "has gpu type",
+			query: Query{
+				GPU: GPUH100,
+			},
+			want: false,
+		},
+		{
+			name: "has intent type",
+			query: Query{
+				Intent: IntentTraining,
+			},
+			want: false,
+		},
+		{
+			name: "has multiple specific fields",
+			query: Query{
+				Os:      OSUbuntu,
+				Service: ServiceEKS,
+				GPU:     GPUH100,
+			},
+			want: false,
+		},
+		{
+			name: "anyValue with one specific field",
+			query: Query{
+				Os:      OSAny,
+				Service: ServiceAny,
+				GPU:     GPUH100, // This one is specific
+				Intent:  IntentAny,
+			},
+			want: false,
+		},
+		{
+			name: "IncludeContext doesn't affect emptiness",
+			query: Query{
+				IncludeContext: true,
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.query.IsEmpty(); got != tt.want {
+				t.Fatalf("IsEmpty() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestQueryIsMatch(t *testing.T) {
 	osv := version.MustParseVersion("22.04")
 	kernel := version.MustParseVersion("5.15.0")
@@ -57,15 +178,13 @@ func TestQueryIsMatch(t *testing.T) {
 
 	base := Query{
 		Os:        OSUbuntu,
-		OsVersion: osv,
-		Kernel:    kernel,
+		OsVersion: &osv,
+		Kernel:    &kernel,
 		Service:   ServiceEKS,
-		K8s:       k8s,
+		K8s:       &k8s,
 		GPU:       GPUH100,
 		Intent:    IntentTraining,
 	}
-
-	zeroVersion := version.Version{}
 
 	tests := []struct {
 		name        string
@@ -80,18 +199,18 @@ func TestQueryIsMatch(t *testing.T) {
 		{name: "os mismatch", left: base, right: Query{Os: OSCOS}, want: false},
 		{name: "os wildcard left", left: Query{Os: OSAny}, right: base, want: true, reverseWant: boolPtr(false)},
 		{name: "os wildcard right", left: base, right: Query{Os: OSAny}, want: false, reverseWant: boolPtr(true)},
-		{name: "os version mismatch", left: base, right: Query{OsVersion: version.MustParseVersion("24.04")}, want: false},
-		{name: "os version wildcard left", left: Query{Os: base.Os, OsVersion: zeroVersion}, right: base, want: true, reverseWant: boolPtr(false)},
-		{name: "os version wildcard right", left: base, right: Query{Os: base.Os, OsVersion: zeroVersion}, want: false, reverseWant: boolPtr(true)},
-		{name: "kernel mismatch", left: base, right: Query{Kernel: version.MustParseVersion("6.0.0")}, want: false},
-		{name: "kernel wildcard left", left: Query{Os: base.Os, Kernel: zeroVersion}, right: base, want: true, reverseWant: boolPtr(false)},
-		{name: "kernel wildcard right", left: base, right: Query{Os: base.Os, Kernel: zeroVersion}, want: false, reverseWant: boolPtr(true)},
+		{name: "os version mismatch", left: base, right: Query{OsVersion: versionPtr("24.04")}, want: false},
+		{name: "os version wildcard left", left: Query{Os: base.Os, OsVersion: nil}, right: base, want: true, reverseWant: boolPtr(false)},
+		{name: "os version wildcard right", left: base, right: Query{Os: base.Os, OsVersion: nil}, want: false, reverseWant: boolPtr(true)},
+		{name: "kernel mismatch", left: base, right: Query{Kernel: versionPtr("6.0.0")}, want: false},
+		{name: "kernel wildcard left", left: Query{Os: base.Os, Kernel: nil}, right: base, want: true, reverseWant: boolPtr(false)},
+		{name: "kernel wildcard right", left: base, right: Query{Os: base.Os, Kernel: nil}, want: false, reverseWant: boolPtr(true)},
 		{name: "service mismatch", left: base, right: Query{Service: ServiceGKE}, want: false},
 		{name: "service wildcard left", left: Query{Service: ServiceAny}, right: base, want: true, reverseWant: boolPtr(false)},
 		{name: "service wildcard right", left: base, right: Query{Service: ServiceAny}, want: false, reverseWant: boolPtr(true)},
-		{name: "k8s mismatch", left: base, right: Query{K8s: version.MustParseVersion("1.29.0")}, want: false},
-		{name: "k8s wildcard left", left: Query{Os: base.Os, K8s: zeroVersion}, right: base, want: true, reverseWant: boolPtr(false)},
-		{name: "k8s wildcard right", left: base, right: Query{Os: base.Os, K8s: zeroVersion}, want: false, reverseWant: boolPtr(true)},
+		{name: "k8s mismatch", left: base, right: Query{K8s: versionPtr("1.29.0")}, want: false},
+		{name: "k8s wildcard left", left: Query{Os: base.Os, K8s: nil}, right: base, want: true, reverseWant: boolPtr(false)},
+		{name: "k8s wildcard right", left: base, right: Query{Os: base.Os, K8s: nil}, want: false, reverseWant: boolPtr(true)},
 		{name: "gpu mismatch", left: base, right: Query{GPU: GPUB200}, want: false},
 		{name: "gpu wildcard left", left: Query{GPU: GPUAny}, right: base, want: true, reverseWant: boolPtr(false)},
 		{name: "gpu wildcard right", left: base, right: Query{GPU: GPUAny}, want: false, reverseWant: boolPtr(true)},
@@ -149,11 +268,12 @@ func TestNormalizeVersionValue(t *testing.T) {
 
 	tests := []struct {
 		name string
-		in   version.Version
+		in   *version.Version
 		want string
 	}{
-		{name: "zero precision", in: version.Version{}, want: anyValue},
-		{name: "semantic version", in: v, want: "1.2.3"},
+		{name: "nil version", in: nil, want: anyValue},
+		{name: "zero precision", in: &version.Version{}, want: anyValue},
+		{name: "semantic version", in: &v, want: "1.2.3"},
 	}
 
 	for _, tt := range tests {
@@ -308,10 +428,10 @@ func TestParseQuery(t *testing.T) {
 			path: "/?os=ubuntu&osv=22.04&kernel=5.15.0&env=eks&k8s=1.28.3&gpu=h100&intent=training",
 			want: &Query{
 				Os:        OSUbuntu,
-				OsVersion: osv,
-				Kernel:    kernel,
+				OsVersion: &osv,
+				Kernel:    &kernel,
 				Service:   ServiceEKS,
-				K8s:       k8s,
+				K8s:       &k8s,
 				GPU:       GPUH100,
 				Intent:    IntentTraining,
 			},
@@ -360,16 +480,16 @@ func assertQueryEquals(t *testing.T, want, got *Query) {
 	if want.Os != got.Os {
 		t.Fatalf("Os = %s, want %s", got.Os, want.Os)
 	}
-	if want.OsVersion != got.OsVersion {
+	if !versionPtrEquals(want.OsVersion, got.OsVersion) {
 		t.Fatalf("OsVersion = %v, want %v", got.OsVersion, want.OsVersion)
 	}
-	if want.Kernel != got.Kernel {
+	if !versionPtrEquals(want.Kernel, got.Kernel) {
 		t.Fatalf("Kernel = %v, want %v", got.Kernel, want.Kernel)
 	}
 	if want.Service != got.Service {
 		t.Fatalf("Service = %s, want %s", got.Service, want.Service)
 	}
-	if want.K8s != got.K8s {
+	if !versionPtrEquals(want.K8s, got.K8s) {
 		t.Fatalf("K8s = %v, want %v", got.K8s, want.K8s)
 	}
 	if want.GPU != got.GPU {
@@ -383,4 +503,19 @@ func assertQueryEquals(t *testing.T, want, got *Query) {
 func boolPtr(val bool) *bool {
 	result := val
 	return &result
+}
+
+func versionPtr(s string) *version.Version {
+	v := version.MustParseVersion(s)
+	return &v
+}
+
+func versionPtrEquals(a, b *version.Version) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	return *a == *b
 }

@@ -27,6 +27,7 @@
 package recipe
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -46,16 +47,16 @@ type Query struct {
 	Os OsFamily `json:"os,omitempty" yaml:"os,omitempty"`
 
 	// OsVersion is the operating system version (e.g., 22.04)
-	OsVersion version.Version `json:"osv,omitempty" yaml:"osv,omitempty"`
+	OsVersion *version.Version `json:"osv,omitempty" yaml:"osv,omitempty"`
 
 	// Kernel is the running kernel version (e.g., 5.15.0)
-	Kernel version.Version `json:"kernel,omitempty" yaml:"kernel,omitempty"`
+	Kernel *version.Version `json:"kernel,omitempty" yaml:"kernel,omitempty"`
 
 	// Service is the managed service context (e.g., eks, gke, or self-managed)
 	Service ServiceType `json:"service,omitempty" yaml:"service,omitempty"`
 
 	// K8s is the Kubernetes cluster version (e.g., v1.25.4)
-	K8s version.Version `json:"k8s,omitempty" yaml:"k8s,omitempty"`
+	K8s *version.Version `json:"k8s,omitempty" yaml:"k8s,omitempty"`
 
 	// GPU is the GPU type (e.g., H100, GB200)
 	GPU GPUType `json:"gpu,omitempty" yaml:"gpu,omitempty"`
@@ -64,17 +65,143 @@ type Query struct {
 	Intent IntentType `json:"intent,omitempty" yaml:"intent,omitempty"`
 
 	// IncludeContext indicates whether to include context metadata in the response
-	IncludeContext bool `json:"withContext" yaml:"withContext"`
+	IncludeContext bool `json:"withContext,omitempty" yaml:"withContext,omitempty"`
 }
 
 func (q *Query) IsEmpty() bool {
-	return q.Os == "" &&
-		!q.OsVersion.IsValid() &&
-		!q.Kernel.IsValid() &&
-		q.Service == "" &&
-		!q.K8s.IsValid() &&
-		q.GPU == "" &&
-		q.Intent == ""
+	return (q.Os == "" || q.Os == anyValue) &&
+		(q.OsVersion == nil || !q.OsVersion.IsValid()) &&
+		(q.Kernel == nil || !q.Kernel.IsValid()) &&
+		(q.Service == "" || q.Service == anyValue) &&
+		(q.K8s == nil || !q.K8s.IsValid()) &&
+		(q.GPU == "" || q.GPU == anyValue) &&
+		(q.Intent == "" || q.Intent == anyValue)
+}
+
+// MarshalJSON implements custom JSON marshaling for Query.
+// It omits fields that are set to their default "any" value to produce cleaner JSON output.
+func (q Query) MarshalJSON() ([]byte, error) {
+	aux := struct {
+		Os             *OsFamily    `json:"os,omitempty"`
+		OsVersion      *string      `json:"osv,omitempty"`
+		Kernel         *string      `json:"kernel,omitempty"`
+		Service        *ServiceType `json:"service,omitempty"`
+		K8s            *string      `json:"k8s,omitempty"`
+		GPU            *GPUType     `json:"gpu,omitempty"`
+		Intent         *IntentType  `json:"intent,omitempty"`
+		IncludeContext *bool        `json:"withContext,omitempty"`
+	}{}
+
+	// Only include non-empty and non-"any" enum values
+	if q.Os != "" && q.Os != OSAny {
+		aux.Os = &q.Os
+	}
+	if q.OsVersion != nil {
+		v := q.OsVersion.String()
+		aux.OsVersion = &v
+	}
+	if q.Kernel != nil {
+		v := q.Kernel.String()
+		aux.Kernel = &v
+	}
+	if q.Service != "" && q.Service != ServiceAny {
+		aux.Service = &q.Service
+	}
+	if q.K8s != nil {
+		v := q.K8s.String()
+		aux.K8s = &v
+	}
+	if q.GPU != "" && q.GPU != GPUAny {
+		aux.GPU = &q.GPU
+	}
+	if q.Intent != "" && q.Intent != IntentAny {
+		aux.Intent = &q.Intent
+	}
+	if q.IncludeContext {
+		aux.IncludeContext = &q.IncludeContext
+	}
+
+	return json.Marshal(aux)
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling for Query.
+// It handles the omitted "any" values by treating missing fields as wildcards.
+func (q *Query) UnmarshalJSON(data []byte) error {
+	aux := struct {
+		Os             *OsFamily    `json:"os"`
+		OsVersion      *string      `json:"osv"`
+		Kernel         *string      `json:"kernel"`
+		Service        *ServiceType `json:"service"`
+		K8s            *string      `json:"k8s"`
+		GPU            *GPUType     `json:"gpu"`
+		Intent         *IntentType  `json:"intent"`
+		IncludeContext *bool        `json:"withContext"`
+	}{}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// Set fields from aux, using defaults for missing values
+	if aux.Os != nil {
+		q.Os = *aux.Os
+	} else {
+		q.Os = OSAny
+	}
+
+	if aux.OsVersion != nil {
+		v, err := version.ParseVersion(*aux.OsVersion)
+		if err != nil {
+			return fmt.Errorf("invalid osv: %w", err)
+		}
+		q.OsVersion = &v
+	} else {
+		q.OsVersion = nil
+	}
+
+	if aux.Kernel != nil {
+		v, err := version.ParseVersion(*aux.Kernel)
+		if err != nil {
+			return fmt.Errorf("invalid kernel: %w", err)
+		}
+		q.Kernel = &v
+	} else {
+		q.Kernel = nil
+	}
+
+	if aux.Service != nil {
+		q.Service = *aux.Service
+	} else {
+		q.Service = ServiceAny
+	}
+
+	if aux.K8s != nil {
+		v, err := version.ParseVersion(*aux.K8s)
+		if err != nil {
+			return fmt.Errorf("invalid k8s: %w", err)
+		}
+		q.K8s = &v
+	} else {
+		q.K8s = nil
+	}
+
+	if aux.GPU != nil {
+		q.GPU = *aux.GPU
+	} else {
+		q.GPU = GPUAny
+	}
+
+	if aux.Intent != nil {
+		q.Intent = *aux.Intent
+	} else {
+		q.Intent = IntentAny
+	}
+
+	if aux.IncludeContext != nil {
+		q.IncludeContext = *aux.IncludeContext
+	}
+
+	return nil
 }
 
 // Validate checks if the query has valid field values and combinations.
@@ -159,9 +286,9 @@ func normalizeValue[T ~string](val T) string {
 }
 
 // normalizeVersionValue normalizes a version value for key generation.
-// If the version is invalid (zero/unset), it returns "any".
-func normalizeVersionValue(val version.Version) string {
-	if !val.IsValid() {
+// If the version is nil or invalid (zero/unset), it returns "any".
+func normalizeVersionValue(val *version.Version) string {
+	if val == nil || !val.IsValid() {
 		return anyValue
 	}
 	return normalizeValue(strings.TrimSpace(val.String()))
@@ -386,22 +513,26 @@ func ParseQuery(r *http.Request) (*Query, error) {
 
 	// Parse OS version
 	if osVerStr := u.Get(QueryParamOSVersion); osVerStr != "" {
-		if q.OsVersion, err = version.ParseVersion(osVerStr); err != nil {
+		var osVer version.Version
+		if osVer, err = version.ParseVersion(osVerStr); err != nil {
 			if errors.Is(err, version.ErrNegativeComponent) {
 				return nil, fmt.Errorf("os version cannot contain negative numbers: %s", osVerStr)
 			}
 			return nil, fmt.Errorf("invalid os version %q: %w", osVerStr, err)
 		}
+		q.OsVersion = &osVer
 	}
 
 	// Parse kernel version
 	if kernelStr := u.Get(QueryParamKernel); kernelStr != "" {
-		if q.Kernel, err = version.ParseVersion(kernelStr); err != nil {
+		var kernel version.Version
+		if kernel, err = version.ParseVersion(kernelStr); err != nil {
 			if errors.Is(err, version.ErrNegativeComponent) {
 				return nil, fmt.Errorf("kernel version cannot contain negative numbers: %s", kernelStr)
 			}
 			return nil, fmt.Errorf("invalid kernel version %q: %w", kernelStr, err)
 		}
+		q.Kernel = &kernel
 	}
 
 	// Parse service type
@@ -411,12 +542,14 @@ func ParseQuery(r *http.Request) (*Query, error) {
 
 	// Parse Kubernetes version
 	if k8sStr := u.Get(QueryParamKubernetes); k8sStr != "" {
-		if q.K8s, err = version.ParseVersion(k8sStr); err != nil {
+		var k8sVer version.Version
+		if k8sVer, err = version.ParseVersion(k8sStr); err != nil {
 			if errors.Is(err, version.ErrNegativeComponent) {
 				return nil, fmt.Errorf("kubernetes version cannot contain negative numbers: %s", k8sStr)
 			}
 			return nil, fmt.Errorf("invalid kubernetes version %q: %w", k8sStr, err)
 		}
+		q.K8s = &k8sVer
 	}
 
 	// Parse GPU type
@@ -448,12 +581,12 @@ func matchEnum[T ~string](rule, candidate, wildcard T) bool {
 	return rule == candidate
 }
 
-func matchVersion(rule, candidate version.Version) bool {
-	if !rule.IsValid() {
+func matchVersion(rule, candidate *version.Version) bool {
+	if rule == nil || !rule.IsValid() {
 		return true
 	}
-	if !candidate.IsValid() {
+	if candidate == nil || !candidate.IsValid() {
 		return false
 	}
-	return rule == candidate
+	return *rule == *candidate
 }
