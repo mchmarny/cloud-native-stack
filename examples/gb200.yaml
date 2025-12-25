@@ -1,8 +1,8 @@
 kind: Snapshot
 apiVersion: snapshot.dgxc.io/v1
 metadata:
-  measurement-timestamp: "2025-12-25T18:49:48Z"
-  snapshot-version: 0.6.3
+  measurement-timestamp: "2025-12-25T19:10:19Z"
+  snapshot-version: 0.6.4
   source-node: ip-10-0-160-248.ec2.internal
 measurements:
   - type: SystemD
@@ -40,7 +40,7 @@ measurements:
           CPUSchedulingPriority: "0"
           CPUSchedulingResetOnFork: false
           CPUShares: 18446744073709551615
-          CPUUsageNSec: 595584096343000
+          CPUUsageNSec: 596010578922000
           CPUWeight: 18446744073709551615
           CacheDirectory: '[]'
           CacheDirectoryMode: "493"
@@ -205,7 +205,7 @@ measurements:
           Markers: '[]'
           MemoryAccounting: true
           MemoryAvailable: 18446744073709551615
-          MemoryCurrent: 96930914304
+          MemoryCurrent: 96997269504
           MemoryDenyWriteExecute: false
           MemoryHigh: 18446744073709551615
           MemoryLimit: 18446744073709551615
@@ -1160,16 +1160,16 @@ measurements:
           /proc/sys/dev/tty/legacy_tiocsti: "0"
           /proc/sys/fs/aio-max-nr: "65536"
           /proc/sys/fs/aio-nr: "0"
-          /proc/sys/fs/dentry-state: "1842204\t1741539\t45\t0\t754722\t0"
+          /proc/sys/fs/dentry-state: "1842485\t1741856\t45\t0\t755134\t0"
           /proc/sys/fs/dir-notify-enable: "1"
           /proc/sys/fs/epoll/max_user_watches: "216410223"
           /proc/sys/fs/fanotify/max_queued_events: "16384"
           /proc/sys/fs/fanotify/max_user_groups: "128"
           /proc/sys/fs/fanotify/max_user_marks: "1048576"
           /proc/sys/fs/file-max: "9223372036854775807"
-          /proc/sys/fs/file-nr: "5184\t0\t9223372036854775807"
-          /proc/sys/fs/inode-nr: "1082442\t435"
-          /proc/sys/fs/inode-state: "1082442\t435\t0\t0\t0\t0\t0"
+          /proc/sys/fs/file-nr: "4032\t0\t9223372036854775807"
+          /proc/sys/fs/inode-nr: "1082311\t435"
+          /proc/sys/fs/inode-state: "1082311\t435\t0\t0\t0\t0\t0"
           /proc/sys/fs/inotify/max_queued_events: "16384"
           /proc/sys/fs/inotify/max_user_instances: "65535"
           /proc/sys/fs/inotify/max_user_watches: "524288"
@@ -1271,7 +1271,7 @@ measurements:
           /proc/sys/kernel/msgmni: "32000"
           /proc/sys/kernel/ngroups_max: "65536"
           /proc/sys/kernel/nmi_watchdog: "0"
-          /proc/sys/kernel/ns_last_pid: "3172026"
+          /proc/sys/kernel/ns_last_pid: "3180474"
           /proc/sys/kernel/numa_balancing: "0"
           /proc/sys/kernel/numa_balancing_promote_rate_limit_MBps: "65536"
           /proc/sys/kernel/oops_all_cpu_backtrace: "0"
@@ -1307,7 +1307,7 @@ measurements:
           /proc/sys/kernel/random/entropy_avail: "256"
           /proc/sys/kernel/random/poolsize: "256"
           /proc/sys/kernel/random/urandom_min_reseed_secs: "60"
-          /proc/sys/kernel/random/uuid: f5533ba7-cf9e-4149-9665-468b4ff3b867
+          /proc/sys/kernel/random/uuid: 45075f8b-5914-4c7a-9373-35f02fa5a6ad
           /proc/sys/kernel/random/write_wakeup_threshold: "256"
           /proc/sys/kernel/randomize_va_space: "2"
           /proc/sys/kernel/real-root-dev: "0"
@@ -1591,7 +1591,7 @@ measurements:
           node-driver-registrar: v2.10.0-eks-1-29-7
           node-exporter: v1.8.1-multiarch
           node-feature-discovery: v0.17.3
-          node-role-controller:v0.5.0@sha256: 345638126a65cff794a59c620badcd02cdbc100d45f7745b4b42e32a803ff645
+          node-role-controller: v0.5.0
           nvidia-xid-analyzer-sidecar: v1
           nvsentinel-fault-quarantine-module: 1.167.1
           nvsentinel-fault-remediation-module: 1.167.1

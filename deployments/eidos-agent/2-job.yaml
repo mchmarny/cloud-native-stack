@@ -52,8 +52,7 @@ spec:
           args:
             - |
               set -e
-              echo "Starting eidos snapshot collection..."
-              /ko-app/eidos snapshot --format yaml --output /tmp/eidos-snapshot.yaml
+              /ko-app/eidos snapshot --debug --format yaml --output /tmp/eidos-snapshot.yaml
               cat /tmp/eidos-snapshot.yaml
           resources:
             requests:
