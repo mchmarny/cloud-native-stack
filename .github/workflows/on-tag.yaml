@@ -5,11 +5,12 @@ on:
     - 'v[0-9]+.[0-9]+.[0-9]+'  # Only build tag with semantic versioning format
 
 permissions:
-  contents: write
-  packages: write
-  issues: write
-  id-token: write
   actions: read
+  attestations: write
+  contents: write
+  id-token: write
+  issues: write
+  packages: write
 
 jobs:
 
@@ -91,3 +92,31 @@ jobs:
             --region ${{ env.RUN_REGION }} \
             --project ${{ env.PROJECT_ID }}
           echo "Deploy complete."
+
+      - name: Install crane
+        run: |
+          go install github.com/google/go-containerregistry/cmd/crane@latest
+
+      - name: Resolve image digest
+        id: img
+        run: |
+          REG_URI="ghcr.io/${{ github.repository }}"
+          TAG="${{ github.ref_name }}"
+          IMG_API_DIGEST="$(crane digest "${REG_URI}/eidos-api-server:${TAG}")"
+          IMG_CLI_DIGEST="$(crane digest "${REG_URI}/eidos:${TAG}")"
+          echo "image-api-digest=${IMG_API_DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "image-cli-digest=${IMG_CLI_DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate artifact attestation for eidos-api-server
+        uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8  # v3.1.0
+        with:
+          subject-name: ghcr.io/${{ github.repository }}/eidos-api-server
+          subject-digest: '${{ steps.img.outputs.image-api-digest }}'
+          push-to-registry: true
+
+      - name: Generate artifact attestation for eidos
+        uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8  # v3.1.0
+        with:
+          subject-name: ghcr.io/${{ github.repository }}/eidos
+          subject-digest: '${{ steps.img.outputs.image-cli-digest }}'
+          push-to-registry: true
