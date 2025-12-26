@@ -1,25 +1,36 @@
 openapi: 3.1.0
 info:
-  title: CNS System Configuration Recommendation API
+  title: Eidos API Server - CNS Recipe API
   version: 1.0.0
   description: >
-    Returns an optimized, versioned system configuration payload (recommended components and versions)
-    for a given combination of platform parameters (OS, kernel, environment, Kubernetes, GPU, intent).
+    Returns optimized system configuration recipes (measurements and component recommendations)
+    for a given combination of platform parameters (OS, kernel, service, Kubernetes, GPU, intent).
+    
+    The recipe system uses a rule-based overlay architecture where base measurements are layered
+    with environment-specific overlays based on query matching.
 
 servers:
-  - url: https://api.dgxc.io
-    description: Production
+  - url: https://api.eidos.dev/v1
+    description: Production server
+  - url: http://localhost:8080
+    description: Local development server
 
 tags:
-  - name: Recommendations
-  - name: System
+  - name: Recipes
+    description: Configuration recipe operations
+  - name: Health
+    description: Service health and readiness checks
 
 paths:
-  /v1/recommendations:
+  /v1/recipe:
     get:
-      tags: [Recommendations]
-      summary: Get optimized system configuration recommendations
-      operationId: getRecommendations
+      tags: [Recipes]
+      summary: Get optimized system configuration recipe
+      operationId: getRecipe
+      description: >
+        Returns a recipe containing measurements and configuration recommendations
+        based on the provided query parameters. Uses rule-based overlay matching
+        to combine base measurements with environment-specific configurations.
       parameters:
         - name: X-Request-Id
           in: header
@@ -28,68 +39,73 @@ paths:
             type: string
             format: uuid
           description: Client-provided request ID for tracing
-        - name: osFamily
+        - name: os
           in: query
           required: false
-          description: OS family (or ALL). If omitted, treated as ALL.
+          description: OS family. If omitted, treated as "any" (wildcard).
           schema:
             type: string
-            enum: [Ubuntu, RHEL, ALL]
-            default: ALL
-        - name: osVersion
+            enum: [ubuntu, cos, any]
+            default: any
+        - name: osv
           in: query
           required: false
-          description: OS version (or ALL). Example Ubuntu 24.04, RHEL 9.3
+          description: OS version (e.g., 24.04, 22.04). If omitted, treated as wildcard.
           schema:
             type: string
-            pattern: '^(ALL|\d+\.\d+)$'
-            default: ALL
-            examples: ["24.04", "22.04", "9.3", "ALL"]
+            pattern: '^\d+\.\d+(\.\d+)?$'
+            examples: ["24.04", "22.04", "20.04"]
         - name: kernel
           in: query
           required: false
-          description: Kernel version (or ALL). Example 6.8
+          description: Kernel version (e.g., 6.8, 5.15.0). Supports vendor suffixes. If omitted, treated as wildcard.
           schema:
             type: string
-            pattern: '^(ALL|\d+\.\d+(\.\d+)?)$'
-            default: ALL
-            examples: ["6.8", "5.15.0", "ALL"]
-        - name: environment
+            pattern: '^\d+\.\d+(\.\d+)?'
+            examples: ["6.8", "5.15.0", "6.8.0-1028-aws"]
+        - name: service
           in: query
           required: false
-          description: Kubernetes environment (or ALL).
+          description: Kubernetes service/environment type. If omitted, treated as "any" (wildcard).
           schema:
             type: string
-            enum: [GKE, EKS, OKE, ALL]
-            default: ALL
-        - name: kubernetes
+            enum: [eks, gke, aks, self-managed, any]
+            default: any
+        - name: k8s
           in: query
           required: false
-          description: Kubernetes minor version (or ALL). Example 1.33
+          description: Kubernetes version (e.g., 1.33, v1.32.6). Supports vendor suffixes. If omitted, treated as wildcard.
           schema:
             type: string
-            pattern: '^(ALL|1\.\d+)$'
-            default: ALL
-            examples: ["1.33", "1.32", "ALL"]
+            pattern: '^v?\d+\.\d+(\.\d+)?'
+            examples: ["1.33", "v1.32.6", "v1.33.5-eks-3025e55"]
         - name: gpu
           in: query
           required: false
-          description: GPU type (or ALL).
+          description: GPU type. If omitted, treated as "any" (wildcard).
           schema:
             type: string
-            enum: [H100, GB200, A100, L40, ALL]
-            default: ALL
+            enum: [h100, gb200, a100, l40, any]
+            default: any
         - name: intent
           in: query
           required: false
-          description: Workload intent (or ALL).
+          description: Workload intent. If omitted, treated as "any" (wildcard).
           schema:
             type: string
-            enum: [training, inference, ALL]
-            default: ALL
+            enum: [training, inference, any]
+            default: any
+        - name: context
+          in: query
+          required: false
+          description: Whether to include context metadata in measurements (true/false or 1/0)
+          schema:
+            type: string
+            enum: ["true", "false", "1", "0"]
+            default: "false"
       responses:
         "200":
-          description: Recommendation payload for the requested parameter combination
+          description: Recipe payload for the requested parameter combination
           headers:
             X-Request-Id:
               $ref: "#/components/headers/RequestIdResponse"
@@ -104,91 +120,65 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RecommendationResponse"
+                $ref: "#/components/schemas/RecipeResponse"
               examples:
-                example1:
-                  summary: Example recommendation response
+                basic:
+                  summary: Basic recipe request
                   value:
+                    apiVersion: v1
+                    kind: Recipe
                     request:
-                      osFamily: Ubuntu
-                      osVersion: "24.04"
-                      kernel: "6.8"
-                      environment: EKS
-                      kubernetes: "1.33"
-                      gpu: GB200
+                      os: ubuntu
+                      osv: "24.04"
+                      service: eks
+                      k8s: "1.33"
+                      gpu: h100
                       intent: training
-                    matchedRuleId: "rule-eks-gb200-k8s133-kernel68"
-                    cnsReleases:
-                      - cnsVersion: "16.0"
-                        platforms:
-                          - "NVIDIA Certified Server (x86 & arm64)"
-                          - "DGX Server"
-                        supportedOS:
-                          - "Ubuntu 24.04 LTS"
-                        components:
-                          - name: containerd
-                            version: "2.1.3"
-                          - name: nvidia-container-toolkit
-                            version: "1.17.8"
-                          - name: crio
-                            version: "1.33.2"
-                          - name: kubernetes
-                            version: "1.33.2"
-                          - name: cni-calico
-                            version: "3.30.2"
-                          - name: nvidia-gpu-operator
-                            version: "25.3.4"
-                          - name: nvidia-network-operator
-                            version: null
-                          - name: nvidia-nim-operator
-                            version: "2.0.1"
-                          - name: nvidia-nsight-operator
-                            version: "1.1.2"
-                          - name: nvidia-data-center-driver
-                            version: "580.82.07"
-                          - name: helm
-                            version: "3.18.3"
-                      - cnsVersion: "15.1"
-                        platforms:
-                          - "NVIDIA Certified Server (x86 & arm64)"
-                          - "DGX Server"
-                        supportedOS:
-                          - "Ubuntu 24.04 LTS"
-                        components:
-                          - name: containerd
-                            version: "2.1.3"
-                          - name: nvidia-container-toolkit
-                            version: "1.17.8"
-                          - name: crio
-                            version: "1.32.6"
-                          - name: kubernetes
-                            version: "1.32.6"
-                          - name: cni-calico
-                            version: "3.30.2"
-                          - name: nvidia-gpu-operator
-                            version: "25.3.4"
-                          - name: nvidia-network-operator
-                            version: "25.4.0"
-                          - name: nvidia-nim-operator
-                            version: "2.0.1"
-                          - name: nvidia-nsight-operator
-                            version: "1.1.2"
-                          - name: nvidia-data-center-driver
-                            version: "580.82.07"
-                          - name: helm
-                            version: "3.18.3"
+                    matchedRules:
+                      - "OS: ubuntu any, Kernel: any, Service: eks, K8s: any, GPU: h100, Intent: training, Context: false"
+                    measurements:
+                      - type: systemd
+                        subtypes:
+                          - name: containerd.service
+                            data:
+                              CPUAccounting: "yes"
+                              MemoryAccounting: "yes"
+                      - type: os
+                        subtypes:
+                          - name: grub
+                            data:
+                              intel_iommu: "on"
+                              iommu: "pt"
+                      - type: k8s
+                        subtypes:
+                          - name: server
+                            data:
+                              version: "1.33.0"
+                      - type: gpu
+                        subtypes:
+                          - name: device
+                            data:
+                              model: "H100"
         "400":
           description: Invalid request parameters
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-        "404":
-          description: No recommendation found for given parameters
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
+              examples:
+                invalidParameter:
+                  summary: Invalid query parameter
+                  value:
+                    code: INVALID_REQUEST
+                    message: "Invalid recipe query"
+                    details:
+                      error: "invalid os family: windows"
+                    requestId: "550e8400-e29b-41d4-a716-446655440000"
+                    timestamp: "2025-01-15T10:30:00Z"
+                    retryable: false
         "429":
           description: Rate limit exceeded
           headers:
@@ -196,58 +186,6 @@ paths:
               schema:
                 type: integer
               description: Seconds until retry allowed
-            X-Request-Id:
-              $ref: "#/components/headers/RequestIdResponse"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "500":
-          description: Internal server error
-          headers:
-            X-Request-Id:
-              $ref: "#/components/headers/RequestIdResponse"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "503":
-          description: Service temporarily unavailable
-          headers:
-            Retry-After:
-              schema:
-                type: integer
-              description: Seconds until retry allowed
-            X-Request-Id:
-              $ref: "#/components/headers/RequestIdResponse"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-
-  /v1/recommendations/resolve:
-    post:
-      tags: [Recommendations]
-      summary: Resolve recommendations for one or more parameter sets (bulk)
-      operationId: resolveRecommendationsBulk
-      parameters:
-        - name: X-Request-Id
-          in: header
-          required: false
-          schema:
-            type: string
-            format: uuid
-          description: Client-provided request ID for tracing
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/BulkResolveRequest"
-      responses:
-        "200":
-          description: Bulk recommendation results
-          headers:
             X-Request-Id:
               $ref: "#/components/headers/RequestIdResponse"
             X-RateLimit-Limit:
@@ -259,25 +197,6 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BulkResolveResponse"
-        "400":
-          description: Invalid request parameters
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "429":
-          description: Rate limit exceeded
-          headers:
-            Retry-After:
-              schema:
-                type: integer
-              description: Seconds until retry allowed
-            X-Request-Id:
-              $ref: "#/components/headers/RequestIdResponse"
-          content:
-            application/json:
-              schema:
                 $ref: "#/components/schemas/Error"
         "500":
           description: Internal server error
@@ -288,6 +207,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+              examples:
+                internalError:
+                  summary: Server error during recipe build
+                  value:
+                    code: INTERNAL_ERROR
+                    message: "Failed to build recipe"
+                    details:
+                      error: "failed to load recipe store"
+                    requestId: "550e8400-e29b-41d4-a716-446655440000"
+                    timestamp: "2025-01-15T10:30:00Z"
+                    retryable: true
         "503":
           description: Service temporarily unavailable
           headers:
@@ -304,9 +234,10 @@ paths:
 
   /health:
     get:
-      tags: [System]
+      tags: [Health]
       summary: Health check endpoint
       operationId: healthCheck
+      description: Returns the health status of the service
       responses:
         "200":
           description: Service is healthy
@@ -314,20 +245,19 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [status, timestamp]
+                required: [status]
                 properties:
                   status:
                     type: string
                     enum: [healthy]
-                  timestamp:
-                    type: string
-                    format: date-time
+                    example: healthy
 
   /ready:
     get:
-      tags: [System]
+      tags: [Health]
       summary: Readiness check endpoint
       operationId: readinessCheck
+      description: Returns whether the service is ready to serve traffic
       responses:
         "200":
           description: Service is ready to serve traffic
@@ -335,30 +265,27 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [status, timestamp]
+                required: [status]
                 properties:
                   status:
                     type: string
                     enum: [ready]
-                  timestamp:
-                    type: string
-                    format: date-time
+                    example: ready
         "503":
           description: Service is not ready
           content:
             application/json:
               schema:
                 type: object
-                required: [status, timestamp]
+                required: [status]
                 properties:
                   status:
                     type: string
                     enum: [not_ready]
-                  timestamp:
-                    type: string
-                    format: date-time
+                    example: not_ready
                   reason:
                     type: string
+                    example: "initializing"
 
 components:
   headers:
@@ -366,41 +293,50 @@ components:
       schema:
         type: string
         format: uuid
-      description: Server-assigned or echoed request ID
+      description: Server-assigned or echoed request ID for tracing
     CacheControl:
       schema:
         type: string
       description: Cache directives for CDN/client caching
-      example: "public, max-age=300"
+      example: "public, max-age=600"
     RateLimitLimit:
       schema:
         type: integer
       description: Request quota in current window
+      example: 100
     RateLimitRemaining:
       schema:
         type: integer
       description: Remaining requests in current window
+      example: 95
     RateLimitReset:
       schema:
         type: integer
       description: Unix timestamp when quota resets
+      example: 1705318200
 
   schemas:
     Error:
       type: object
-      required: [code, message, requestId, timestamp]
+      required: [code, message, requestId, timestamp, retryable]
       properties:
         code:
           type: string
           description: Machine-readable error code
-          examples: ["INVALID_PARAMETER", "NO_MATCHING_RULE", "INTERNAL_ERROR"]
+          examples:
+            - INVALID_REQUEST
+            - METHOD_NOT_ALLOWED
+            - INTERNAL_ERROR
+            - RATE_LIMIT_EXCEEDED
         message:
           type: string
           description: Human-readable error message
+          example: "Invalid recipe query"
         details:
           type: object
           additionalProperties: true
           description: Additional context-specific error details
+          nullable: true
         requestId:
           type: string
           format: uuid
@@ -408,131 +344,131 @@ components:
         timestamp:
           type: string
           format: date-time
+          description: ISO 8601 timestamp when error occurred
         retryable:
           type: boolean
           description: Whether client should retry this request
+          example: false
 
-    RecommendationRequest:
+    Query:
       type: object
-      additionalProperties: false
+      description: Recipe query parameters
       properties:
-        osFamily:
+        os:
           type: string
-          enum: [Ubuntu, RHEL, ALL]
-          default: ALL
-        osVersion:
+          description: Operating system family
+          enum: [ubuntu, cos, any]
+          example: ubuntu
+        osv:
           type: string
-          default: ALL
+          description: Operating system version
+          example: "24.04"
         kernel:
           type: string
-          default: ALL
-        environment:
+          description: Kernel version (supports vendor suffixes)
+          example: "6.8.0-1028-aws"
+        service:
           type: string
-          enum: [GKE, EKS, OKE, ALL]
-          default: ALL
-        kubernetes:
+          description: Kubernetes service type
+          enum: [eks, gke, aks, self-managed, any]
+          example: eks
+        k8s:
           type: string
-          default: ALL
+          description: Kubernetes version (supports vendor suffixes)
+          example: "v1.33.5-eks-3025e55"
         gpu:
           type: string
-          enum: [H100, GB200, A100, L40, ALL]
-          default: ALL
+          description: GPU type
+          enum: [h100, gb200, a100, l40, any]
+          example: h100
         intent:
           type: string
-          enum: [training, inference, ALL]
-          default: ALL
-      required: []
+          description: Workload intent
+          enum: [training, inference, any]
+          example: training
+        withContext:
+          type: boolean
+          description: Include context metadata in measurements
+          default: false
 
-    ComponentRecommendation:
+    Reading:
       type: object
-      additionalProperties: false
+      description: A single measurement reading with value and optional unit
+      required: [value]
+      properties:
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+          description: The measurement value
+        unit:
+          type: string
+          description: Optional unit of measurement
+          example: "MB"
+
+    Subtype:
+      type: object
+      description: A subtype within a measurement containing specific configuration data
+      required: [name, data]
       properties:
         name:
           type: string
-          description: Stable component identifier (use kebab-case for consistency).
-          examples: ["nvidia-gpu-operator", "kubernetes", "containerd"]
-        version:
-          description: Component version; null means not applicable for this CNS release.
-          type: [string, "null"]
-        notes:
-          type: [string, "null"]
-          description: Optional implementation notes or constraints.
-          default: null
-      required: [name, version]
+          description: Subtype identifier (e.g., service name, configuration category)
+          example: containerd.service
+        data:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Reading"
+          description: Key-value pairs of configuration settings
+        context:
+          type: object
+          additionalProperties: true
+          description: Optional metadata about the source and collection method
+          nullable: true
 
-    CNSReleaseRecommendation:
+    Measurement:
       type: object
-      additionalProperties: false
+      description: A measurement grouping related configuration subtypes
+      required: [type, subtypes]
       properties:
-        cnsVersion:
+        type:
           type: string
-          description: CNS release identifier (string; typically semver-like).
-          examples: ["16.0", "15.1", "14.2"]
-        platforms:
-          type: array
-          items: {type: string}
-          description: Supported platform families for this CNS release.
-        supportedOS:
-          type: array
-          items: {type: string}
-          description: Human-readable OS support list for this CNS release.
-        components:
+          description: Measurement type category
+          enum: [systemd, os, k8s, gpu]
+          example: systemd
+        subtypes:
           type: array
           items:
-            $ref: "#/components/schemas/ComponentRecommendation"
-      required: [cnsVersion, components]
+            $ref: "#/components/schemas/Subtype"
+          description: List of configuration subtypes within this measurement
 
-    RecommendationResponse:
+    RecipeResponse:
       type: object
-      additionalProperties: false
+      description: Complete recipe response with metadata and measurements
+      required: [apiVersion, kind, measurements]
       properties:
+        apiVersion:
+          type: string
+          description: API version of the recipe format
+          example: v1
+        kind:
+          type: string
+          description: Resource type
+          enum: [Recipe]
+          example: Recipe
         request:
-          $ref: "#/components/schemas/RecommendationRequest"
-        matchedRuleId:
-          type: string
-          description: Identifier for the rule used to compute this recommendation.
-        cnsReleases:
+          $ref: "#/components/schemas/Query"
+          description: Original query parameters (omitted if all wildcards)
+        matchedRules:
           type: array
           items:
-            $ref: "#/components/schemas/CNSReleaseRecommendation"
-      required: [request, cnsReleases]
-
-    BulkResolveRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        requests:
-          type: array
-          minItems: 1
-          maxItems: 100
-          items:
-            $ref: "#/components/schemas/RecommendationRequest"
-          description: Array of recommendation requests to process
-        pageSize:
-          type: integer
-          minimum: 1
-          maximum: 100
-          default: 20
-          description: Number of results per page
-        continuationToken:
-          type: string
-          description: Opaque token for fetching next page of results
-      required: [requests]
-
-    BulkResolveResponse:
-      type: object
-      additionalProperties: false
-      properties:
-        results:
+            type: string
+          description: List of overlay rules that matched this query
+          example:
+            - "OS: ubuntu any, Kernel: any, Service: eks, K8s: any, GPU: h100, Intent: training, Context: false"
+        measurements:
           type: array
           items:
-            $ref: "#/components/schemas/RecommendationResponse"
-          description: Array of recommendation responses
-        nextContinuationToken:
-          type: [string, "null"]
-          description: Token for next page; null if no more results
-        totalCount:
-          type: integer
-          description: Total results available (may be approximate)
-          minimum: 0
-      required: [results]
+            $ref: "#/components/schemas/Measurement"
+          description: System configuration measurements and recommendations
