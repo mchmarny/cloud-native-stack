@@ -13,7 +13,9 @@ type Recommender interface {
 	Recommend(ctx context.Context, intent recipe.IntentType, snap *snapshotter.Snapshot) (*Recommendation, error)
 }
 
-// Recommendation is the structure representing recommendations based on a snapshot.
+// Recommendation is the structure representing recommended configuration for a given set of
+// environment configurations and intent. The environment configurations are derived from the
+// provided snapshot.
 type Recommendation struct {
 	// Kind is the type of the recommendation object.
 	Kind string `json:"kind,omitempty" yaml:"kind,omitempty"`

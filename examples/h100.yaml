@@ -1,8 +1,8 @@
 kind: Snapshot
 apiVersion: snapshot.dgxc.io/v1
 metadata:
-  measurement-timestamp: "2025-12-25T21:25:46Z"
-  snapshot-version: 0.6.8
+  measurement-timestamp: "2025-12-26T15:56:39Z"
+  snapshot-version: 0.7.0
   source-node: ip-10-0-158-18.ec2.internal
 measurements:
   - type: SystemD
@@ -40,7 +40,7 @@ measurements:
           CPUSchedulingPriority: "0"
           CPUSchedulingResetOnFork: false
           CPUShares: 18446744073709551615
-          CPUUsageNSec: 1924961057699000
+          CPUUsageNSec: 1935382425507000
           CPUWeight: 18446744073709551615
           CacheDirectory: '[]'
           CacheDirectoryMode: "493"
@@ -205,7 +205,7 @@ measurements:
           Markers: '[]'
           MemoryAccounting: true
           MemoryAvailable: 18446744073709551615
-          MemoryCurrent: 468979982336
+          MemoryCurrent: 469050392576
           MemoryDenyWriteExecute: false
           MemoryHigh: 18446744073709551615
           MemoryLimit: 18446744073709551615
@@ -1161,7 +1161,7 @@ measurements:
           /proc/sys/dev/tty/legacy_tiocsti: "0"
           /proc/sys/fs/aio-max-nr: "65536"
           /proc/sys/fs/aio-nr: "0"
-          /proc/sys/fs/dentry-state: "15058408\t14944889\t45\t0\t12495001\t0"
+          /proc/sys/fs/dentry-state: "15118843\t15005324\t45\t0\t12555390\t0"
           /proc/sys/fs/dir-notify-enable: "1"
           /proc/sys/fs/epoll/max_user_watches: "466828132"
           /proc/sys/fs/fanotify/max_queued_events: "16384"
@@ -1169,8 +1169,8 @@ measurements:
           /proc/sys/fs/fanotify/max_user_marks: "1048576"
           /proc/sys/fs/file-max: "9223372036854775807"
           /proc/sys/fs/file-nr: "4608\t0\t9223372036854775807"
-          /proc/sys/fs/inode-nr: "2510157\t437"
-          /proc/sys/fs/inode-state: "2510157\t437\t0\t0\t0\t0\t0"
+          /proc/sys/fs/inode-nr: "2510203\t437"
+          /proc/sys/fs/inode-state: "2510204\t437\t0\t0\t0\t0\t0"
           /proc/sys/fs/inotify/max_queued_events: "16384"
           /proc/sys/fs/inotify/max_user_instances: "65535"
           /proc/sys/fs/inotify/max_user_watches: "524288"
@@ -1276,7 +1276,7 @@ measurements:
           /proc/sys/kernel/msgmni: "32000"
           /proc/sys/kernel/ngroups_max: "65536"
           /proc/sys/kernel/nmi_watchdog: "0"
-          /proc/sys/kernel/ns_last_pid: "3870629"
+          /proc/sys/kernel/ns_last_pid: "246741"
           /proc/sys/kernel/numa_balancing: "1"
           /proc/sys/kernel/numa_balancing_promote_rate_limit_MBps: "65536"
           /proc/sys/kernel/oops_all_cpu_backtrace: "0"
@@ -1313,7 +1313,7 @@ measurements:
           /proc/sys/kernel/random/entropy_avail: "256"
           /proc/sys/kernel/random/poolsize: "256"
           /proc/sys/kernel/random/urandom_min_reseed_secs: "60"
-          /proc/sys/kernel/random/uuid: 0515890d-115c-4b3a-9e50-89c6835037f4
+          /proc/sys/kernel/random/uuid: 3ec7ecbb-7e41-4689-93ef-7e30786d7f31
           /proc/sys/kernel/random/write_wakeup_threshold: "256"
           /proc/sys/kernel/randomize_va_space: "2"
           /proc/sys/kernel/real-root-dev: "0"
@@ -1559,6 +1559,21 @@ measurements:
           xt_state: true
           xt_statistic: true
           xt_tcpudp: true
+      - subtype: release
+        data:
+          BUG_REPORT_URL: https://bugs.launchpad.net/ubuntu/
+          HOME_URL: https://www.ubuntu.com/
+          ID: ubuntu
+          ID_LIKE: debian
+          LOGO: ubuntu-logo
+          NAME: Ubuntu
+          PRETTY_NAME: Ubuntu 24.04.3 LTS
+          PRIVACY_POLICY_URL: https://www.ubuntu.com/legal/terms-and-policies/privacy-policy
+          SUPPORT_URL: https://help.ubuntu.com/
+          UBUNTU_CODENAME: noble
+          VERSION: 24.04.3 LTS (Noble Numbat)
+          VERSION_CODENAME: noble
+          VERSION_ID: "24.04"
   - type: K8s
     subtypes:
       - subtype: server
@@ -1693,6 +1708,7 @@ measurements:
           daemonsets.labels.helm.sh/chart: gpu-operator-v25.3.0
           daemonsets.priorityClassName: system-node-critical
           daemonsets.rollingUpdate.maxUnavailable: "1"
+
           daemonsets.tolerations: '[{"effect":"NoSchedule","operator":"Exists"},{"effect":"NoExecute","operator":"Exists"}]'
           daemonsets.updateStrategy: RollingUpdate
           dcgm.enabled: "true"
@@ -1843,6 +1859,11 @@ measurements:
           vgpuManager.enabled: "false"
           vgpuManager.image: vgpu-manager
           vgpuManager.imagePullPolicy: IfNotPresent
+      - subtype: provider
+        data:
+          provider-id: aws:///us-east-1e/i-0861d1808b85e90ca
+          service: eks
+          source-node: ip-10-0-158-18.ec2.internal
   - type: GPU
     subtypes:
       - subtype: smi

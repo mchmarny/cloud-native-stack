@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	providerServiceName = "service"
-	providerID          = "provider-id"
-	providerSourceNode  = "source-node"
+	providerSubTypeServiceName = "service"
+	providerSubTypeProviderID  = "provider-id"
+	providerSubTypeSourceNode  = "source-node"
 )
 
 // collectProvider retrieves the cloud provider information from the node spec.
@@ -55,9 +55,9 @@ func (k *Collector) collectProvider(ctx context.Context) (map[string]measurement
 	// Parse provider ID to determine cloud provider
 	// Format: <provider>:///<region>/<instance-id> or similar variations
 	provider := parseProvider(providerID)
-	providerData[providerServiceName] = measurement.Str(provider)
-	providerData[providerID] = measurement.Str(providerID)
-	providerData[providerSourceNode] = measurement.Str(nodeName)
+	providerData[providerSubTypeServiceName] = measurement.Str(provider)
+	providerData[providerSubTypeProviderID] = measurement.Str(providerID)
+	providerData[providerSubTypeSourceNode] = measurement.Str(nodeName)
 
 	return providerData, nil
 }

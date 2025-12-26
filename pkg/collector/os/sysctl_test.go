@@ -63,8 +63,8 @@ func TestSysctlCollector_Integration(t *testing.T) {
 		t.Errorf("Expected type %s, got %s", measurement.TypeOS, m.Type)
 	}
 
-	if len(m.Subtypes) != 3 {
-		t.Errorf("Expected 3 subtypes, got %d", len(m.Subtypes))
+	if len(m.Subtypes) != 4 {
+		t.Errorf("Expected 4 subtypes (grub, sysctl, kmod, release), got %d", len(m.Subtypes))
 		return
 	}
 

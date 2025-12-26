@@ -1,8 +1,8 @@
 kind: Snapshot
 apiVersion: snapshot.dgxc.io/v1
 metadata:
-  measurement-timestamp: "2025-12-25T19:53:45Z"
-  snapshot-version: 0.6.6
+  measurement-timestamp: "2025-12-26T15:58:39Z"
+  snapshot-version: 0.7.0
   source-node: ip-10-0-160-248.ec2.internal
 measurements:
   - type: SystemD
@@ -40,7 +40,7 @@ measurements:
           CPUSchedulingPriority: "0"
           CPUSchedulingResetOnFork: false
           CPUShares: 18446744073709551615
-          CPUUsageNSec: 596907278989000
+          CPUUsageNSec: 622075597958000
           CPUWeight: 18446744073709551615
           CacheDirectory: '[]'
           CacheDirectoryMode: "493"
@@ -205,7 +205,7 @@ measurements:
           Markers: '[]'
           MemoryAccounting: true
           MemoryAvailable: 18446744073709551615
-          MemoryCurrent: 97113718784
+          MemoryCurrent: 97168719872
           MemoryDenyWriteExecute: false
           MemoryHigh: 18446744073709551615
           MemoryLimit: 18446744073709551615
@@ -1160,16 +1160,16 @@ measurements:
           /proc/sys/dev/tty/legacy_tiocsti: "0"
           /proc/sys/fs/aio-max-nr: "65536"
           /proc/sys/fs/aio-nr: "0"
-          /proc/sys/fs/dentry-state: "1843418\t1742773\t45\t0\t756010\t0"
+          /proc/sys/fs/dentry-state: "1865514\t1764890\t45\t0\t778161\t0"
           /proc/sys/fs/dir-notify-enable: "1"
           /proc/sys/fs/epoll/max_user_watches: "216410223"
           /proc/sys/fs/fanotify/max_queued_events: "16384"
           /proc/sys/fs/fanotify/max_user_groups: "128"
           /proc/sys/fs/fanotify/max_user_marks: "1048576"
           /proc/sys/fs/file-max: "9223372036854775807"
-          /proc/sys/fs/file-nr: "2016\t0\t9223372036854775807"
-          /proc/sys/fs/inode-nr: "1082368\t435"
-          /proc/sys/fs/inode-state: "1082368\t435\t0\t0\t0\t0\t0"
+          /proc/sys/fs/file-nr: "2880\t0\t9223372036854775807"
+          /proc/sys/fs/inode-nr: "1082313\t435"
+          /proc/sys/fs/inode-state: "1082313\t435\t0\t0\t0\t0\t0"
           /proc/sys/fs/inotify/max_queued_events: "16384"
           /proc/sys/fs/inotify/max_user_instances: "65535"
           /proc/sys/fs/inotify/max_user_watches: "524288"
@@ -1271,7 +1271,7 @@ measurements:
           /proc/sys/kernel/msgmni: "32000"
           /proc/sys/kernel/ngroups_max: "65536"
           /proc/sys/kernel/nmi_watchdog: "0"
-          /proc/sys/kernel/ns_last_pid: "3198815"
+          /proc/sys/kernel/ns_last_pid: "3683387"
           /proc/sys/kernel/numa_balancing: "0"
           /proc/sys/kernel/numa_balancing_promote_rate_limit_MBps: "65536"
           /proc/sys/kernel/oops_all_cpu_backtrace: "0"
@@ -1307,7 +1307,7 @@ measurements:
           /proc/sys/kernel/random/entropy_avail: "256"
           /proc/sys/kernel/random/poolsize: "256"
           /proc/sys/kernel/random/urandom_min_reseed_secs: "60"
-          /proc/sys/kernel/random/uuid: 10782f89-be71-4658-a149-75327b062696
+          /proc/sys/kernel/random/uuid: 0692ecec-c13d-4deb-b9f8-4ae536a8e2b5
           /proc/sys/kernel/random/write_wakeup_threshold: "256"
           /proc/sys/kernel/randomize_va_space: "2"
           /proc/sys/kernel/real-root-dev: "0"
@@ -1535,12 +1535,27 @@ measurements:
           xt_state: true
           xt_statistic: true
           xt_tcpudp: true
+      - subtype: release
+        data:
+          BUG_REPORT_URL: https://bugs.launchpad.net/ubuntu/
+          HOME_URL: https://www.ubuntu.com/
+          ID: ubuntu
+          ID_LIKE: debian
+          LOGO: ubuntu-logo
+          NAME: Ubuntu
+          PRETTY_NAME: Ubuntu 24.04.3 LTS
+          PRIVACY_POLICY_URL: https://www.ubuntu.com/legal/terms-and-policies/privacy-policy
+          SUPPORT_URL: https://help.ubuntu.com/
+          UBUNTU_CODENAME: noble
+          VERSION: 24.04.3 LTS (Noble Numbat)
+          VERSION_CODENAME: noble
+          VERSION_ID: "24.04"
   - type: K8s
     subtypes:
       - subtype: server
         data:
           goVersion: go1.24.6
-          platform: linux/amd64
+          platform: linux/arm64
           version: v1.33.5-eks-3025e55
       - subtype: image
         data:
@@ -1764,6 +1779,11 @@ measurements:
           vgpuManager.enabled: "false"
           vgpuManager.image: vgpu-manager
           vgpuManager.imagePullPolicy: IfNotPresent
+      - subtype: provider
+        data:
+          provider-id: aws:///us-east-1-dfw-2a/i-03f2b75345f7ccfb4
+          service: eks
+          source-node: ip-10-0-160-248.ec2.internal
   - type: GPU
     subtypes:
       - subtype: smi

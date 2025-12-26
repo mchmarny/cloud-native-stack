@@ -81,6 +81,8 @@ func (r *ConfigurationRecommender) Recommend(ctx context.Context, intent recipe.
 		"include_context", query.IncludeContext,
 	)
 
+	// TODO: Implement actual recommendation logic
+
 	recommendGenerateTotal.WithLabelValues("success").Inc()
 
 	// Placeholder implementation
