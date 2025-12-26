@@ -3,7 +3,7 @@
 Cloud Native Stack (CNS) provides tooling and comprehensive documentation to help you deploy, validate, and operate optimized AI workloads in your GPU-accelerated Kubernetes clusters:
 
 - **Documentation** – Installation guides, playbooks, optimizations, and troubleshooting for GPU infrastructure
-- **`eidos` CLI** – Command-line tool for system snapshots and CNS recipe generation
+- **Eidos CLI** – Command-line tool for system snapshots and CNS recipe generation
 - **Eidos Agent** – Kubernetes job for automated cluster configuration and optimization using NCS recipes
 
 ## Quick Start
