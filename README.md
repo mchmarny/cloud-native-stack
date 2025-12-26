@@ -13,7 +13,7 @@ Cloud Native Stack (CNS) provides tooling and comprehensive documentation to hel
 You can find the latest release [here](https://github.com/mchmarny/cloud-native-stack/releases/latest). You can install the latest version manually from the [releases section of the repo](https://github.com/mchmarny/cloud-native-stack/releases/latest) or using provided script:
 
 ```shell
-curl -sfL https://raw.githubusercontent.com/mchmarny/cloud-native-stack/refs/heads/main/installer | bash -s --
+curl -sfL https://raw.githubusercontent.com/mchmarny/cloud-native-stack/refs/heads/main/install | bash -s --
 ```
 
 Verify installation:
