@@ -306,11 +306,13 @@ overlays:
 
 		if containerdSubtype == nil {
 			t.Fatal("containerd.service subtype not found")
+			return
 		}
 
 		// Verify context from base is preserved
 		if containerdSubtype.Context == nil {
 			t.Fatal("expected context to be present, got nil")
+			return
 		}
 
 		if source, ok := containerdSubtype.Context["source"]; !ok || source != "systemctl" {
@@ -354,6 +356,7 @@ overlays:
 
 		if systemdMeasurement == nil {
 			t.Fatal("SystemD measurement not found in response")
+			return
 		}
 
 		// Find containerd.service subtype
@@ -367,6 +370,7 @@ overlays:
 
 		if containerdSubtype == nil {
 			t.Fatal("containerd.service subtype not found")
+			return
 		}
 
 		// Verify context is stripped

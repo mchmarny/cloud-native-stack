@@ -8,7 +8,6 @@ go.work.sum
 # Test binaries
 *.test
 tmp
-awsme_test_outputs
 test_outputs
 
 # Dependency directories

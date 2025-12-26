@@ -18,6 +18,7 @@ func TestNew(t *testing.T) {
 	s := New(WithHandler(routes))
 	if s == nil {
 		t.Fatal("expected server instance, got nil")
+		return
 	}
 
 	if s.config == nil {
@@ -217,7 +218,7 @@ func TestGracefulShutdown(t *testing.T) {
 
 	s := New(WithConfig(cfg))
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
 	// Start server in background

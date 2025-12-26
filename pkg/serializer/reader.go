@@ -119,6 +119,9 @@ func (r *Reader) Deserialize(v any) error {
 		}
 		return nil
 
+	case FormatTable:
+		return fmt.Errorf("table format is not supported for deserialization")
+
 	default:
 		return fmt.Errorf("unsupported format for deserialization: %s", r.format)
 	}

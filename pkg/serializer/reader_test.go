@@ -87,6 +87,7 @@ func TestNewReader(t *testing.T) {
 		}
 		if reader == nil {
 			t.Fatal("Expected non-nil reader")
+			return
 		}
 		if reader.format != FormatJSON {
 			t.Errorf("Expected format %v, got %v", FormatJSON, reader.format)
@@ -101,6 +102,7 @@ func TestNewReader(t *testing.T) {
 		}
 		if reader == nil {
 			t.Fatal("Expected non-nil reader")
+			return
 		}
 		if reader.format != FormatYAML {
 			t.Errorf("Expected format %v, got %v", FormatYAML, reader.format)

@@ -191,6 +191,7 @@ func flattenValue(out map[string]any, val reflect.Value, prefix string) {
 		val = val.Elem()
 	}
 
+	//nolint:exhaustive // We handle the common cases explicitly; all others go to default
 	switch val.Kind() {
 	case reflect.Struct:
 		typ := val.Type()

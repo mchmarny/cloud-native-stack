@@ -13,7 +13,7 @@ import (
 const sysctlSubtypeName = "sysctl"
 
 func TestSysctlCollector_Collect_ContextCancellation(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 
 	collector := &Collector{}
 
@@ -41,7 +41,7 @@ func TestSysctlCollector_Integration(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
@@ -57,6 +57,7 @@ func TestSysctlCollector_Integration(t *testing.T) {
 	// Should return measurement with TypeOS and three subtypes
 	if m == nil {
 		t.Fatal("Expected non-nil measurement")
+		return
 	}
 
 	if m.Type != measurement.TypeOS {
@@ -112,7 +113,7 @@ func TestSysctlCollector_ExcludesNet(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
@@ -156,7 +157,7 @@ func TestSysctlCollector_MultiLineKeyValueParsing(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
@@ -183,6 +184,7 @@ func TestSysctlCollector_MultiLineKeyValueParsing(t *testing.T) {
 
 	if sysctlSubtype == nil {
 		t.Fatal("Expected to find sysctl subtype")
+		return
 	}
 
 	params := sysctlSubtype.Data
@@ -232,7 +234,7 @@ func TestSysctlCollector_SingleLineValues(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
@@ -259,6 +261,7 @@ func TestSysctlCollector_SingleLineValues(t *testing.T) {
 
 	if sysctlSubtype == nil {
 		t.Fatal("Expected to find sysctl subtype")
+		return
 	}
 
 	params := sysctlSubtype.Data
@@ -292,7 +295,7 @@ func TestSysctlCollector_MixedContent(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)

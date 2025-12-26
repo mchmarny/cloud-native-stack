@@ -93,7 +93,7 @@ func TestPolicyCollector_Collect(t *testing.T) {
 	// This test validates the structure when policies are found
 	// Note: The dynamic client discovery is complex to mock fully,
 	// so we're testing the parsing logic and structure
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	collector := createTestPolicyCollector()
 
@@ -117,7 +117,7 @@ func TestPolicyCollector_Collect(t *testing.T) {
 
 func TestPolicyCollector_EmptyCluster(t *testing.T) {
 	// Test behavior when no policies exist
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	collector := createTestPolicyCollector()
 
@@ -128,7 +128,7 @@ func TestPolicyCollector_EmptyCluster(t *testing.T) {
 }
 
 func TestPolicyCollector_WithCancelledContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 	cancel() // Cancel immediately
 
 	collector := createTestPolicyCollector()

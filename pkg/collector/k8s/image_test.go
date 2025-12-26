@@ -55,7 +55,7 @@ func createTestCollector(objects ...corev1.Pod) *Collector {
 func TestImageCollector_Collect(t *testing.T) {
 	t.Setenv("NODE_NAME", testNodeName)
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: "pod-a", Namespace: "ns"},
 		Spec: corev1.PodSpec{
@@ -102,7 +102,7 @@ func TestImageCollector_Collect(t *testing.T) {
 }
 
 func TestImageCollector_CollectWithCancelledContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 	cancel() // Cancel immediately
 
 	collector := createTestCollector()
@@ -116,7 +116,7 @@ func TestImageCollector_CollectWithCancelledContext(t *testing.T) {
 func TestImageCollector_MultipleLocations(t *testing.T) {
 	t.Setenv("NODE_NAME", testNodeName)
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	pod1 := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: "pod-1", Namespace: "ns1"},
 		Spec: corev1.PodSpec{
@@ -162,7 +162,7 @@ func TestImageCollector_MultipleLocations(t *testing.T) {
 func TestImageCollector_WithDigest(t *testing.T) {
 	t.Setenv("NODE_NAME", testNodeName)
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{Name: "pod-a", Namespace: "ns"},
 		Spec: corev1.PodSpec{

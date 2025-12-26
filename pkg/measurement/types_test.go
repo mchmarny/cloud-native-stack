@@ -245,6 +245,7 @@ func TestMeasurement_GetSubtype(t *testing.T) {
 		st := m.GetSubtype(testSubtypeCluster)
 		if st == nil {
 			t.Fatal("GetSubtype() returned nil")
+			return
 		}
 		if st.Name != testSubtypeCluster {
 			t.Errorf("GetSubtype() name = %v, want cluster", st.Name)
@@ -786,6 +787,7 @@ func TestMeasurement_GetOrCreateSubtype(t *testing.T) {
 		st := m.GetOrCreateSubtype("cluster")
 		if st == nil {
 			t.Fatal("GetOrCreateSubtype() returned nil")
+			return
 		}
 		if st.Name != "cluster" {
 			t.Errorf("Name = %v, want cluster", st.Name)
@@ -804,6 +806,7 @@ func TestMeasurement_GetOrCreateSubtype(t *testing.T) {
 		st := m.GetOrCreateSubtype("new_subtype")
 		if st == nil {
 			t.Fatal("GetOrCreateSubtype() returned nil")
+			return
 		}
 		if st.Name != "new_subtype" {
 			t.Errorf("Name = %v, want new_subtype", st.Name)

@@ -9,7 +9,7 @@ import (
 )
 
 func TestSystemDCollector_Collect_ContextCancellation(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 	cancel() // Cancel immediately
 
 	collector := &Collector{
@@ -34,7 +34,7 @@ func TestSystemDCollector_DefaultServices(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	// Test with nil services (should use default)
 	collector := &Collector{}
@@ -55,7 +55,7 @@ func TestSystemDCollector_CustomServices(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 
 	collector := &Collector{
 		Services: []string{"containerd.service", "docker.service"},
@@ -71,6 +71,7 @@ func TestSystemDCollector_CustomServices(t *testing.T) {
 	// If successful, verify structure
 	if m == nil {
 		t.Fatal("Expected non-nil measurement")
+		return
 	}
 
 	if m.Type != measurement.TypeSystemD {
@@ -99,7 +100,7 @@ func TestSystemDCollector_Integration(t *testing.T) {
 	}
 
 	// This test requires systemd to be running
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{
 		Services: []string{"containerd.service"},
 	}

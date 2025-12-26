@@ -48,7 +48,6 @@ func (k *Collector) collectProvider(ctx context.Context) (map[string]measurement
 	providerID := node.Spec.ProviderID
 	if providerID == "" {
 		// No provider ID means this is likely a bare-metal or on-premises cluster
-		// TODO: add other detection options
 		return providerData, nil
 	}
 

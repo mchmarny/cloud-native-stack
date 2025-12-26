@@ -884,6 +884,7 @@ func ExampleVersion_Compare() {
 	v3, _ := ParseVersion("1.3.0")
 
 	fmt.Println(v1.Compare(v2)) // v1 < v2
+	//nolint:gocritic // intentional self-comparison for demonstration
 	fmt.Println(v2.Compare(v2)) // v2 == v2
 	fmt.Println(v3.Compare(v1)) // v3 > v1
 

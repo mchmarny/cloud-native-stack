@@ -10,7 +10,7 @@ import (
 )
 
 func TestGrubCollector_Collect_ContextCancellation(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 	cancel() // Cancel immediately
 
 	collector := &Collector{}
@@ -35,7 +35,7 @@ func TestGrubCollector_Integration(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
@@ -51,6 +51,7 @@ func TestGrubCollector_Integration(t *testing.T) {
 	// Should return measurement with TypeOS and three subtypes: grub, sysctl, kmod
 	if m == nil {
 		t.Fatal("Expected non-nil measurement")
+		return
 	}
 
 	if m.Type != measurement.TypeOS {
@@ -73,6 +74,7 @@ func TestGrubCollector_Integration(t *testing.T) {
 
 	if grubSubtype == nil {
 		t.Fatal("Expected to find grub subtype")
+		return
 	}
 
 	// Validate that Data is a map
@@ -95,7 +97,7 @@ func TestGrubCollector_ValidatesParsing(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
@@ -122,6 +124,7 @@ func TestGrubCollector_ValidatesParsing(t *testing.T) {
 
 	if grubSubtype == nil {
 		t.Fatal("Expected to find grub subtype")
+		return
 	}
 
 	props := grubSubtype.Data

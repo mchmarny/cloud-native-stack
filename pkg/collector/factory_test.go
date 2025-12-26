@@ -35,7 +35,7 @@ func TestDefaultCollectorFactory_CreateOSCollector(t *testing.T) {
 		t.Fatal("Expected non-nil collector")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	_, err := collector.Collect(ctx)
 	if err != nil {
 		t.Logf("Collect returned error (acceptable): %v", err)

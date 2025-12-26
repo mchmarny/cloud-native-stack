@@ -6,12 +6,15 @@ linters:
     - dogsled
     - dupl
     - errorlint
+    - exhaustive
     - funlen
     - goconst
+    - gocritic
     - gosec
     - importas
     - misspell
     - nakedret
+    - nilnil
     - prealloc
     - revive
     - staticcheck
@@ -19,6 +22,7 @@ linters:
     - unconvert
     - unparam
     - whitespace
+
   settings:
     funlen:
       lines: 200

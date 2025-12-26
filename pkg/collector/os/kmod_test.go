@@ -10,7 +10,7 @@ import (
 )
 
 func TestKModCollector_Collect(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	// This test validates the interface works correctly
@@ -30,7 +30,7 @@ func TestKModCollector_Collect(t *testing.T) {
 }
 
 func TestKModCollector_Collect_ContextCancellation(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 	cancel() // Cancel immediately
 
 	collector := &Collector{}
@@ -55,7 +55,7 @@ func TestKModCollector_Integration(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
@@ -71,6 +71,7 @@ func TestKModCollector_Integration(t *testing.T) {
 	// Should return measurement with TypeOS and three subtypes
 	if m == nil {
 		t.Fatal("Expected non-nil measurement")
+		return
 	}
 
 	if m.Type != measurement.TypeOS {
@@ -93,6 +94,7 @@ func TestKModCollector_Integration(t *testing.T) {
 
 	if kmodSubtype == nil {
 		t.Fatal("Expected to find kmod subtype")
+		return
 	}
 
 	// Validate that Data contains module names

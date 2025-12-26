@@ -13,7 +13,7 @@ import (
 const releaseSubtypeName = "release"
 
 func TestReleaseCollector_Collect_ContextCancellation(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 	cancel() // Cancel immediately
 
 	collector := &Collector{}
@@ -38,7 +38,7 @@ func TestReleaseCollector_Integration(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
@@ -54,6 +54,7 @@ func TestReleaseCollector_Integration(t *testing.T) {
 	// Should return measurement with TypeOS and four subtypes: grub, sysctl, kmod, release
 	if m == nil {
 		t.Fatal("Expected non-nil measurement")
+		return
 	}
 
 	if m.Type != measurement.TypeOS {
@@ -76,6 +77,7 @@ func TestReleaseCollector_Integration(t *testing.T) {
 
 	if releaseSubtype == nil {
 		t.Fatal("Expected to find release subtype")
+		return
 	}
 
 	// Validate that Data is a map
@@ -106,7 +108,7 @@ func TestReleaseCollector_ValidatesKeyValueParsing(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
@@ -133,6 +135,7 @@ func TestReleaseCollector_ValidatesKeyValueParsing(t *testing.T) {
 
 	if releaseSubtype == nil {
 		t.Fatal("Expected to find release subtype")
+		return
 	}
 
 	data := releaseSubtype.Data
@@ -164,7 +167,7 @@ func TestReleaseCollector_HandlesQuotedValues(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
@@ -191,6 +194,7 @@ func TestReleaseCollector_HandlesQuotedValues(t *testing.T) {
 
 	if releaseSubtype == nil {
 		t.Fatal("Expected to find release subtype")
+		return
 	}
 
 	data := releaseSubtype.Data
@@ -248,7 +252,7 @@ func TestReleaseCollector_ValidatesCommonFields(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
@@ -271,6 +275,7 @@ func TestReleaseCollector_ValidatesCommonFields(t *testing.T) {
 
 	if releaseSubtype == nil {
 		t.Fatal("Expected to find release subtype")
+		return
 	}
 
 	data := releaseSubtype.Data
@@ -298,7 +303,7 @@ func TestReleaseCollector_DataTypes(t *testing.T) {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	m, err := collector.Collect(ctx)
@@ -321,6 +326,7 @@ func TestReleaseCollector_DataTypes(t *testing.T) {
 
 	if releaseSubtype == nil {
 		t.Fatal("Expected to find release subtype")
+		return
 	}
 
 	data := releaseSubtype.Data
@@ -336,7 +342,7 @@ func TestReleaseCollector_DataTypes(t *testing.T) {
 
 // BenchmarkReleaseCollector_Collect benchmarks the release collection process
 func BenchmarkReleaseCollector_Collect(b *testing.B) {
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	// Verify it works before benchmarking
@@ -353,7 +359,7 @@ func BenchmarkReleaseCollector_Collect(b *testing.B) {
 
 // ExampleCollector_collectRelease demonstrates how the release collector works
 func ExampleCollector_collectRelease() {
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := &Collector{}
 
 	measurement, err := collector.Collect(ctx)

@@ -1,7 +1,7 @@
-# Makefile for the awsme project
-# Purpose: Build, lint, test, and manage releases for the awsme project.
+# Makefile for the cloud-native-stack project
+# Purpose: Build, lint, test, and manage releases for the cloud-native-stack project.
 
-REPO_NAME          := awsme
+REPO_NAME          := cloud-native-stack
 VERSION            ?= $(shell git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
 YAML_FILES         := $(shell find . -type f \( -iname "*.yml" -o -iname "*.yaml" \) ! -path "./docs/*")
 COMMIT             := $(shell git rev-parse HEAD)

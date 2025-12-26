@@ -11,7 +11,7 @@ import (
 func TestKubernetesCollector_Collect(t *testing.T) {
 	t.Setenv("NODE_NAME", "test-node")
 
-	ctx := context.Background()
+	ctx := context.TODO()
 	collector := createTestCollector()
 
 	m, err := collector.Collect(ctx)
@@ -48,7 +48,7 @@ func TestKubernetesCollector_Collect(t *testing.T) {
 }
 
 func TestKubernetesCollector_CollectWithCancelledContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.TODO())
 	cancel() // Cancel immediately
 
 	collector := createTestCollector()
