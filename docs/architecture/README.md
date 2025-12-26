@@ -95,10 +95,6 @@ if err := g.Wait(); err != nil {
 flowchart TD
     A["Developer"] --> B["eidos CLI"]
     B --> C["Local Node<br/>(K8s/GPU)"]
-    
-    style A fill:#e3f2fd
-    style B fill:#e8f5e9
-    style C fill:#fff4e1
 ```
 
 ### Topology 2: Centralized API with Load Balancer
@@ -121,15 +117,6 @@ flowchart TD
     API3["API v3 Pod"] --> PROM
     
     PROM["Prometheus<br/>(Metrics)"]
-    
-    style C1 fill:#e3f2fd
-    style C2 fill:#e3f2fd
-    style CN fill:#e3f2fd
-    style LB fill:#fff9c4
-    style API1 fill:#e8f5e9
-    style API2 fill:#e8f5e9
-    style API3 fill:#e8f5e9
-    style PROM fill:#f3e5f5
 ```
 
 ### Topology 3: Kubernetes Job Agent
@@ -153,15 +140,6 @@ flowchart TD
         
         STORE["ConfigMap / Secret<br/>(Snapshots stored here)"]
     end
-    
-    style K8S fill:#f5f5f5,stroke:#333,stroke-width:2px
-    style NODE1 fill:#fff4e1
-    style NODE2 fill:#fff4e1
-    style JOB1 fill:#e8f5e9
-    style JOB2 fill:#e8f5e9
-    style OUT1 fill:#e3f2fd
-    style OUT2 fill:#e3f2fd
-    style STORE fill:#f3e5f5
 ```
 
 ### Topology 4: Service Mesh Integration
@@ -181,14 +159,6 @@ flowchart LR
     end
     
     CLIENT["Clients"] --> PROXY
-    
-    style MESH fill:#f5f5f5,stroke:#333,stroke-width:2px
-    style POD fill:#fff4e1
-    style PROXY fill:#fff9c4
-    style API fill:#e8f5e9
-    style OBS fill:#e3f2fd
-    style SEC fill:#ffebee
-    style CLIENT fill:#e3f2fd
 ```
 
 ## Shared Core Packages
@@ -212,15 +182,6 @@ flowchart TD
     SER["serializer/<br/>Output formatting<br/>(JSON, YAML, table)"]
     LOG["logging/<br/>Structured logging"]
     SVR["server/<br/>HTTP server<br/>infrastructure (API only)"]
-    
-    style PKG fill:#f3e5f5
-    style COLL fill:#e8f5e9
-    style MEAS fill:#e8f5e9
-    style REC fill:#e8f5e9
-    style VER fill:#e8f5e9
-    style SER fill:#e8f5e9
-    style LOG fill:#e8f5e9
-    style SVR fill:#fff9c4
 ```
 
 ## Data Flow

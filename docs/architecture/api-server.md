@@ -23,12 +23,6 @@ flowchart TD
     C3 --> D["Application Handler<br/>recipe.Builder.HandleRecipes"]
     
     D --> D1["1. Method validation (GET)<br/>2. Parse query params<br/>3. Build query<br/>4. Builder.Build(ctx, query)<br/>5. Return JSON response"]
-    
-    style A fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#f3e5f5
-    style C2 fill:#ffeb3b
-    style D fill:#e8f5e9
 ```
 
 ## Request Flow
@@ -58,14 +52,6 @@ flowchart TD
     H5["E. Respond<br/>• Set Cache-Control<br/>• Serialize to JSON<br/>• Return 200 OK"] --> Z
     
     Z[JSON Response]
-    
-    style M1 fill:#e3f2fd
-    style M2 fill:#e3f2fd
-    style M3 fill:#ffebee
-    style M4 fill:#fff9c4
-    style M5 fill:#e3f2fd
-    style H fill:#e8f5e9
-    style H4 fill:#f3e5f5
 ```
 
 ## Component Details

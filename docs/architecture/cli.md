@@ -25,12 +25,6 @@ flowchart TD
     E --> E1["Collector Factory"]
     E --> E2["Recipe Builder"]
     E --> E3["Serializer<br/>(JSON/YAML/Table)"]
-    
-    style A fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#e8f5e9
-    style D fill:#e8f5e9
-    style E fill:#f3e5f5
 ```
 
 ## Component Details
