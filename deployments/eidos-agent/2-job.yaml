@@ -53,8 +53,9 @@ spec:
             - |
               set -e
               /ko-app/eidos --debug snapshot -t yaml -o /export/snapshot.yaml
-              cat /tmp/snapshot.yaml
+              cat /export/snapshot.yaml
               /ko-app/eidos --debug recommend -t yaml -f /export/snapshot.yaml -i training -o /export/recommend.yaml
+              cat /export/recommend.yaml
           resources:
             requests:
               cpu: "1"
