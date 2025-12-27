@@ -41,9 +41,6 @@ jobs:
       - name: Install ko
         uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d  # v0.9
 
-      # - name: Install cosign
-      #   uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62  # v3.10.0
-
       - name: Install Syft
         uses: anchore/sbom-action/download-syft@43a17d6e7add2b5535efe4dcae9952337c479a93  # v0.20.11
 
@@ -95,20 +92,6 @@ jobs:
           image_digest: '${{ steps.img.outputs.image-cli-digest }}'
           registry_password: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Generate artifact attestation for eidos-api-server
-      #   uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8  # v3.1.0
-      #   with:
-      #     subject-name: ghcr.io/${{ github.repository_owner }}/eidos-api-server
-      #     subject-digest: '${{ steps.img.outputs.image-api-digest }}'
-      #     push-to-registry: true
-
-      # - name: Generate artifact attestation for eidos
-      #   uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8  # v3.1.0
-      #   with:
-      #     subject-name: ghcr.io/${{ github.repository_owner }}/eidos
-      #     subject-digest: '${{ steps.img.outputs.image-cli-digest }}'
-      #     push-to-registry: true
-
       # Auth to GCP
       - name: Get Auth Token
         id: auth
@@ -124,7 +107,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db  # v3.0.1
 
       # Update API Service
-      - name: Update image in Cloud Run
+      - name: Update API image in Cloud Run
         if: steps.auth.outcome == 'success' && steps.release.outcome == 'success'
         shell: bash
         run: |
