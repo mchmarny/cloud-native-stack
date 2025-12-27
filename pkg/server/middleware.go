@@ -13,10 +13,12 @@ import (
 // withMiddleware wraps handlers with common middleware
 func (s *Server) withMiddleware(handler http.HandlerFunc) http.HandlerFunc {
 	return s.metricsMiddleware(
-		s.requestIDMiddleware(
-			s.panicRecoveryMiddleware( // Recover first to prevent token waste on panics
-				s.rateLimitMiddleware(
-					s.loggingMiddleware(handler),
+		s.versionMiddleware(
+			s.requestIDMiddleware(
+				s.panicRecoveryMiddleware( // Recover first to prevent token waste on panics
+					s.rateLimitMiddleware(
+						s.loggingMiddleware(handler),
+					),
 				),
 			),
 		),
@@ -24,6 +26,19 @@ func (s *Server) withMiddleware(handler http.HandlerFunc) http.HandlerFunc {
 }
 
 // Middleware implementations
+
+// versionMiddleware handles API version negotiation and sets version header
+func (s *Server) versionMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		version := negotiateAPIVersion(r)
+		SetAPIVersionHeader(w, version)
+
+		// Store version in context for handlers to access if needed
+		ctx := context.WithValue(r.Context(), contextKeyAPIVersion, version)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+}
 
 // requestIDMiddleware extracts or generates request IDs
 func (s *Server) requestIDMiddleware(next http.HandlerFunc) http.HandlerFunc {
@@ -103,19 +118,23 @@ func (s *Server) loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		start := time.Now()
 		requestID := r.Context().Value(contextKeyRequestID)
 
+		// Wrap response writer to track status code
+		rw := newResponseWriter(w)
+
 		slog.Debug("request started",
 			"requestID", requestID,
 			"method", r.Method,
 			"path", r.URL.Path,
 		)
 
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(rw, r)
 
 		duration := time.Since(start)
 		slog.Debug("request completed",
 			"requestID", requestID,
 			"method", r.Method,
 			"path", r.URL.Path,
+			"status", rw.Status(),
 			"duration", duration.String(),
 		)
 	}

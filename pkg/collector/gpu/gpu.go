@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os/exec"
+	"time"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
@@ -19,6 +20,10 @@ type Collector struct {
 // Collect retrieves the NVIDIA SMI information by executing nvidia-smi command and
 // parses the XML output into NVSMIDevice structures
 func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+	// Add timeout to prevent runaway operations
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err

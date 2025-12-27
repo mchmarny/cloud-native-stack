@@ -1,9 +1,11 @@
 package recipe
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/version"
@@ -28,6 +30,10 @@ func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
 			})
 		return
 	}
+
+	// Add request-scoped timeout
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
 
 	q, err := ParseQuery(r)
 	if err != nil {
@@ -54,7 +60,7 @@ func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
 		"intent", q.Intent.String(),
 	)
 
-	resp, err := b.BuildFromQuery(r.Context(), q)
+	resp, err := b.BuildFromQuery(ctx, q)
 	if err != nil {
 		server.WriteError(w, r, http.StatusInternalServerError, server.ErrCodeInternalError,
 			"Failed to build recipe", true, map[string]interface{}{

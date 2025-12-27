@@ -6,4 +6,6 @@ type contextKey string
 const (
 	// contextKeyRequestID is the context key for request ID
 	contextKeyRequestID contextKey = "requestID"
+	// contextKeyAPIVersion is the context key for API version
+	contextKeyAPIVersion contextKey = "apiVersion"
 )

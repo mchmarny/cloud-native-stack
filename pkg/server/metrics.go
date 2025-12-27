@@ -52,18 +52,8 @@ var (
 	)
 )
 
-// responseWriter wraps http.ResponseWriter to capture status code
-type responseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	rw.statusCode = code
-	rw.ResponseWriter.WriteHeader(code)
-}
-
-// metricsMiddleware instruments HTTP requests with Prometheus metrics
+// metricsMiddleware instruments HTTP requests with Prometheus metrics.
+// It tracks request rate, errors, and duration (RED metrics) for observability.
 func (s *Server) metricsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -71,14 +61,14 @@ func (s *Server) metricsMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		defer httpRequestsInFlight.Dec()
 
 		// Wrap response writer to capture status code
-		wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		wrapped := newResponseWriter(w)
 
 		next.ServeHTTP(wrapped, r)
 
 		duration := time.Since(start).Seconds()
 		path := r.URL.Path
 		method := r.Method
-		status := strconv.Itoa(wrapped.statusCode)
+		status := strconv.Itoa(wrapped.Status())
 
 		httpRequestsTotal.WithLabelValues(method, path, status).Inc()
 		httpRequestDuration.WithLabelValues(method, path).Observe(duration)

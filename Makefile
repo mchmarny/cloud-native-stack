@@ -59,7 +59,7 @@ lint-yaml: ## Lints YAML files
 .PHONY: test
 test: ## Runs unit tests
 	@set -e; \
-	echo "Running tests"; \
+	echo "Running tests with race detector"; \
 	go test -count=1 -race -covermode=atomic -coverprofile=coverage.out ./... || exit 1; \
 	echo "Test coverage"; \
 	go tool cover -func=coverage.out

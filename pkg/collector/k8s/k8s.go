@@ -70,7 +70,7 @@ func (k *Collector) getClient() error {
 		return nil
 	}
 	var err error
-	k.ClientSet, k.RestConfig, err = getKubeClient("")
+	k.ClientSet, k.RestConfig, err = GetKubeClient()
 	if err != nil {
 		return fmt.Errorf("failed to get kubernetes client: %w", err)
 	}
