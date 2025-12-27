@@ -81,6 +81,7 @@ func TestSysctlCollector_Integration(t *testing.T) {
 
 	if sysctlSubtype == nil {
 		t.Fatal("Expected to find sysctl subtype")
+		return
 	}
 
 	// Validate that Data is a map
@@ -520,6 +521,7 @@ func TestSysctlCollector_ParsesSysctlParameters(t *testing.T) {
 
 			if subtype == nil {
 				t.Fatal("Expected non-nil subtype")
+				return
 			}
 
 			if subtype.Name != "sysctl" {

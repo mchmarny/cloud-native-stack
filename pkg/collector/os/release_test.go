@@ -545,6 +545,7 @@ VERSION_ID="22.04"`,
 
 			if subtype == nil {
 				t.Fatal("Expected non-nil subtype")
+				return
 			}
 
 			if subtype.Name != "release" {
@@ -621,6 +622,7 @@ VERSION_ID="1.0"`
 
 	if subtype == nil {
 		t.Fatal("Expected non-nil subtype")
+		return
 	}
 
 	data := subtype.Data

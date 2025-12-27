@@ -144,6 +144,7 @@ func TestNewParser(t *testing.T) {
 			p := NewParser(tt.opts...)
 			if p == nil {
 				t.Fatal("NewParser() returned nil")
+				return
 			}
 			if p.delimiter != tt.expectedDelimiter {
 				t.Errorf("delimiter = %q, want %q", p.delimiter, tt.expectedDelimiter)

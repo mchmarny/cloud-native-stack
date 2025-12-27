@@ -265,6 +265,7 @@ func TestGrubCollector_ParsesKeyOnlyParameters(t *testing.T) {
 
 			if subtype == nil {
 				t.Fatal("Expected non-nil subtype")
+				return
 			}
 
 			if subtype.Name != "grub" {

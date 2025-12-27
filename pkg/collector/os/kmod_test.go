@@ -196,6 +196,7 @@ rfkill 32768 7 bluetooth,cfg80211, Live 0x0000000000000000`,
 
 			if subtype == nil {
 				t.Fatal("Expected non-nil subtype")
+				return
 			}
 
 			if subtype.Name != "kmod" {

@@ -293,6 +293,7 @@ overlays:
 
 		if systemdMeasurement == nil {
 			t.Fatal("SystemD measurement not found in response")
+			return
 		}
 
 		// Find containerd.service subtype
