@@ -11,20 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	providerSubTypeServiceName = "service"
-	providerSubTypeProviderID  = "provider-id"
-	providerSubTypeSourceNode  = "source-node"
-)
-
-// collectProvider retrieves the cloud provider information from the node spec.
-// It read current node via the Kubernetes API and inspects the providerID field to determine
-// the cloud provider.
-// Typical values:
-//   - EKS (AWS): aws:///us-west-2a/i-0123456789abcdef0
-//   - GKE (GCP): gce://my-project/us-central1-a/gke-cluster-…-node-…
-//   - AKS (Azure): azure:///subscriptions/.../virtualMachines/...
-func (k *Collector) collectProvider(ctx context.Context) (map[string]measurement.Reading, error) {
+func (k *Collector) collectNode(ctx context.Context) (map[string]measurement.Reading, error) {
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -44,19 +31,34 @@ func (k *Collector) collectProvider(ctx context.Context) (map[string]measurement
 
 	providerData := make(map[string]measurement.Reading)
 
-	// Extract provider ID from node spec
+	// Name
+	providerData["source-node"] = measurement.Str(nodeName)
+
+	// Provider
 	providerID := node.Spec.ProviderID
-	if providerID == "" {
-		// No provider ID means this is likely a bare-metal or on-premises cluster
-		return providerData, nil
+	if providerID != "" {
+		providerName := parseProvider(providerID)
+		providerData["provider"] = measurement.Str(providerName)
+		providerData["provider-id"] = measurement.Str(providerID)
 	}
 
-	// Parse provider ID to determine cloud provider
-	// Format: <provider>:///<region>/<instance-id> or similar variations
-	provider := parseProvider(providerID)
-	providerData[providerSubTypeServiceName] = measurement.Str(provider)
-	providerData[providerSubTypeProviderID] = measurement.Str(providerID)
-	providerData[providerSubTypeSourceNode] = measurement.Str(nodeName)
+	// Node CRI-O
+	status := node.Status
+	if status.NodeInfo.ContainerRuntimeVersion != "" {
+		providerData["container-runtime"] = measurement.Str(status.NodeInfo.ContainerRuntimeVersion)
+	}
+
+	if status.NodeInfo.KernelVersion != "" {
+		providerData["kernel-version"] = measurement.Str(status.NodeInfo.KernelVersion)
+	}
+
+	if status.NodeInfo.OperatingSystem != "" {
+		providerData["operating-system"] = measurement.Str(status.NodeInfo.OperatingSystem)
+	}
+
+	if status.NodeInfo.OSImage != "" {
+		providerData["os-image"] = measurement.Str(status.NodeInfo.OSImage)
+	}
 
 	return providerData, nil
 }

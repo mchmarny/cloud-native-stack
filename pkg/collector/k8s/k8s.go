@@ -44,10 +44,10 @@ func (k *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 		return nil, fmt.Errorf("failed to collect cluster policies: %w", err)
 	}
 
-	// Cloud Provider
-	provider, err := k.collectProvider(ctx)
+	// Node
+	node, err := k.collectNode(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to collect provider: %w", err)
+		return nil, fmt.Errorf("failed to collect node: %w", err)
 	}
 
 	// Build measurement using builder pattern
@@ -59,7 +59,7 @@ func (k *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 		).
 		WithSubtype(measurement.Subtype{Name: "image", Data: images}).
 		WithSubtype(measurement.Subtype{Name: "policy", Data: policies}).
-		WithSubtype(measurement.Subtype{Name: "provider", Data: provider}).
+		WithSubtype(measurement.Subtype{Name: "node", Data: node}).
 		Build()
 
 	return res, nil

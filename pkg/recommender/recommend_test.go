@@ -375,9 +375,9 @@ func TestParseK8sSubtypes(t *testing.T) {
 					},
 				},
 				{
-					Name: "provider",
+					Name: "node",
 					Data: map[string]measurement.Reading{
-						"service": measurement.Str("eks"),
+						"provider": measurement.Str("eks"),
 					},
 				},
 			},
@@ -394,9 +394,9 @@ func TestParseK8sSubtypes(t *testing.T) {
 			name: "GKE service",
 			subtypes: []measurement.Subtype{
 				{
-					Name: "provider",
+					Name: "node",
 					Data: map[string]measurement.Reading{
-						"service": measurement.Str("gke"),
+						"provider": measurement.Str("gke"),
 					},
 				},
 			},
@@ -422,9 +422,9 @@ func TestParseK8sSubtypes(t *testing.T) {
 			name: "invalid service type",
 			subtypes: []measurement.Subtype{
 				{
-					Name: "provider",
+					Name: "node",
 					Data: map[string]measurement.Reading{
-						"service": measurement.Str("invalid-service"),
+						"provider": measurement.Str("invalid-service"),
 					},
 				},
 			},
@@ -691,9 +691,9 @@ func createTestSnapshot() *snapshotter.Snapshot {
 						},
 					},
 					{
-						Name: "provider",
+						Name: "node",
 						Data: map[string]measurement.Reading{
-							"service": measurement.Str("eks"),
+							"provider": measurement.Str("eks"),
 						},
 					},
 				},

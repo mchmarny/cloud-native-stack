@@ -212,7 +212,7 @@ func parseK8sSubtypes(subtypes []measurement.Subtype, q *recipe.Query) error {
 	}
 
 	// Parse Service type
-	reading = walkSubtypesForReading("provider", "service", subtypes)
+	reading = walkSubtypesForReading("node", "provider", subtypes)
 	if reading != nil {
 		service := recipe.ServiceType(reading.String())
 		if !service.IsValid() {
