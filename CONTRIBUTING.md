@@ -104,18 +104,24 @@ cloud-native-stack/
 │   ├── eidos/               # CLI binary
 │   └── eidos-api-server/    # API server binary
 ├── pkg/                      # Core packages
-│   ├── api/                 # HTTP server and handlers
-│   ├── cli/                 # CLI commands (urfave/cli)
-│   ├── client/              # API client library
+│   ├── api/                 # HTTP API layer and handlers
+│   ├── cli/                 # CLI commands (urfave/cli v3)
 │   ├── collector/           # System configuration collectors
-│   ├── logging/             # Structured logging utilities
-│   ├── measurement/         # Performance measurements
-│   ├── node/                # Node information
+│   │   ├── gpu/            # GPU hardware collectors
+│   │   ├── k8s/            # Kubernetes API collectors
+│   │   ├── os/             # Operating system collectors
+│   │   └── systemd/        # SystemD service collectors
+│   ├── logging/             # Structured logging (slog)
+│   ├── measurement/         # Measurement types and utilities
 │   ├── recipe/              # Recipe generation logic
+│   │   ├── header/         # Common header types
+│   │   └── version/        # Semantic version parsing
+│   ├── recommender/         # Snapshot analysis and recommendations
 │   ├── serializer/          # Output formatting (JSON/YAML/table)
-│   ├── server/              # Server configuration
-│   ├── snapshotter/         # Snapshot orchestration
-│   └── version/             # Version information
+│   ├── server/              # HTTP server implementation
+│   └── snapshotter/         # Snapshot orchestration
+├── api/                      # API specifications
+│   └── eidos/               # OpenAPI/Swagger definitions
 ├── deployments/             # Kubernetes manifests
 │   └── eidos-agent/         # Agent Job and RBAC
 ├── docs/                    # Documentation
@@ -123,7 +129,8 @@ cloud-native-stack/
 │   ├── playbooks/           # Ansible automation
 │   ├── optimizations/       # Performance tuning
 │   └── troubleshooting/     # Common issues
-├── examples/                # Example configurations
+├── examples/                # Example configurations and comparisons
+├── infra/                   # Infrastructure as code (Terraform)
 ├── tools/                   # Build and release scripts
 ├── .goreleaser.yaml         # Release configuration
 ├── .golangci.yaml           # Linter configuration
@@ -136,26 +143,51 @@ cloud-native-stack/
 #### CLI (`eidos`)
 - **Location**: `cmd/eidos/main.go` → `pkg/cli/`
 - **Framework**: [urfave/cli v3](https://github.com/urfave/cli)
-- **Commands**: `snapshot`, `recipe`
-- **Purpose**: User-facing tool for system snapshots and recipe generation
+- **Commands**: `snapshot`, `recipe`, `recommend`
+- **Purpose**: User-facing tool for system snapshots, recipe generation, and recommendations
+- **Output**: Supports JSON, YAML, and table formats
 
 #### API Server
-- **Location**: `cmd/eidos-api-server/main.go` → `pkg/api/`
-- **Endpoints**: `/v1/recipe`, `/healthz`
-- **Purpose**: HTTP service for recipe generation
+- **Location**: `cmd/eidos-api-server/main.go` → `pkg/server/`, `pkg/api/`
+- **Endpoints**: 
+  - `GET /v1/recipe` - Generate configuration recipes
+  - `GET /health` - Liveness probe
+  - `GET /ready` - Readiness probe
+  - `GET /metrics` - Prometheus metrics
+- **Purpose**: HTTP service for recipe generation with rate limiting and observability
+- **Deployment**: https://cns.dgxc.io
 
 #### Collectors
 - **Location**: `pkg/collector/`
-- **Pattern**: Factory-based registration
-- **Types**: SystemD, OS (grub, sysctl, kmod, release), Kubernetes, GPU
-- **Purpose**: Gather system configuration data
-- **OS Release Collector**: New 4th OS subtype that captures `/etc/os-release` (ID, VERSION_ID, PRETTY_NAME, etc.)
+- **Pattern**: Factory-based with dependency injection
+- **Types**: 
+  - **SystemD**: Service states (containerd, docker, kubelet)
+  - **OS**: 4 subtypes - grub, sysctl, kmod, release
+  - **Kubernetes**: Node info, server version, images, ClusterPolicy
+  - **GPU**: Hardware info, driver version, MIG settings
+- **Purpose**: Parallel collection of system configuration data
+- **Context Support**: All collectors respect context cancellation
 
 #### Recipe Engine
 - **Location**: `pkg/recipe/`
-- **Purpose**: Generate optimized configurations based on environment parameters
-- **Input**: OS, kernel, GPU type, service type, workload intent
-- **Output**: Configuration recommendations
+- **Purpose**: Generate optimized configurations using base-plus-overlay model
+- **Input**: OS, OS version, kernel, K8s service/version, GPU type, workload intent
+- **Output**: Recipe with matched rules and configuration measurements
+- **Data Source**: Embedded YAML configuration (`recipe/data/data-v1.yaml`)
+
+#### Recommender
+- **Location**: `pkg/recommender/`
+- **Purpose**: Analyze system snapshots and generate tailored recommendations
+- **Process**: Extract query from snapshot → Build recipe → Return recommendations
+- **Intent Types**: training, inference, any
+- **Query Extraction**: Parses K8s, OS, GPU measurements to construct recipe query
+
+#### Snapshotter
+- **Location**: `pkg/snapshotter/`
+- **Purpose**: Orchestrate parallel collection of system measurements
+- **Output**: Complete snapshot with metadata and all collector measurements
+- **Usage**: CLI command, Kubernetes Job agent
+- **Format**: Structured snapshot (snapshot.dgxc.io/v1)
 
 ### Common Make Targets
 
@@ -167,6 +199,7 @@ make server       # Start API server locally (debug mode)
 
 # Testing
 make test         # Run unit tests with coverage
+make test-race    # Run tests with race detection
 make qualify      # Run tests, lints, and scans (full check)
 
 # Code Quality
@@ -181,9 +214,13 @@ make info         # Show project and tool versions
 
 # Releases (CI only)
 make release      # Build multi-platform release artifacts
+make snapshot     # Create release snapshot
 make bump-major   # Bump major version
 make bump-minor   # Bump minor version
 make bump-patch   # Bump patch version
+
+# Utilities
+make help         # Show all available targets
 ```
 
 ## Development Workflow
@@ -521,16 +558,26 @@ ls -lh dist/
 # Help
 ./dist/eidos_*/eidos --help
 
-# Snapshot with debug logging
-./dist/eidos_*/eidos --debug snapshot --format yaml
+# Snapshot (outputs to stdout)
+eidos snapshot --format yaml
+eidos snapshot --output system.yaml --format json
 
 # Recipe generation
-./dist/eidos_*/eidos recipe \
+eidos recipe --os ubuntu --service eks --gpu h100
+eidos recipe \
   --os ubuntu \
   --osv 24.04 \
+  --kernel 6.8 \
   --service eks \
+  --k8s 1.33 \
   --gpu h100 \
+  --intent training \
+  --context \
   --format yaml
+
+# Generate recommendations from snapshot
+eidos recommend --snapshot system.yaml --intent training
+eidos recommend -f system.yaml -i inference -o recommendations.yaml
 ```
 
 ### Running the API Server
@@ -543,8 +590,14 @@ make server
 PORT=8080 LOG_LEVEL=debug go run cmd/eidos-api-server/main.go
 
 # Test endpoints
-curl http://localhost:8080/healthz
-curl "http://localhost:8080/v1/recipe?os=ubuntu&gpu=h100"
+curl http://localhost:8080/health
+curl http://localhost:8080/ready
+curl http://localhost:8080/metrics
+curl "http://localhost:8080/v1/recipe?os=ubuntu&gpu=h100&intent=training"
+curl "http://localhost:8080/v1/recipe?os=ubuntu&osv=24.04&service=eks&gpu=gb200&context=true"
+
+# Test with jq
+curl -s "http://localhost:8080/v1/recipe?gpu=h100" | jq '.matchedRules'
 ```
 
 ### Testing in Kubernetes
@@ -552,15 +605,25 @@ curl "http://localhost:8080/v1/recipe?os=ubuntu&gpu=h100"
 Build and deploy the agent locally:
 
 ```bash
-# Build container image
+# Build container image with ko
 ko build --local ./cmd/eidos-api-server
 
-# Update deployment with local image
+# Or build with Docker
+docker build -t eidos:dev -f Dockerfile .
+
+# Deploy agent
+kubectl apply -f deployments/eidos-agent/1-deps.yaml
+kubectl apply -f deployments/eidos-agent/2-job.yaml
+
+# Update job image for testing
 kubectl set image job/eidos -n gpu-operator eidos=<local-image>
 
-# Deploy and check logs
-kubectl apply -f deployments/eidos-agent/
+# Check logs
+kubectl get jobs -n gpu-operator
 kubectl logs -n gpu-operator job/eidos -f
+
+# Get snapshot output
+kubectl logs -n gpu-operator job/eidos > snapshot.yaml
 ```
 
 ## Code Quality Standards
@@ -591,11 +654,13 @@ type Collector interface {
 
 ### Testing Requirements
 
-- **Coverage**: Aim for meaningful test coverage (current: ~28%, target: >50%)
+- **Coverage**: Aim for meaningful test coverage (current: ~60%, target: >70%)
 - **Unit tests**: Test all public functions and methods
 - **Table-driven tests**: Use for multiple test cases
+- **Integration tests**: Test collector interactions with real/fake clients
 - **Error cases**: Test error conditions and edge cases
-- **Mocks**: Mock external dependencies (filesystem, network, etc.)
+- **Context handling**: Test context cancellation and timeouts
+- **Mocks**: Use fake clients for external dependencies (Kubernetes client-go fakes)
 
 Example test structure:
 ```go
@@ -692,7 +757,13 @@ func ProcessRequest(ctx context.Context, id string) error {
 
 Current key dependencies:
 - `github.com/urfave/cli/v3` - CLI framework
-- Standard library for most functionality
+- `k8s.io/client-go` - Kubernetes API client
+- `k8s.io/api` - Kubernetes API types
+- `golang.org/x/sync/errgroup` - Concurrent error handling
+- `golang.org/x/time/rate` - Rate limiting
+- `gopkg.in/yaml.v3` - YAML parsing and generation
+- `github.com/stretchr/testify` - Testing assertions
+- Standard library for most core functionality
 
 ## Pull Request Process
 
