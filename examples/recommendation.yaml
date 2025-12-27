@@ -1,8 +1,8 @@
 kind: Recommendation
 apiVersion: recommendation.dgxc.io/v1
 metadata:
-  recommendation-timestamp: "2025-12-26T20:00:41Z"
-  recommender-version: v0.7.6-next
+  recommendation-timestamp: "2025-12-27T00:07:33Z"
+  recommender-version: 0.7.8
 request:
   os: ubuntu
   osv:

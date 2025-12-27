@@ -1,8 +1,8 @@
 kind: Snapshot
 apiVersion: snapshot.dgxc.io/v1
 metadata:
-  measurement-timestamp: "2025-12-26T15:56:39Z"
-  snapshot-version: 0.7.5
+  recommendation-timestamp: "2025-12-27T00:18:20Z"
+  snapshot-version: 0.7.8
   source-node: ip-10-0-158-18.ec2.internal
 measurements:
   - type: SystemD
@@ -40,7 +40,7 @@ measurements:
           CPUSchedulingPriority: "0"
           CPUSchedulingResetOnFork: false
           CPUShares: 18446744073709551615
-          CPUUsageNSec: 1935382425507000
+          CPUUsageNSec: 1940093013353000
           CPUWeight: 18446744073709551615
           CacheDirectory: '[]'
           CacheDirectoryMode: "493"
@@ -205,7 +205,7 @@ measurements:
           Markers: '[]'
           MemoryAccounting: true
           MemoryAvailable: 18446744073709551615
-          MemoryCurrent: 469050392576
+          MemoryCurrent: 469112930304
           MemoryDenyWriteExecute: false
           MemoryHigh: 18446744073709551615
           MemoryLimit: 18446744073709551615
@@ -350,7 +350,7 @@ measurements:
           TTYVHangup: false
           TTYVTDisallocate: false
           TasksAccounting: true
-          TasksCurrent: 500
+          TasksCurrent: 501
           TasksMax: 18446744073709551615
           TemporaryFileSystem: '[]'
           TimeoutAbortUSec: 90000000
@@ -1161,16 +1161,16 @@ measurements:
           /proc/sys/dev/tty/legacy_tiocsti: "0"
           /proc/sys/fs/aio-max-nr: "65536"
           /proc/sys/fs/aio-nr: "0"
-          /proc/sys/fs/dentry-state: "15118843\t15005324\t45\t0\t12555390\t0"
+          /proc/sys/fs/dentry-state: "15146158\t15032629\t45\t0\t12582684\t0"
           /proc/sys/fs/dir-notify-enable: "1"
           /proc/sys/fs/epoll/max_user_watches: "466828132"
           /proc/sys/fs/fanotify/max_queued_events: "16384"
           /proc/sys/fs/fanotify/max_user_groups: "128"
           /proc/sys/fs/fanotify/max_user_marks: "1048576"
           /proc/sys/fs/file-max: "9223372036854775807"
-          /proc/sys/fs/file-nr: "4608\t0\t9223372036854775807"
-          /proc/sys/fs/inode-nr: "2510203\t437"
-          /proc/sys/fs/inode-state: "2510204\t437\t0\t0\t0\t0\t0"
+          /proc/sys/fs/file-nr: "7680\t0\t9223372036854775807"
+          /proc/sys/fs/inode-nr: "2510224\t437"
+          /proc/sys/fs/inode-state: "2510224\t437\t0\t0\t0\t0\t0"
           /proc/sys/fs/inotify/max_queued_events: "16384"
           /proc/sys/fs/inotify/max_user_instances: "65535"
           /proc/sys/fs/inotify/max_user_watches: "524288"
@@ -1276,7 +1276,7 @@ measurements:
           /proc/sys/kernel/msgmni: "32000"
           /proc/sys/kernel/ngroups_max: "65536"
           /proc/sys/kernel/nmi_watchdog: "0"
-          /proc/sys/kernel/ns_last_pid: "246741"
+          /proc/sys/kernel/ns_last_pid: "503132"
           /proc/sys/kernel/numa_balancing: "1"
           /proc/sys/kernel/numa_balancing_promote_rate_limit_MBps: "65536"
           /proc/sys/kernel/oops_all_cpu_backtrace: "0"
@@ -1313,7 +1313,7 @@ measurements:
           /proc/sys/kernel/random/entropy_avail: "256"
           /proc/sys/kernel/random/poolsize: "256"
           /proc/sys/kernel/random/urandom_min_reseed_secs: "60"
-          /proc/sys/kernel/random/uuid: 3ec7ecbb-7e41-4689-93ef-7e30786d7f31
+          /proc/sys/kernel/random/uuid: 0af062a2-0f30-464e-ba2d-170379a23558
           /proc/sys/kernel/random/write_wakeup_threshold: "256"
           /proc/sys/kernel/randomize_va_space: "2"
           /proc/sys/kernel/real-root-dev: "0"
@@ -1358,7 +1358,7 @@ measurements:
           /proc/sys/kernel/user_events_max: "32768"
           /proc/sys/kernel/usermodehelper/bset: "4294967295\t511"
           /proc/sys/kernel/usermodehelper/inheritable: "4294967295\t511"
-          /proc/sys/kernel/version: '#26~22.04.1-Ubuntu SMP Wed Feb 19 06:54:57 UTC 2025'
+          /proc/sys/kernel/version: ""
           /proc/sys/kernel/warn_limit: "0"
           /proc/sys/kernel/watchdog: "1"
           /proc/sys/kernel/watchdog_cpumask: 0-191
@@ -1708,7 +1708,6 @@ measurements:
           daemonsets.labels.helm.sh/chart: gpu-operator-v25.3.0
           daemonsets.priorityClassName: system-node-critical
           daemonsets.rollingUpdate.maxUnavailable: "1"
-
           daemonsets.tolerations: '[{"effect":"NoSchedule","operator":"Exists"},{"effect":"NoExecute","operator":"Exists"}]'
           daemonsets.updateStrategy: RollingUpdate
           dcgm.enabled: "true"

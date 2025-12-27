@@ -1,8 +1,8 @@
 kind: Snapshot
 apiVersion: snapshot.dgxc.io/v1
 metadata:
-  recommendation-timestamp: "2025-12-26T19:57:44Z"
-  snapshot-version: 0.7.6
+  recommendation-timestamp: "2025-12-27T00:07:30Z"
+  snapshot-version: 0.7.8
   source-node: ip-10-0-160-248.ec2.internal
 measurements:
   - type: SystemD
@@ -40,7 +40,7 @@ measurements:
           CPUSchedulingPriority: "0"
           CPUSchedulingResetOnFork: false
           CPUShares: 18446744073709551615
-          CPUUsageNSec: 627096827196000
+          CPUUsageNSec: 632285245980000
           CPUWeight: 18446744073709551615
           CacheDirectory: '[]'
           CacheDirectoryMode: "493"
@@ -106,7 +106,7 @@ measurements:
           ExtensionImages: '[]'
           FailureAction: none
           FailureActionExitStatus: "-1"
-
+          FileDescriptorStoreMax: "0"
           FinalKillSignal: "9"
           Following: ""
           FragmentPath: /lib/systemd/system/containerd.service
@@ -205,7 +205,7 @@ measurements:
           Markers: '[]'
           MemoryAccounting: true
           MemoryAvailable: 18446744073709551615
-          MemoryCurrent: 97234022400
+          MemoryCurrent: 97286496256
           MemoryDenyWriteExecute: false
           MemoryHigh: 18446744073709551615
           MemoryLimit: 18446744073709551615
@@ -350,7 +350,7 @@ measurements:
           TTYVHangup: false
           TTYVTDisallocate: false
           TasksAccounting: true
-          TasksCurrent: 475
+          TasksCurrent: 476
           TasksMax: 18446744073709551615
           TemporaryFileSystem: '[]'
           TimeoutAbortUSec: 90000000
@@ -1160,16 +1160,16 @@ measurements:
           /proc/sys/dev/tty/legacy_tiocsti: "0"
           /proc/sys/fs/aio-max-nr: "65536"
           /proc/sys/fs/aio-nr: "0"
-          /proc/sys/fs/dentry-state: "1870228\t1769560\t45\t0\t782619\t0"
+          /proc/sys/fs/dentry-state: "1874703\t1774059\t45\t0\t787245\t0"
           /proc/sys/fs/dir-notify-enable: "1"
           /proc/sys/fs/epoll/max_user_watches: "216410223"
           /proc/sys/fs/fanotify/max_queued_events: "16384"
           /proc/sys/fs/fanotify/max_user_groups: "128"
           /proc/sys/fs/fanotify/max_user_marks: "1048576"
           /proc/sys/fs/file-max: "9223372036854775807"
-          /proc/sys/fs/file-nr: "5760\t0\t9223372036854775807"
-          /proc/sys/fs/inode-nr: "1082569\t435"
-          /proc/sys/fs/inode-state: "1082569\t435\t0\t0\t0\t0\t0"
+          /proc/sys/fs/file-nr: "4032\t0\t9223372036854775807"
+          /proc/sys/fs/inode-nr: "1082418\t435"
+          /proc/sys/fs/inode-state: "1082418\t435\t0\t0\t0\t0\t0"
           /proc/sys/fs/inotify/max_queued_events: "16384"
           /proc/sys/fs/inotify/max_user_instances: "65535"
           /proc/sys/fs/inotify/max_user_watches: "524288"
@@ -1271,7 +1271,7 @@ measurements:
           /proc/sys/kernel/msgmni: "32000"
           /proc/sys/kernel/ngroups_max: "65536"
           /proc/sys/kernel/nmi_watchdog: "0"
-          /proc/sys/kernel/ns_last_pid: "3780165"
+          /proc/sys/kernel/ns_last_pid: "3880745"
           /proc/sys/kernel/numa_balancing: "0"
           /proc/sys/kernel/numa_balancing_promote_rate_limit_MBps: "65536"
           /proc/sys/kernel/oops_all_cpu_backtrace: "0"
@@ -1307,7 +1307,7 @@ measurements:
           /proc/sys/kernel/random/entropy_avail: "256"
           /proc/sys/kernel/random/poolsize: "256"
           /proc/sys/kernel/random/urandom_min_reseed_secs: "60"
-          /proc/sys/kernel/random/uuid: 7d481225-d606-477c-88a2-391adab1be03
+          /proc/sys/kernel/random/uuid: f2d61d30-0ac4-4ceb-b135-b33267ea7357
           /proc/sys/kernel/random/write_wakeup_threshold: "256"
           /proc/sys/kernel/randomize_va_space: "2"
           /proc/sys/kernel/real-root-dev: "0"
@@ -1350,7 +1350,7 @@ measurements:
           /proc/sys/kernel/user_events_max: "32768"
           /proc/sys/kernel/usermodehelper/bset: "4294967295\t511"
           /proc/sys/kernel/usermodehelper/inheritable: "4294967295\t511"
-          /proc/sys/kernel/version: '#30~22.04.1-Ubuntu SMP Sun Apr 20 05:49:17 UTC 2025'
+          /proc/sys/kernel/version: ""
           /proc/sys/kernel/warn_limit: "0"
           /proc/sys/kernel/watchdog: "1"
           /proc/sys/kernel/watchdog_cpumask: 0-143
@@ -1555,7 +1555,7 @@ measurements:
       - subtype: server
         data:
           goVersion: go1.24.6
-          platform: linux/amd64
+          platform: linux/arm64
           version: v1.33.5-eks-3025e55
       - subtype: image
         data:
