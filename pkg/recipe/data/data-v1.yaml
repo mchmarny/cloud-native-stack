@@ -157,6 +157,16 @@ base:
         context:
           version: Kubernetes version for GPU orchestration
 
+      - subtype: registry
+        data:
+          name: nvcr.io
+          repo: nvidia
+          uri: nvcr.io/nvidia
+        context:
+          name: NVIDIA NGC container registry for GPU-optimized images
+          repo: NVIDIA NGC repository
+          uri: Full URI for accessing NVIDIA NGC registry
+
       - subtype: image
         data:
           container-toolkit: v1.17.8
@@ -188,6 +198,16 @@ base:
           mpi-operator: MPI job orchestration for distributed multi-GPU training
           node-feature-discovery: Discovers GPU hardware features for optimal workload placement
           training-operator: Kubernetes operator for distributed ML training on GPUs
+
+      - subtype: config
+        data:
+          mig: false
+          cdi: true
+          rdma: true
+        context:
+          mig: Multi-Instance GPU disabled for dedicated GPU access
+          cdi: Container Device Interface enabled for GPU device injection
+          rdma: RDMA support enabled for high-speed GPU networking
 
   - type: gpu
     subtypes:
@@ -240,6 +260,11 @@ overlays:
               aws-efa-k8s-device-plugin: v0.5.3
             context:
               aws-efa-k8s-device-plugin: EFA device plugin for high-speed GPU-to-GPU networking
+          - subtype: config
+            data:
+              useOpenKernelModule: true
+            context:
+              useOpenKernelModule: Use open-source EFA kernel module for compatibility with GB200 GPUs
       - type: os
         subtypes:
           - subtype: kmod

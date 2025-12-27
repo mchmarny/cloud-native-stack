@@ -1,8 +1,8 @@
 kind: Snapshot
 apiVersion: snapshot.dgxc.io/v1
 metadata:
-  recommendation-timestamp: "2025-12-27T12:46:14Z"
-  snapshot-version: 0.7.9
+  snapshot-timestamp: "2025-12-27T13:10:47Z"
+  snapshot-version: 0.7.10
   source-node: ip-10-0-158-18.ec2.internal
 measurements:
   - type: SystemD
@@ -40,7 +40,7 @@ measurements:
           CPUSchedulingPriority: "0"
           CPUSchedulingResetOnFork: false
           CPUShares: 18446744073709551615
-          CPUUsageNSec: 1947110404142000
+          CPUUsageNSec: 1947342122286000
           CPUWeight: 18446744073709551615
           CacheDirectory: '[]'
           CacheDirectoryMode: "493"
@@ -205,7 +205,7 @@ measurements:
           Markers: '[]'
           MemoryAccounting: true
           MemoryAvailable: 18446744073709551615
-          MemoryCurrent: 469186584576
+          MemoryCurrent: 469240979456
           MemoryDenyWriteExecute: false
           MemoryHigh: 18446744073709551615
           MemoryLimit: 18446744073709551615
@@ -350,7 +350,7 @@ measurements:
           TTYVHangup: false
           TTYVTDisallocate: false
           TasksAccounting: true
-          TasksCurrent: 501
+          TasksCurrent: 500
           TasksMax: 18446744073709551615
           TemporaryFileSystem: '[]'
           TimeoutAbortUSec: 90000000
@@ -1161,7 +1161,7 @@ measurements:
           /proc/sys/dev/tty/legacy_tiocsti: "0"
           /proc/sys/fs/aio-max-nr: "65536"
           /proc/sys/fs/aio-nr: "0"
-          /proc/sys/fs/dentry-state: "15186823\t15073312\t45\t0\t12623365\t0"
+          /proc/sys/fs/dentry-state: "15188187\t15074662\t45\t0\t12624729\t0"
           /proc/sys/fs/dir-notify-enable: "1"
           /proc/sys/fs/epoll/max_user_watches: "466828132"
           /proc/sys/fs/fanotify/max_queued_events: "16384"
@@ -1276,7 +1276,7 @@ measurements:
           /proc/sys/kernel/msgmni: "32000"
           /proc/sys/kernel/ngroups_max: "65536"
           /proc/sys/kernel/nmi_watchdog: "0"
-          /proc/sys/kernel/ns_last_pid: "885848"
+          /proc/sys/kernel/ns_last_pid: "898738"
           /proc/sys/kernel/numa_balancing: "1"
           /proc/sys/kernel/numa_balancing_promote_rate_limit_MBps: "65536"
           /proc/sys/kernel/oops_all_cpu_backtrace: "0"
@@ -1313,7 +1313,7 @@ measurements:
           /proc/sys/kernel/random/entropy_avail: "256"
           /proc/sys/kernel/random/poolsize: "256"
           /proc/sys/kernel/random/urandom_min_reseed_secs: "60"
-          /proc/sys/kernel/random/uuid: 45d684c2-caa7-43a7-a17d-9d4649782d28
+          /proc/sys/kernel/random/uuid: 38db2d14-3077-4250-862e-23d092751a3e
           /proc/sys/kernel/random/write_wakeup_threshold: "256"
           /proc/sys/kernel/randomize_va_space: "2"
           /proc/sys/kernel/real-root-dev: "0"
@@ -1579,7 +1579,7 @@ measurements:
       - subtype: server
         data:
           goVersion: go1.24.9
-          platform: linux/arm64
+          platform: linux/amd64
           version: v1.30.14-eks-3025e55
       - subtype: image
         data:
@@ -1860,7 +1860,9 @@ measurements:
           vgpuManager.imagePullPolicy: IfNotPresent
       - subtype: node
         data:
-          container-runtime: containerd://1.7.24
+          container-runtime-id: containerd://1.7.24
+          container-runtime-name: containerd
+          container-runtime-version: 1.7.24
           kernel-version: 6.8.0-1024-aws
           operating-system: linux
           os-image: Ubuntu 22.04.5 LTS

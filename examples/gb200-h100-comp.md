@@ -4,25 +4,25 @@
 
 | System | Source | Node | Snapshot Version |
 |--------|--------|------|------------------|
-| H100   | AWS EKS | `ip-10-0-158-18.ec2.internal` | v0.7.0 |
-| GB200  | AWS EKS | `ip-10-0-160-248.ec2.internal` | v0.7.0 |
+| H100   | AWS EKS | `ip-10-0-158-18.ec2.internal` | v0.7.10 |
+| GB200  | AWS EKS | `ip-10-0-160-248.ec2.internal` | v0.7.10 |
 
-Both snapshots use `snapshot.dgxc.io/v1` API version with v0.7.0 format.
+Both snapshots use `snapshot.dgxc.io/v1` API version with v0.7.10 format.
 
 > Meaningful config and capability diffs only. Ignores order, timestamps, and other expected runtime noise.
 
-## Snapshot Structure (v0.7.0)
+## Snapshot Structure (v0.7.10)
 
-Both systems use the enhanced v0.7.0 snapshot format with four measurement types:
+Both systems use the enhanced v0.7.10 snapshot format with four measurement types:
 
 1. **SystemD Services** – Configuration of containerd, docker, kubelet, and system services
-2. **OS Configuration** – 4 subtypes (new `release` subtype in v0.7.0):
+2. **OS Configuration** – 4 subtypes (release subtype in v0.7.0+):
    - `grub` – Boot parameters and kernel arguments
    - `sysctl` – Kernel parameters from `/proc/sys`
    - `kmod` – Loaded kernel modules  
-   - `release` – OS identification from `/etc/os-release` (**new in v0.7.0**)
+   - `release` – OS identification from `/etc/os-release` (added in v0.7.0)
 3. **Kubernetes** – 3 subtypes:
-   - `server` – Server version with vendor-specific format support (e.g., `v1.33.5-eks-3025e55`)
+   - `server` – Server version with vendor-specific format support (e.g., `v1.30.14-eks-3025e55`)
    - `image` – All deployed container images with versions
    - `policy` – Complete GPU Operator ClusterPolicy configuration (100+ settings)
 4. **GPU** – Hardware details and driver information
@@ -34,8 +34,8 @@ Both systems use the enhanced v0.7.0 snapshot format with four measurement types
 | Category | Classification | Notes |
 |----------|----------------|-------|
 | Kernel & Boot | Different | Same kernel family (6.8 AWS), different patch levels |
-| CPU Architecture | **Different** | H100 is **ARM64**; GB200 is **ARM64** (both) |
-| Platform | Different | H100 reports arm64; GB200 reports amd64 for K8s |
+| CPU Architecture | **Same** | Both are **ARM64** |
+| Platform | Different | H100 reports amd64; GB200 reports arm64 for K8s |
 | GPU Architecture | **Different** | H100 is **Hopper**; GB200 is **Blackwell** |
 | GPU Count | Different | H100: 8 GPUs; GB200: 4 GPUs |
 | GPU Driver | Different | H100: 570.133.20; GB200: 580.82.07 |
@@ -60,7 +60,8 @@ Both systems use the enhanced v0.7.0 snapshot format with four measurement types
 | Driver Version | 570.133.20 | 580.82.07 |
 | CUDA Version | 12.8 | 13.1 |
 | Addressing Mode | HMM | ATS |
-| Display Mode | Enabled | Deprecated |
+| Display Mode | Enabled | Requested functionality has been deprecated |
+| Display Active | Disabled | Disabled |
 | Persistence Mode | Disabled | Disabled |
 | GSP Firmware | 570.133.20 | 580.82.07 |
 | VBIOS Version | 96.00.BC.00.01 | 97.00.B9.00.69 |
@@ -75,10 +76,10 @@ Both systems use the enhanced v0.7.0 snapshot format with four measurement types
 
 | System | K8s Version | Go Version | Platform |
 |--------|-------------|------------|----------|
-| H100 | v1.30.14-eks-3025e55 | go1.24.9 | linux/arm64 |
-| GB200 | v1.33.5-eks-3025e55 | go1.24.6 | linux/amd64 |
+| H100 | v1.30.14-eks-3025e55 | go1.24.9 | linux/amd64 |
+| GB200 | v1.33.5-eks-3025e55 | go1.24.6 | linux/arm64 |
 
-**Classification:** GB200 runs newer K8s (v1.33 vs v1.30), but platform reporting differs (arm64 vs amd64).
+**Classification:** GB200 runs newer K8s (v1.33 vs v1.30), and platform reporting now correctly shows H100 as amd64 and GB200 as arm64.
 
 ### GPU Operator & DCGM Stack
 
