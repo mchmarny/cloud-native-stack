@@ -1,6 +1,6 @@
 package recipe
 
-import "github.com/NVIDIA/cloud-native-stack/pkg/version"
+import "github.com/NVIDIA/cloud-native-stack/pkg/recipe/version"
 
 // QueryBuilder provides a fluent interface for constructing Query objects.
 type QueryBuilder struct {

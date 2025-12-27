@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/version"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 	"github.com/NVIDIA/cloud-native-stack/pkg/server"
-	"github.com/NVIDIA/cloud-native-stack/pkg/version"
 )
 
 var (

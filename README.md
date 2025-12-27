@@ -3,8 +3,9 @@
 Cloud Native Stack (CNS) provides tooling and comprehensive documentation to help you deploy, validate, and operate optimized AI workloads in your GPU-accelerated Kubernetes clusters:
 
 - **Documentation** – Installation guides, playbooks, optimizations, and troubleshooting for GPU infrastructure
-- **Eidos CLI** – Command-line tool for system snapshots and CNS recipe generation
-- **Eidos Agent** – Kubernetes job for automated cluster configuration and optimization using NCS recipes
+- **CLI** – Command-line tool for system snapshots and CNS recipe generation
+- **Agent** – Kubernetes job for automated cluster configuration and optimization using NCS recipes
+- **API** - REST API for optimized configuration generation based on input parameters
 
 ## Quick Start
 
@@ -182,6 +183,257 @@ kubectl logs -n gpu-operator job/eidos
 ```
 
 The agent outputs a YAML snapshot of the cluster node configuration to stdout.
+
+### Query the API
+
+The Eidos API provides a REST interface for generating configuration recipes without requiring CLI installation. It's designed for integration with automation tools, CI/CD pipelines, and web applications.
+
+> NOTE: The API does not store any query data. All recipe generation happens in real-time using embedded configuration templates.
+
+#### API Endpoint
+
+**Base URL:** https://cns.dgxc.io
+
+**Recipe Generation:** `GET /v1/recipe`
+
+#### Query Parameters
+
+Generate optimized configuration recipes by specifying environment parameters:
+
+**Available query string parameters:**
+- `os` – Operating system family: `ubuntu`, `rhel`, `cos`, `all` (default: `all`)
+- `osv` – OS version (e.g., `24.04`, `22.04`) (default: `all`)
+- `kernel` – Kernel version (supports vendor suffixes like `6.8.0-1028-aws`) (default: `all`)
+- `service` – Kubernetes service: `eks`, `gke`, `aks`, `oke`, `self-managed`, `all` (default: `all`)
+- `k8s` – Kubernetes version (supports vendor formats like `v1.33.5-eks-3025e55`) (default: `all`)
+- `gpu` – GPU type: `h100`, `gb200`, `a100`, `l40`, `all` (default: `all`)
+- `intent` – Workload intent: `training`, `inference`, `any` (default: `any`)
+- `context` – Include metadata in response: `true`, `false` (default: `false`)
+
+#### Usage Examples
+
+**Basic query** – Ubuntu on EKS with GB200 GPUs:
+```shell
+curl "https://cns.dgxc.io/v1/recipe?os=ubuntu&gpu=gb200&service=eks"
+```
+
+**Full specification** – Optimized for training workloads with context:
+```shell
+curl "https://cns.dgxc.io/v1/recipe?os=ubuntu&osv=24.04&kernel=6.8&service=eks&k8s=1.33&gpu=h100&intent=training&context=true"
+```
+
+**Using with jq** – Extract specific settings:
+```shell
+curl -s "https://cns.dgxc.io/v1/recipe?gpu=gb200&intent=inference" | jq '.measurements[] | select(.type=="GPU")'
+```
+
+**Save to file:**
+```shell
+curl "https://cns.dgxc.io/v1/recipe?os=ubuntu&gpu=h100&service=gke" -o recipe.json
+```
+
+#### Response Format
+
+The API returns JSON responses containing configuration recipes:
+
+```json
+{
+  "apiVersion": "recipe.dgxc.io/v1",
+  "kind": "Recipe",
+  "metadata": {
+    "created": "2025-12-27T10:30:00Z",
+    "recipe-version": "v1.0.0"
+  },
+  "request": {
+    "os": "ubuntu",
+    "gpu": "h100",
+    "service": "eks",
+    "intent": "training"
+  },
+  "matchedRules": [
+    "os:ubuntu",
+    "gpu:h100",
+    "intent:training"
+  ],
+  "measurements": [
+    {
+      "type": "K8s",
+      "subtypes": [
+        {
+          "subtype": "cluster",
+          "data": {
+            "gpu-operator-version": "25.3.1",
+            "enable-mig": "false"
+          }
+        }
+      ]
+    },
+    {
+      "type": "GPU",
+      "subtypes": [
+        {
+          "subtype": "driver",
+          "data": {
+            "version": "570.158.01",
+            "cuda-version": "12.7"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Response Headers
+
+The API includes helpful response headers:
+
+- `Content-Type: application/json` – Response format
+- `X-Request-Id` – Unique request identifier for tracing
+- `Cache-Control: public, max-age=300` – Response caching guidance
+- `X-RateLimit-Limit` – Maximum requests per window
+- `X-RateLimit-Remaining` – Requests remaining in current window
+- `X-RateLimit-Reset` – Unix timestamp when window resets
+
+#### Error Handling
+
+The API returns standard HTTP status codes with detailed error messages:
+
+**400 Bad Request** – Invalid parameter values:
+```json
+{
+  "code": "INVALID_PARAMETER",
+  "message": "invalid gpu type: must be one of h100, gb200, a100, l40, all",
+  "details": {
+    "parameter": "gpu",
+    "provided": "invalid-gpu"
+  },
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-27T10:30:00Z",
+  "retryable": false
+}
+```
+
+**404 Not Found** – No matching configuration:
+```json
+{
+  "code": "NO_MATCHING_RULE",
+  "message": "no configuration recipe found for the specified parameters",
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-27T10:30:00Z",
+  "retryable": false
+}
+```
+
+**429 Too Many Requests** – Rate limit exceeded:
+```json
+{
+  "code": "RATE_LIMIT_EXCEEDED",
+  "message": "rate limit exceeded, please retry after indicated time",
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-27T10:30:00Z",
+  "retryable": true
+}
+```
+
+Response includes `Retry-After` header indicating when to retry.
+
+**500 Internal Server Error** – Server-side error:
+```json
+{
+  "code": "INTERNAL_ERROR",
+  "message": "an internal error occurred processing your request",
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-12-27T10:30:00Z",
+  "retryable": true
+}
+```
+
+#### Rate Limiting
+
+The API implements rate limiting to ensure fair usage:
+
+- **Rate:** 100 requests per second per IP
+- **Burst:** 200 requests
+- **Headers:** All responses include rate limit status in headers
+
+When rate limited, wait for the time specified in the `Retry-After` header before retrying.
+
+#### Health Checks
+
+Monitor API availability using health endpoints:
+
+**Liveness probe:**
+```shell
+curl https://cns.dgxc.io/health
+```
+
+**Readiness probe:**
+```shell
+curl https://cns.dgxc.io/ready
+```
+
+Both return `200 OK` when healthy with a simple status JSON.
+
+#### Integration Examples
+
+**Python with requests:**
+```python
+import requests
+
+params = {
+    'os': 'ubuntu',
+    'gpu': 'h100',
+    'service': 'eks',
+    'intent': 'training'
+}
+
+response = requests.get('https://cns.dgxc.io/v1/recipe', params=params)
+if response.status_code == 200:
+    recipe = response.json()
+    print(f"Matched {len(recipe['matchedRules'])} configuration rules")
+else:
+    print(f"Error: {response.json()['message']}")
+```
+
+**Go with net/http:**
+```go
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "net/http"
+)
+
+func main() {
+    url := "https://cns.dgxc.io/v1/recipe?os=ubuntu&gpu=gb200&service=eks"
+    
+    resp, err := http.Get(url)
+    if err != nil {
+        panic(err)
+    }
+    defer resp.Body.Close()
+    
+    var recipe map[string]interface{}
+    if err := json.NewDecoder(resp.Body).Decode(&recipe); err != nil {
+        panic(err)
+    }
+    
+    fmt.Printf("Recipe: %+v\n", recipe)
+}
+```
+
+**Shell script automation:**
+```bash
+#!/bin/bash
+
+# Generate recipe and extract GPU driver version
+DRIVER_VERSION=$(curl -s "https://cns.dgxc.io/v1/recipe?gpu=h100&intent=training" \
+  | jq -r '.measurements[] | select(.type=="GPU") | .subtypes[] | select(.subtype=="driver") | .data.version')
+
+echo "Recommended driver version: $DRIVER_VERSION"
+```
 
 ## Security and Verification
 

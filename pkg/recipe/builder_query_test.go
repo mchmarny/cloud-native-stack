@@ -3,7 +3,7 @@ package recipe
 import (
 	"testing"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/version"
+	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/version"
 )
 
 func TestQueryBuilder_Basic(t *testing.T) {

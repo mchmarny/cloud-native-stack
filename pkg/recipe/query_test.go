@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/version"
+	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/version"
 )
 
 func TestQueryString(t *testing.T) {

@@ -12,8 +12,8 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
+	ver "github.com/NVIDIA/cloud-native-stack/pkg/recipe/version"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
-	ver "github.com/NVIDIA/cloud-native-stack/pkg/version"
 )
 
 func recipeCmd() *cli.Command {

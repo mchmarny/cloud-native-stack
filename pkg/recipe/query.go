@@ -34,7 +34,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/version"
+	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/version"
 )
 
 const (

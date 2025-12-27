@@ -511,7 +511,7 @@ func TestSnapshotCommand(t *testing.T) {
 - `pkg/collector` - System data collection
 - `pkg/measurement` - Data model
 - `pkg/recipe` - Recipe building
-- `pkg/version` - Semantic versioning
+- `pkg/recipe/version` - Semantic versioning
 - `pkg/serializer` - Output formatting
 - `pkg/logging` - Logging configuration
 - `pkg/snapshotter` - Snapshot orchestration

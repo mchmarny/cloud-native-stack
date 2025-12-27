@@ -9,8 +9,8 @@ import (
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
+	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/version"
 	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
-	"github.com/NVIDIA/cloud-native-stack/pkg/version"
 )
 
 // ConfigRecommender generates configuration recommendations based on system snapshots.
