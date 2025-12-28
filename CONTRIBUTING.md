@@ -202,12 +202,12 @@ cloud-native-stack/
     - SHA256 checksums for verification
 - **Features**:
   - Template-based generation with go:embed
-  - Functional options pattern for configuration (WithBundlerTypes, WithSequential, WithFailFast, WithConfig, WithDryRun)
-  - **Parallel execution by default** (sequential mode available via WithSequential(true))
+  - Functional options pattern for configuration (WithBundlerTypes, WithFailFast, WithConfig, WithRegistry)
+  - **Parallel execution** (all bundlers run concurrently)
   - Empty bundlerTypes = all registered bundlers (dynamic discovery)
   - Fail-fast or error collection modes
-  - Dry-run mode for validation
   - Prometheus metrics for observability
+  - Context-aware execution with cancellation support
 - **Extensibility**: Implement `Bundler` interface and self-register in init() to add new bundle types
 
 ### Common Make Targets
@@ -826,13 +826,14 @@ ls -la test-bundles/network-operator/
 
 **Bundler Best Practices**:
 - Use functional options pattern for configuration
-- Generate files in parallel with errgroup
+- Bundlers execute in parallel automatically
 - Embed templates with go:embed for portability
 - Compute SHA256 checksums for verification
-- Support dry-run mode for validation
+- Check context cancellation for long operations
 - Add structured logging with slog
 - Expose Prometheus metrics
 - Write integration tests with real recipes
+- Keep bundlers stateless or use synchronization for thread-safety
 
 ## Code Quality Standards
 

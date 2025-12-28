@@ -409,7 +409,7 @@ flowchart TD
     
     C --> D[bundler.New]
     
-    D --> D1["Build DefaultBundler:<br/>• Empty bundlerTypes = all registered<br/>• Specified types = filtered selection<br/>• Parallel=true by default"]
+    D --> D1["Build DefaultBundler:<br/>• Empty bundlerTypes = all registered<br/>• Specified types = filtered selection<br/>• Parallel execution"]
     
     D1 --> E[DefaultBundler.Make]
     
@@ -417,7 +417,7 @@ flowchart TD
     
     E1 --> E2["Parallel Execution:<br/>• errgroup.WithContext<br/>• One goroutine per bundler<br/>• Concurrent file generation"]
     
-    E2 --> E3["Each Bundler:<br/>1. Validate recipe (if Validator)<br/>2. Configure (if ConfigurableBundler)<br/>3. Generate bundle files<br/>4. Compute checksums<br/>5. Return BundleResult"]
+    E2 --> E3["Each Bundler:<br/>1. Validate recipe (optional interface)<br/>2. Configure (optional interface)<br/>3. Generate bundle files<br/>4. Compute checksums<br/>5. Return Result"]
     
     E3 --> F[Aggregate BundleOutput]
     
@@ -448,20 +448,16 @@ bundlers := defaultRegistry.Get(type) // Returns specific bundler
 
 **DefaultBundler Options:**
 - `WithBundlerTypes([]BundleType)` – Specify bundler types (empty = all)
-- `WithSequential(bool)` – Enable sequential execution (default: false/parallel)
 - `WithFailFast(bool)` – Stop on first error (default: false/collect all)
-- `WithConfig(*BundlerConfig)` – Provide bundler configuration
-- `WithDryRun(bool)` – Simulate without writing files
+- `WithConfig(*Config)` – Provide bundler configuration
+- `WithRegistry(*Registry)` – Use custom bundler registry
 
-**Execution Modes:**
-- **Parallel (default)**: Uses `errgroup.WithContext` for concurrent execution
+**Execution:**
+- **Parallel execution**: Uses `errgroup.WithContext` for concurrent execution
+  - All bundlers run concurrently by default
   - Faster for multiple bundlers
-  - Non-deterministic bundler order
-  - Requires thread-safe bundler implementations
-- **Sequential**: Executes bundlers one at a time
-  - Predictable order
-  - Easier debugging
-  - Slower for multiple bundlers
+  - Context cancellation propagates to all bundlers
+  - Requires thread-safe bundler implementations or stateless design
 
 #### Usage Examples
 
@@ -547,7 +543,7 @@ The bundle command integrates with the CLI through:
 **Log Output Example:**
 ```
 INFO  generating bundle recipeFilePath=recipe.yaml outputDir=./bundles bundlerTypes=[gpu-operator]
-INFO  starting bundle generation bundler_count=1 output_dir=./bundles sequential=false dry_run=false
+INFO  starting bundle generation bundler_count=1 output_dir=./bundles
 INFO  bundler completed bundler_type=gpu-operator files=5 size_bytes=12458 duration=45ms
 INFO  bundle generation complete summary="Generated 5 files (12 KB) in 45ms. Success: 1/1 bundlers."
 INFO  bundle generation completed success=1 errors=0 duration_sec=0.045 summary="Generated 5 files (12 KB) in 45ms. Success: 1/1 bundlers."
@@ -2045,9 +2041,9 @@ func WithNamespace(ns string) Option {
     }
 }
 
-func WithDryRun(dryRun bool) Option {
+func WithFailFast(failFast bool) Option {
     return func(b *Bundler) {
-        b.config.DryRun = dryRun
+        b.config.FailFast = failFast
     }
 }
 
@@ -2242,7 +2238,6 @@ slog integration for structured log output:
 slog.Info("generating bundle",
     "bundler_type", bundlerType,
     "output_dir", outputDir,
-    "dry_run", dryRun,
 )
 
 // Bundle generation complete

@@ -471,10 +471,11 @@ The Bundler Framework provides an extensible system for generating deployment bu
 **Rationale**: Separation of structure (templates) from logic (Go code)  
 **Implementation**: text/template with custom functions, embedded at compile time
 
-**4. Parallel Generation with Error Handling**  
+**4. Parallel Execution**  
 **Pattern**: errgroup.WithContext for concurrent bundle generation  
-**Rationale**: Fast bundle creation; fail-fast on first error  
-**Trade-off**: Memory usage vs latency
+**Rationale**: Fast bundle creation; configurable fail-fast behavior  
+**Implementation**: All bundlers execute in parallel by default  
+**Trade-off**: Memory usage vs latency; coordination overhead vs throughput
 
 ### Component Architecture
 
@@ -506,13 +507,9 @@ flowchart TD
     D4 --> E
     D5 --> E
     
-    E --> F{Dry Run?}
-    F -->|No| G[Write Files]
-    F -->|Yes| H[Validation Only]
-    
-    G --> I[Record Metrics]
-    H --> I
-    I --> J[Return BundleResult]
+    E --> F[Write Files]
+    F --> G[Record Metrics]
+    G --> H[Return BundleResult]
 ```
 
 ### Bundler Interface
@@ -520,17 +517,21 @@ flowchart TD
 ```go
 // Bundler generates deployment bundles from recipes.
 type Bundler interface {
-    // Type returns the unique identifier for this bundler.
-    Type() BundleType
-    
-    // Validate checks if the recipe contains required data.
-    Validate(ctx context.Context, recipe *recipe.Recipe) error
-    
     // Make generates a bundle in the specified directory.
-    Make(ctx context.Context, recipe *recipe.Recipe, outputDir string) (*BundleResult, error)
-    
-    // Configure applies configuration options.
-    Configure(config *BundlerConfig) error
+    // Returns a Result containing generated files, sizes, and any errors.
+    Make(ctx context.Context, recipe *recipe.Recipe, outputDir string) (*Result, error)
+}
+
+// Optional interfaces that bundlers may implement:
+
+// Validator allows bundlers to validate recipes before generation.
+type Validator interface {
+    Validate(ctx context.Context, recipe *recipe.Recipe) error
+}
+
+// Configurable allows bundlers to accept custom configuration.
+type Configurable interface {
+    Configure(config *Config) error
 }
 ```
 
