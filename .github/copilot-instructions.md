@@ -476,5 +476,5 @@ func newCommand() *cli.Command {
 - **Main README**: [../README.md](../README.md)
 - **Contributing Guide**: [../CONTRIBUTING.md](../CONTRIBUTING.md)
 - **Playbooks**: [../docs/playbooks/readme.md](../docs/playbooks/readme.md)
-- **API Specification**: [../api/eidos/api-server-v1.yaml](../api/eidos/api-server-v1.yaml)
+- **API Specification**: [../api/eidos/v1/api-server-v1.yaml](../api/eidos/v1/api-server-v1.yaml)
 - **GoDoc**: Run `make docs` and visit http://localhost:6060
