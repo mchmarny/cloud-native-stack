@@ -3,43 +3,37 @@ package bundler
 import (
 	"fmt"
 	"sync"
+
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/bundle"
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/gpuoperator"
 )
 
-// BundlerRegistry manages registered bundlers with thread-safe operations.
-// It allows dynamic registration and retrieval of bundlers by type.
-type BundlerRegistry struct {
-	mu       sync.RWMutex
-	bundlers map[BundleType]Bundler
+// Registry manages registered bundlers with thread-safe operations.
+type Registry struct {
+	bundlers map[bundle.Type]bundle.Bundler
+
+	mu sync.RWMutex
 }
 
-var (
-	defaultRegistry = NewRegistry()
-)
-
-// NewRegistry creates a new BundlerRegistry instance.
-func NewRegistry() *BundlerRegistry {
-	return &BundlerRegistry{
-		bundlers: make(map[BundleType]Bundler),
+// NewRegistry creates a new Registry instance.
+func NewRegistry(cfg *config.Config) *Registry {
+	return &Registry{
+		bundlers: map[bundle.Type]bundle.Bundler{
+			bundle.BundleTypeGpuOperator: gpuoperator.NewBundler(cfg),
+		},
 	}
 }
 
-// Register registers a bundler with the default registry.
-// This is typically called in package init() functions.
-func Register(bundleType BundleType, b Bundler) {
-	defaultRegistry.Register(bundleType, b)
-}
-
 // Register registers a bundler in this registry.
-// If a bundler with the same type already exists, it will be replaced.
-func (r *BundlerRegistry) Register(bundleType BundleType, b Bundler) {
+func (r *Registry) Register(bundleType bundle.Type, b bundle.Bundler) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.bundlers[bundleType] = b
 }
 
 // Get retrieves a bundler by type from this registry.
-// Returns the bundler and true if found, nil and false otherwise.
-func (r *BundlerRegistry) Get(bundleType BundleType) (Bundler, bool) {
+func (r *Registry) Get(bundleType bundle.Type) (bundle.Bundler, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	b, ok := r.bundlers[bundleType]
@@ -47,12 +41,11 @@ func (r *BundlerRegistry) Get(bundleType BundleType) (Bundler, bool) {
 }
 
 // GetAll returns all registered bundlers.
-// Returns a copy of the bundlers map to prevent external modification.
-func (r *BundlerRegistry) GetAll() map[BundleType]Bundler {
+func (r *Registry) GetAll() map[bundle.Type]bundle.Bundler {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	bundlers := make(map[BundleType]Bundler, len(r.bundlers))
+	bundlers := make(map[bundle.Type]bundle.Bundler, len(r.bundlers))
 	for k, v := range r.bundlers {
 		bundlers[k] = v
 	}
@@ -60,11 +53,11 @@ func (r *BundlerRegistry) GetAll() map[BundleType]Bundler {
 }
 
 // List returns all registered bundler types.
-func (r *BundlerRegistry) List() []BundleType {
+func (r *Registry) List() []bundle.Type {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	types := make([]BundleType, 0, len(r.bundlers))
+	types := make([]bundle.Type, 0, len(r.bundlers))
 	for k := range r.bundlers {
 		types = append(types, k)
 	}
@@ -72,8 +65,7 @@ func (r *BundlerRegistry) List() []BundleType {
 }
 
 // Unregister removes a bundler from this registry.
-// Returns an error if the bundler type doesn't exist.
-func (r *BundlerRegistry) Unregister(bundleType BundleType) error {
+func (r *Registry) Unregister(bundleType bundle.Type) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -85,12 +77,15 @@ func (r *BundlerRegistry) Unregister(bundleType BundleType) error {
 	return nil
 }
 
-// GetFromDefault retrieves a bundler from the default registry.
-func GetFromDefault(bundleType BundleType) (Bundler, bool) {
-	return defaultRegistry.Get(bundleType)
+// Count returns the number of registered bundlers.
+func (r *Registry) Count() int {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return len(r.bundlers)
 }
 
-// ListFromDefault returns all bundler types from the default registry.
-func ListFromDefault() []BundleType {
-	return defaultRegistry.List()
+// IsEmpty returns true if no bundlers are registered.
+// This is useful for checking if a registry has been populated.
+func (r *Registry) IsEmpty() bool {
+	return r.Count() == 0
 }

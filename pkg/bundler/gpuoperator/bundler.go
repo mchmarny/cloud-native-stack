@@ -12,57 +12,43 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler"
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/bundle"
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/errors"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
 
-func init() {
-	// Register GPU Operator bundler with default registry
-	bundler.Register(bundler.BundleTypeGpuOperator, NewBundler())
-}
-
 // Bundler creates GPU Operator application bundles based on recipes.
 type Bundler struct {
-	config *bundler.BundlerConfig
+	config *config.Config
 }
 
 // NewBundler creates a new GPU Operator bundler instance.
-func NewBundler() *Bundler {
+func NewBundler(conf *config.Config) *Bundler {
+	if conf == nil {
+		conf = config.NewConfig()
+	}
+
 	return &Bundler{
-		config: bundler.DefaultBundlerConfig(),
+		config: conf,
 	}
-}
-
-// Configure applies configuration to the bundler.
-func (b *Bundler) Configure(config *bundler.BundlerConfig) error {
-	if config == nil {
-		return fmt.Errorf("config cannot be nil")
-	}
-	b.config.Merge(config)
-	return nil
-}
-
-// Validate validates the recipe before bundling.
-func (b *Bundler) Validate(_ context.Context, recipe *recipe.Recipe) error {
-	// Check for required Kubernetes measurements
-	if err := bundler.ValidateMeasurementExists(recipe, measurement.TypeK8s); err != nil {
-		return errors.Wrap(errors.ErrCodeInvalidRequest, "K8s measurements required", err)
-	}
-
-	// Check for GPU measurements (optional but recommended)
-	if err := bundler.ValidateMeasurementExists(recipe, measurement.TypeGPU); err != nil {
-		slog.Warn("GPU measurements not found in recipe", "warning", err)
-	}
-
-	return nil
 }
 
 // Make generates the GPU Operator bundle based on the provided recipe.
-func (b *Bundler) Make(ctx context.Context, recipe *recipe.Recipe, dir string) (*bundler.BundleResult, error) {
+func (b *Bundler) Make(ctx context.Context, recipe *recipe.Recipe, dir string) (*bundle.Result, error) {
+	// Check for required measurements
+	if err := recipe.ValidateMeasurementExists(measurement.TypeK8s); err != nil {
+		return nil, fmt.Errorf("measurements are required for GPU Operator bundling: %w", err)
+	}
+
+	// Check for GPU measurements (optional but recommended)
+	if err := recipe.ValidateMeasurementExists(measurement.TypeGPU); err != nil {
+		slog.Warn("GPU measurements not found in recipe", "warning", err)
+	}
+
 	start := time.Now()
-	result := bundler.NewBundleResult(bundler.BundleTypeGpuOperator)
+	result := bundle.NewResult(bundle.BundleTypeGpuOperator)
 
 	slog.Debug("generating GPU Operator bundle",
 		"output_dir", dir,
@@ -156,8 +142,15 @@ func (b *Bundler) buildConfigMap() map[string]string {
 }
 
 // generateHelmValues generates Helm values file.
-func (b *Bundler) generateHelmValues(_ context.Context, recipe *recipe.Recipe,
-	bundleDir string, config map[string]string, result *bundler.BundleResult) error {
+func (b *Bundler) generateHelmValues(ctx context.Context, recipe *recipe.Recipe,
+	bundleDir string, config map[string]string, result *bundle.Result) error {
+
+	// Check context cancellation
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
 
 	helmValues := GenerateHelmValues(recipe, config)
 
@@ -179,8 +172,15 @@ func (b *Bundler) generateHelmValues(_ context.Context, recipe *recipe.Recipe,
 }
 
 // generateClusterPolicy generates ClusterPolicy manifest.
-func (b *Bundler) generateClusterPolicy(_ context.Context, recipe *recipe.Recipe,
-	dir string, config map[string]string, result *bundler.BundleResult) error {
+func (b *Bundler) generateClusterPolicy(ctx context.Context, recipe *recipe.Recipe,
+	dir string, config map[string]string, result *bundle.Result) error {
+
+	// Check context cancellation
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
 
 	manifestData := GenerateManifestData(recipe, config)
 
@@ -198,8 +198,15 @@ func (b *Bundler) generateClusterPolicy(_ context.Context, recipe *recipe.Recipe
 }
 
 // generateScripts generates installation and uninstallation scripts.
-func (b *Bundler) generateScripts(_ context.Context, recipe *recipe.Recipe,
-	dir string, config map[string]string, result *bundler.BundleResult) error {
+func (b *Bundler) generateScripts(ctx context.Context, recipe *recipe.Recipe,
+	dir string, config map[string]string, result *bundle.Result) error {
+
+	// Check context cancellation
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
 
 	scriptData := GenerateScriptData(recipe, config)
 
@@ -237,8 +244,15 @@ func (b *Bundler) generateScripts(_ context.Context, recipe *recipe.Recipe,
 }
 
 // generateReadme generates README documentation.
-func (b *Bundler) generateReadme(_ context.Context, recipe *recipe.Recipe,
-	dir string, config map[string]string, result *bundler.BundleResult) error {
+func (b *Bundler) generateReadme(ctx context.Context, recipe *recipe.Recipe,
+	dir string, config map[string]string, result *bundle.Result) error {
+
+	// Check context cancellation
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
 
 	scriptData := GenerateScriptData(recipe, config)
 
@@ -256,7 +270,7 @@ func (b *Bundler) generateReadme(_ context.Context, recipe *recipe.Recipe,
 }
 
 // generateChecksums generates a checksums file for bundle verification.
-func (b *Bundler) generateChecksums(dir string, result *bundler.BundleResult) error {
+func (b *Bundler) generateChecksums(dir string, result *bundle.Result) error {
 	checksums := &bytes.Buffer{}
 	checksums.WriteString("# GPU Operator Bundle Checksums (SHA256)\n")
 	fmt.Fprintf(checksums, "# Generated: %s\n\n", time.Now().UTC().Format(time.RFC3339))
@@ -303,7 +317,7 @@ func (b *Bundler) renderTemplate(name string, data map[string]interface{}) (stri
 }
 
 // writeFile writes content to a file and updates the result.
-func (b *Bundler) writeFile(path string, content []byte, result *bundler.BundleResult) error {
+func (b *Bundler) writeFile(path string, content []byte, result *bundle.Result) error {
 	if err := os.WriteFile(path, content, 0600); err != nil {
 		return errors.Wrap(errors.ErrCodeInternal,
 			fmt.Sprintf("failed to write file %s", path), err)

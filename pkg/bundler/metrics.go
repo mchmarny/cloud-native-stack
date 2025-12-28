@@ -1,6 +1,7 @@
 package bundler
 
 import (
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/bundle"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -60,13 +61,10 @@ var (
 		},
 		[]string{"bundler_type"},
 	)
-
-	// bundlerRegistrationsTotal counts bundler registrations.
-
 )
 
 // recordBundleGenerated records a bundle generation event.
-func recordBundleGenerated(bundlerType BundleType, success bool) {
+func recordBundleGenerated(bundlerType bundle.Type, success bool) {
 	status := "success"
 	if !success {
 		status = "failure"
@@ -75,26 +73,26 @@ func recordBundleGenerated(bundlerType BundleType, success bool) {
 }
 
 // recordBundleDuration records the duration of bundle generation.
-func recordBundleDuration(bundlerType BundleType, seconds float64) {
+func recordBundleDuration(bundlerType bundle.Type, seconds float64) {
 	bundleDurationSeconds.WithLabelValues(string(bundlerType)).Observe(seconds)
 }
 
 // recordBundleSize records the size of the generated bundle.
-func recordBundleSize(bundlerType BundleType, bytes int64) {
+func recordBundleSize(bundlerType bundle.Type, bytes int64) {
 	bundleSizeBytes.WithLabelValues(string(bundlerType)).Set(float64(bytes))
 }
 
 // recordBundleFiles records the number of files in the bundle.
-func recordBundleFiles(bundlerType BundleType, count int) {
+func recordBundleFiles(bundlerType bundle.Type, count int) {
 	bundleFilesTotal.WithLabelValues(string(bundlerType)).Set(float64(count))
 }
 
 // recordBundleError records an error during bundle generation.
-func recordBundleError(bundlerType BundleType, errorType string) {
+func recordBundleError(bundlerType bundle.Type, errorType string) {
 	bundleErrorsTotal.WithLabelValues(string(bundlerType), errorType).Inc()
 }
 
 // recordValidationFailure records a validation failure.
-func recordValidationFailure(bundlerType BundleType) {
+func recordValidationFailure(bundlerType bundle.Type) {
 	bundleValidationFailuresTotal.WithLabelValues(string(bundlerType)).Inc()
 }

@@ -6,18 +6,30 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/bundle"
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/errors"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
+
+var (
+	testReg = NewRegistry(config.NewConfig())
+)
+
+func init() {
+	testReg.Register("mock", &mockBundler{})
+	testReg.Register("mock-configurable", &mockConfigurableBundler{})
+	testReg.Register("mock-fail", &mockBundler{shouldFail: true})
+}
 
 // mockBundler for testing.
 type mockBundler struct {
 	shouldFail bool
 }
 
-func (m *mockBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*BundleResult, error) {
-	result := NewBundleResult("mock")
+func (m *mockBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*bundle.Result, error) {
+	result := bundle.NewResult("mock")
 	if m.shouldFail {
 		return result, errors.New(errors.ErrCodeInternal, "mock bundler failed")
 	}
@@ -26,50 +38,24 @@ func (m *mockBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir stri
 	return result, nil
 }
 
-// mockValidatingBundler for testing validation.
-type mockValidatingBundler struct {
-	shouldFail bool
-}
-
-func (m *mockValidatingBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*BundleResult, error) {
-	result := NewBundleResult("mock-validator")
-	result.AddFile("test.txt", 100)
-	result.MarkSuccess()
-	return result, nil
-}
-
-func (m *mockValidatingBundler) Validate(_ context.Context, _ *recipe.Recipe) error {
-	if m.shouldFail {
-		return errors.New(errors.ErrCodeInvalidRequest, "validation failed")
-	}
-	return nil
-}
-
 // mockConfigurableBundler for testing configuration.
 type mockConfigurableBundler struct {
-	config *BundlerConfig
+	config *config.Config
 }
 
-func (m *mockConfigurableBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*BundleResult, error) {
-	result := NewBundleResult("mock-configurable")
+func (m *mockConfigurableBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*bundle.Result, error) {
+	result := bundle.NewResult("mock-configurable")
 	result.AddFile("test.txt", 100)
 	result.MarkSuccess()
 	return result, nil
 }
 
-func (m *mockConfigurableBundler) Configure(config *BundlerConfig) error {
+func (m *mockConfigurableBundler) Configure(config *config.Config) error {
 	if config == nil {
 		return errors.New(errors.ErrCodeInvalidRequest, "config cannot be nil")
 	}
 	m.config = config
 	return nil
-}
-
-func init() {
-	defaultRegistry.Register("mock", &mockBundler{})
-	defaultRegistry.Register("mock-validator", &mockValidatingBundler{})
-	defaultRegistry.Register("mock-configurable", &mockConfigurableBundler{})
-	defaultRegistry.Register("mock-fail", &mockBundler{shouldFail: true})
 }
 
 func TestDefaultBundler_Make(t *testing.T) {
@@ -93,7 +79,10 @@ func TestDefaultBundler_Make(t *testing.T) {
 		},
 	}
 
-	bundler := New(WithBundlerTypes([]BundleType{"mock"}))
+	bundler := New(
+		WithRegistry(testReg),
+		WithBundlerTypes([]bundle.Type{"mock"}),
+	)
 	output, err := bundler.Make(ctx, rec, tmpDir)
 	if err != nil {
 		t.Fatalf("Make() error = %v", err)
@@ -166,11 +155,10 @@ func TestDefaultBundler_MakeWithOptions(t *testing.T) {
 		},
 	}
 
-	config := DefaultBundlerConfig()
+	config := config.NewConfig()
 	config.Namespace = "test-namespace"
 
-	bundler := New(
-		WithBundlerTypes([]BundleType{"mock"}),
+	bundler := New(WithRegistry(testReg), WithBundlerTypes([]bundle.Type{"mock"}),
 		WithConfig(config),
 	)
 	output, err := bundler.Make(ctx, rec, tmpDir)
@@ -203,7 +191,10 @@ func TestDefaultBundler_MakeCreatesDirectory(t *testing.T) {
 		},
 	}
 
-	bundler := New(WithBundlerTypes([]BundleType{"mock"}))
+	bundler := New(
+		WithRegistry(testReg),
+		WithBundlerTypes([]bundle.Type{"mock"}),
+	)
 	_, err := bundler.Make(ctx, rec, tmpDir)
 	if err != nil {
 		t.Fatalf("Make() error = %v", err)
@@ -215,7 +206,7 @@ func TestDefaultBundler_MakeCreatesDirectory(t *testing.T) {
 	}
 }
 
-func TestDefaultBundler_MakeWithDryRun(t *testing.T) {
+func TestDefaultBundler_MakeWithMultipleBundlers(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
@@ -235,48 +226,9 @@ func TestDefaultBundler_MakeWithDryRun(t *testing.T) {
 		},
 	}
 
+	// Bundlers execute in parallel
 	bundler := New(
-		WithBundlerTypes([]BundleType{"mock"}),
-		WithDryRun(true),
-	)
-	output, err := bundler.Make(ctx, rec, tmpDir)
-	if err != nil {
-		t.Fatalf("Make() error = %v", err)
-	}
-
-	if output == nil {
-		t.Fatal("Make() returned nil output")
-	}
-
-	// In dry run mode, no files should be created
-	if output.TotalFiles > 0 {
-		t.Errorf("DryRun should not create files, got %d files", output.TotalFiles)
-	}
-}
-
-func TestDefaultBundler_MakeWithParallel(t *testing.T) {
-	ctx := context.Background()
-	tmpDir := t.TempDir()
-
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
-			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "cluster",
-						Data: map[string]measurement.Reading{
-							"version": measurement.Str("1.28.0"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	// Parallel is the default (Sequential=false)
-	bundler := New(
-		WithBundlerTypes([]BundleType{"mock", "mock-validator"}),
+		WithRegistry(testReg),
 	)
 	output, err := bundler.Make(ctx, rec, tmpDir)
 	if err != nil {
@@ -288,48 +240,8 @@ func TestDefaultBundler_MakeWithParallel(t *testing.T) {
 	}
 
 	// Should have results from both bundlers
-	if len(output.Results) != 2 {
-		t.Errorf("Expected 2 results, got %d", len(output.Results))
-	}
-}
-
-func TestDefaultBundler_MakeWithSequential(t *testing.T) {
-	ctx := context.Background()
-	tmpDir := t.TempDir()
-
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
-			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "cluster",
-						Data: map[string]measurement.Reading{
-							"version": measurement.Str("1.28.0"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	// Explicitly enable sequential execution
-	bundler := New(
-		WithBundlerTypes([]BundleType{"mock", "mock-validator"}),
-		WithSequential(true),
-	)
-	output, err := bundler.Make(ctx, rec, tmpDir)
-	if err != nil {
-		t.Fatalf("Make() error = %v", err)
-	}
-
-	if output == nil {
-		t.Fatal("Make() returned nil output")
-	}
-
-	// Should have results from both bundlers executed sequentially
-	if len(output.Results) != 2 {
-		t.Errorf("Expected 2 results, got %d", len(output.Results))
+	if len(output.Results) != testReg.Count() {
+		t.Errorf("Expected %d results, got %d", testReg.Count(), len(output.Results))
 	}
 }
 
@@ -354,7 +266,8 @@ func TestDefaultBundler_MakeWithFailFast(t *testing.T) {
 	}
 
 	bundler := New(
-		WithBundlerTypes([]BundleType{"mock-fail", "mock"}),
+		WithRegistry(testReg),
+		WithBundlerTypes([]bundle.Type{"mock-fail", "mock"}),
 		WithFailFast(true),
 	)
 	_, err := bundler.Make(ctx, rec, tmpDir)
@@ -384,7 +297,8 @@ func TestDefaultBundler_MakeWithoutFailFast(t *testing.T) {
 	}
 
 	bundler := New(
-		WithBundlerTypes([]BundleType{"mock-fail", "mock"}),
+		WithRegistry(testReg),
+		WithBundlerTypes([]bundle.Type{"mock-fail", "mock"}),
 		WithFailFast(false),
 	)
 	output, err := bundler.Make(ctx, rec, tmpDir)
@@ -400,70 +314,6 @@ func TestDefaultBundler_MakeWithoutFailFast(t *testing.T) {
 	// Should still have results from successful bundler
 	if len(output.Results) == 0 {
 		t.Error("Expected at least one result")
-	}
-}
-
-func TestDefaultBundler_MakeWithValidation(t *testing.T) {
-	ctx := context.Background()
-	tmpDir := t.TempDir()
-
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
-			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "cluster",
-						Data: map[string]measurement.Reading{
-							"version": measurement.Str("1.28.0"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	bundler := New(WithBundlerTypes([]BundleType{"mock-validator"}))
-	output, err := bundler.Make(ctx, rec, tmpDir)
-	if err != nil {
-		t.Fatalf("Make() error = %v", err)
-	}
-
-	if output == nil {
-		t.Fatal("Make() returned nil output")
-	}
-}
-
-func TestDefaultBundler_MakeWithValidationFailure(t *testing.T) {
-	ctx := context.Background()
-	tmpDir := t.TempDir()
-
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
-			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "cluster",
-						Data: map[string]measurement.Reading{
-							"version": measurement.Str("1.28.0"),
-						},
-					},
-				},
-			},
-		},
-	}
-
-	// Register a failing validator
-	defaultRegistry.Register("mock-validator-fail", &mockValidatingBundler{shouldFail: true})
-
-	bundler := New(
-		WithBundlerTypes([]BundleType{"mock-validator-fail"}),
-		WithFailFast(true), // Enable fail-fast to get error
-	)
-	_, err := bundler.Make(ctx, rec, tmpDir)
-	if err == nil {
-		t.Error("Expected validation error")
 	}
 }
 
@@ -487,11 +337,10 @@ func TestDefaultBundler_MakeWithConfiguration(t *testing.T) {
 		},
 	}
 
-	config := DefaultBundlerConfig()
+	config := config.NewConfig()
 	config.Namespace = "custom-namespace"
 
-	bundler := New(
-		WithBundlerTypes([]BundleType{"mock-configurable"}),
+	bundler := New(WithRegistry(testReg), WithBundlerTypes([]bundle.Type{"mock-configurable"}),
 		WithConfig(config),
 	)
 	output, err := bundler.Make(ctx, rec, tmpDir)
@@ -561,7 +410,10 @@ func TestDefaultBundler_MakeWithEmptyDirectory(t *testing.T) {
 	}
 
 	// Empty dir should default to current directory
-	bundler := New(WithBundlerTypes([]BundleType{"mock"}))
+	bundler := New(
+		WithRegistry(testReg),
+		WithBundlerTypes([]bundle.Type{"mock"}),
+	)
 	output, err := bundler.Make(ctx, rec, "")
 	if err != nil {
 		t.Fatalf("Make() error = %v", err)
@@ -593,7 +445,7 @@ func TestDefaultBundler_MakeWithNoBundlers(t *testing.T) {
 	}
 
 	// Specify non-existent bundler type
-	bundler := New(WithBundlerTypes([]BundleType{"non-existent"}))
+	bundler := New(WithBundlerTypes([]bundle.Type{"non-existent"}))
 	_, err := bundler.Make(ctx, rec, tmpDir)
 	if err == nil {
 		t.Error("Expected error when no bundlers are selected")
@@ -601,10 +453,10 @@ func TestDefaultBundler_MakeWithNoBundlers(t *testing.T) {
 }
 
 func TestBundleOutput_Summary(t *testing.T) {
-	output := &BundleOutput{
+	output := &bundle.Output{
 		TotalFiles: 5,
 		TotalSize:  1024,
-		Results: []*BundleResult{
+		Results: []*bundle.Result{
 			{Success: true},
 			{Success: true},
 			{Success: false},
@@ -620,20 +472,20 @@ func TestBundleOutput_Summary(t *testing.T) {
 func TestBundleOutput_HasErrors(t *testing.T) {
 	tests := []struct {
 		name   string
-		output *BundleOutput
+		output *bundle.Output
 		want   bool
 	}{
 		{
 			name: "no errors",
-			output: &BundleOutput{
-				Errors: []BundleError{},
+			output: &bundle.Output{
+				Errors: []bundle.BundleError{},
 			},
 			want: false,
 		},
 		{
 			name: "with errors",
-			output: &BundleOutput{
-				Errors: []BundleError{
+			output: &bundle.Output{
+				Errors: []bundle.BundleError{
 					{BundlerType: "test", Error: "test error"},
 				},
 			},
@@ -651,7 +503,7 @@ func TestBundleOutput_HasErrors(t *testing.T) {
 }
 
 func TestBundleResult_AddFile(t *testing.T) {
-	result := NewBundleResult("test")
+	result := bundle.NewResult("test")
 	result.AddFile("/path/to/file", 100)
 
 	if len(result.Files) != 1 {
@@ -704,7 +556,7 @@ func TestValidateRecipeStructure(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateRecipeStructure(tt.recipe)
+			err := tt.recipe.ValidateStructure()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ValidateRecipeStructure() error = %v, wantErr %v", err, tt.wantErr)
 			}

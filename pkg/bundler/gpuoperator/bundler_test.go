@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler"
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
@@ -18,7 +18,7 @@ func TestBundler_Make(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	rec := createTestRecipe()
-	b := NewBundler()
+	b := NewBundler(config.NewConfig())
 
 	result, err := b.Make(ctx, rec, tmpDir)
 	if err != nil {
@@ -62,9 +62,6 @@ func TestBundler_Make(t *testing.T) {
 }
 
 func TestBundler_Validate(t *testing.T) {
-	ctx := context.Background()
-	b := NewBundler()
-
 	tests := []struct {
 		name    string
 		recipe  *recipe.Recipe
@@ -93,7 +90,7 @@ func TestBundler_Validate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := b.Validate(ctx, tt.recipe)
+			err := tt.recipe.Validate()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -102,16 +99,12 @@ func TestBundler_Validate(t *testing.T) {
 }
 
 func TestBundler_Configure(t *testing.T) {
-	b := NewBundler()
 
-	config := bundler.DefaultBundlerConfig()
+	config := config.NewConfig()
 	config.Namespace = "custom-namespace"
 	config.HelmChartVersion = "v1.0.0"
 
-	err := b.Configure(config)
-	if err != nil {
-		t.Fatalf("Configure() error = %v", err)
-	}
+	b := NewBundler(config)
 
 	if b.config.Namespace != "custom-namespace" {
 		t.Errorf("Configure() namespace = %s, want custom-namespace", b.config.Namespace)
