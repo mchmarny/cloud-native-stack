@@ -703,7 +703,7 @@ bundler_validation_failures_total{bundler_type="gpu-operator"}
 - Full bundle generation from realistic recipes
 - File system operations
 - Parallel execution correctness
-- Dry-run mode validation
+- Thread-safety verification
 
 **3. Table-Driven Tests**  
 - Multiple recipe structures
