@@ -6,6 +6,7 @@ This directory contains architecture documentation for the Cloud Native Stack (C
 
 - **[CLI Architecture](cli.md)** - Architecture of the `eidos` command-line tool for capturing system snapshots and generating configuration recipes
 - **[API Server Architecture](api-server.md)** - Architecture of the HTTP API server for serving configuration recommendations
+- **Bundler Framework** - Extensible system for generating deployment bundles (Helm charts, manifests, scripts) from recipes
 
 ## Overview
 
@@ -178,6 +179,7 @@ flowchart TD
     PKG --> SER
     PKG --> LOG
     PKG --> SVR
+    PKG --> BUN
     
     COLL["collector/<br/>System data collection<br/>(OS, K8s, GPU, SystemD)"]
     MEAS["measurement/<br/>Data model for<br/>collected metrics"]
@@ -186,6 +188,7 @@ flowchart TD
     SER["serializer/<br/>Output formatting<br/>(JSON, YAML, table)"]
     LOG["logging/<br/>Structured logging"]
     SVR["server/<br/>HTTP server<br/>infrastructure (API only)"]
+    BUN["bundler/<br/>Bundle generation<br/>(Helm, manifests, scripts)"]
 ```
 
 ## Data Flow
@@ -441,6 +444,333 @@ securityContext:
 | Rate Limit Rejects | < 5% | > 10% over 5m |
 
 **Error Budget**: 43 minutes downtime per month (99.9% SLO)
+
+## Bundler Framework Architecture
+
+### Overview
+
+The Bundler Framework provides an extensible system for generating deployment bundles from configuration recipes. It follows a registry-based pattern allowing multiple bundler implementations to coexist and be selected at runtime.
+
+### Design Principles
+
+**1. Registry Pattern**  
+**Rationale**: Decoupled bundler registration; extensibility without modifying core code  
+**Implementation**: Global registry with type-safe bundler lookup  
+**Trade-off**: Runtime registration vs compile-time safety
+
+**2. Functional Options**  
+**Pattern**: Configuration via variadic option functions  
+**Rationale**: Optional parameters without constructor bloat; backward compatibility  
+**Reference**: [Self-referential functions and the design of options](https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html)
+
+**3. Template-based Generation**  
+**Pattern**: Embedded templates with go:embed, data-driven rendering  
+**Rationale**: Separation of structure (templates) from logic (Go code)  
+**Implementation**: text/template with custom functions, embedded at compile time
+
+**4. Parallel Generation with Error Handling**  
+**Pattern**: errgroup.WithContext for concurrent bundle generation  
+**Rationale**: Fast bundle creation; fail-fast on first error  
+**Trade-off**: Memory usage vs latency
+
+### Component Architecture
+
+```mermaid
+flowchart TD
+    A[Recipe] --> B[Bundler.Make]
+    
+    B --> B1[Validate Recipe]
+    B --> B2[Build Config Map]
+    B --> B3[Create Output Dir]
+    
+    B3 --> C{Parallel Generation}
+    
+    C --> C1[Generate Helm Values]
+    C --> C2[Generate Manifests]
+    C --> C3[Generate Scripts]
+    C --> C4[Generate README]
+    C --> C5[Generate Checksums]
+    
+    C1 --> D1[Extract K8s/GPU Data]
+    C2 --> D2[Extract Config Flags]
+    C3 --> D3[Extract Metadata]
+    C4 --> D4[Render Templates]
+    C5 --> D5[Compute SHA256]
+    
+    D1 --> E[Bundle Result]
+    D2 --> E
+    D3 --> E
+    D4 --> E
+    D5 --> E
+    
+    E --> F{Dry Run?}
+    F -->|No| G[Write Files]
+    F -->|Yes| H[Validation Only]
+    
+    G --> I[Record Metrics]
+    H --> I
+    I --> J[Return BundleResult]
+```
+
+### Bundler Interface
+
+```go
+// Bundler generates deployment bundles from recipes.
+type Bundler interface {
+    // Type returns the unique identifier for this bundler.
+    Type() BundleType
+    
+    // Validate checks if the recipe contains required data.
+    Validate(ctx context.Context, recipe *recipe.Recipe) error
+    
+    // Make generates a bundle in the specified directory.
+    Make(ctx context.Context, recipe *recipe.Recipe, outputDir string) (*BundleResult, error)
+    
+    // Configure applies configuration options.
+    Configure(config *BundlerConfig) error
+}
+```
+
+### GPU Operator Bundler
+
+**Purpose**: Generate complete GPU Operator deployment bundle from recipe  
+**Output**: Helm values, ClusterPolicy manifest, scripts, README, checksums
+
+**Data Extraction**:
+- **K8s Measurements**:
+  - `image` subtype → component versions (gpu-operator, driver, dcgm, etc.)
+  - `config` subtype → boolean flags (cdi, mig, rdma, useOpenKernelModule)
+- **GPU Measurements**:
+  - `smi` subtype → driver version, CUDA version
+
+**Key Features**:
+1. **Recipe Structure Alignment**: Matches actual recipe.yaml structure (not legacy policy/cluster)
+2. **Boolean Handling**: Correctly interprets boolean flags vs string values
+3. **Version Extraction**: Extracts all component versions from image subtype
+4. **CDI Support**: Reads CDI configuration from config subtype
+5. **Template Rendering**: Uses embedded templates for all output files
+
+**Bundle Contents**:
+```
+gpu-operator/
+├── values.yaml              # Helm chart values
+├── manifests/
+│   └── clusterpolicy.yaml  # Kubernetes ClusterPolicy
+├── scripts/
+│   ├── install.sh          # Installation script
+│   └── uninstall.sh        # Uninstallation script
+├── README.md                # Deployment instructions
+└── checksums.txt            # SHA256 checksums
+```
+
+### Example: Adding a New Bundler
+
+```go
+package networkoperator
+
+import (
+    "context"
+    "github.com/NVIDIA/cloud-native-stack/pkg/bundler"
+    "github.com/NVIDIA/cloud-native-stack/pkg/recipe"
+)
+
+const bundlerType = bundler.BundleType("network-operator")
+
+type Bundler struct {
+    config *bundler.BundlerConfig
+}
+
+func init() {
+    // Register bundler on package import
+    bundler.Register(bundlerType, func() bundler.Bundler {
+        return NewBundler()
+    })
+}
+
+func NewBundler(opts ...Option) *Bundler {
+    b := &Bundler{
+        config: bundler.DefaultBundlerConfig(),
+    }
+    for _, opt := range opts {
+        opt(b)
+    }
+    return b
+}
+
+func (b *Bundler) Type() bundler.BundleType {
+    return bundlerType
+}
+
+func (b *Bundler) Validate(ctx context.Context, recipe *recipe.Recipe) error {
+    // Check for required K8s measurements
+    return bundler.ValidateRecipeStructure(recipe)
+}
+
+func (b *Bundler) Make(ctx context.Context, recipe *recipe.Recipe, 
+    outputDir string) (*bundler.BundleResult, error) {
+    
+    result := bundler.NewBundleResult(bundlerType)
+    
+    // Generate bundle files in parallel
+    g, ctx := errgroup.WithContext(ctx)
+    
+    g.Go(func() error {
+        return b.generateHelmValues(ctx, recipe, outputDir, result)
+    })
+    
+    g.Go(func() error {
+        return b.generateManifests(ctx, recipe, outputDir, result)
+    })
+    
+    if err := g.Wait(); err != nil {
+        return nil, err
+    }
+    
+    return result, nil
+}
+
+func (b *Bundler) Configure(config *bundler.BundlerConfig) error {
+    b.config = config
+    return nil
+}
+```
+
+### Usage Example
+
+```go
+package main
+
+import (
+    "context"
+    "github.com/NVIDIA/cloud-native-stack/pkg/bundler"
+    _ "github.com/NVIDIA/cloud-native-stack/pkg/bundler/gpuoperator"
+)
+
+func main() {
+    ctx := context.Background()
+    
+    // Create recipe
+    recipe := createRecipe()
+    
+    // Get registered bundlers
+    bundlers := bundler.GetBundlers("gpu-operator")
+    
+    // Generate bundles
+    output, err := bundler.Make(ctx, recipe, "./output",
+        bundler.WithBundlers(bundlers),
+        bundler.WithParallel(true),
+    )
+    
+    if err != nil {
+        panic(err)
+    }
+    
+    fmt.Printf("Generated %d files (%d bytes)\n", 
+        output.TotalFiles, output.TotalBytes)
+}
+```
+
+### Metrics and Observability
+
+**Bundler Metrics** (Prometheus):
+```go
+bundler_make_duration_seconds{bundler_type="gpu-operator"}
+bundler_make_total{bundler_type="gpu-operator",result="success|error"}
+bundler_files_generated_total{bundler_type="gpu-operator"}
+bundler_bytes_generated_total{bundler_type="gpu-operator"}
+bundler_validation_failures_total{bundler_type="gpu-operator"}
+```
+
+**Logging** (Structured with slog):
+- Bundle generation start/complete
+- Per-bundler execution time
+- File creation events
+- Validation errors with context
+
+### Testing Strategy
+
+**1. Unit Tests**  
+- Template rendering with test data
+- Version extraction from recipe measurements
+- Configuration validation
+- Error handling paths
+
+**2. Integration Tests**  
+- Full bundle generation from realistic recipes
+- File system operations
+- Parallel execution correctness
+- Dry-run mode validation
+
+**3. Table-Driven Tests**  
+- Multiple recipe structures
+- Various configuration combinations
+- Edge cases (empty data, missing subtypes)
+
+**Example Test**:
+```go
+func TestBundler_Make(t *testing.T) {
+    tests := []struct {
+        name    string
+        recipe  *recipe.Recipe
+        wantErr bool
+        wantFiles []string
+    }{
+        {
+            name: "complete recipe",
+            recipe: createTestRecipe(),
+            wantFiles: []string{
+                "values.yaml",
+                "manifests/clusterpolicy.yaml",
+                "scripts/install.sh",
+                "README.md",
+                "checksums.txt",
+            },
+        },
+    }
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            b := NewBundler()
+            result, err := b.Make(ctx, tt.recipe, tmpDir)
+            
+            if (err != nil) != tt.wantErr {
+                t.Errorf("Make() error = %v, wantErr %v", err, tt.wantErr)
+            }
+            
+            // Verify expected files exist
+            for _, file := range tt.wantFiles {
+                path := filepath.Join(tmpDir, "gpu-operator", file)
+                if _, err := os.Stat(path); os.IsNotExist(err) {
+                    t.Errorf("expected file not found: %s", file)
+                }
+            }
+        })
+    }
+}
+```
+
+### Future Enhancements
+
+**1. Additional Bundlers**  
+- Network Operator (RDMA, SR-IOV configuration)
+- Storage Operator (CSI drivers, volume configuration)
+- NIM Operator (Inference microservices deployment)
+- Nsight Operator (Profiling and debugging tools)
+
+**2. Template Management**  
+- External template loading (not just embedded)
+- Template versioning and compatibility checks
+- Template validation and testing framework
+
+**3. Bundle Composition**  
+- Multi-bundler orchestration
+- Dependency resolution between bundles
+- Unified checksums across all bundles
+
+**4. Distribution**  
+- Bundle packaging (tar.gz, OCI images)
+- Signature verification (cosign, GPG)
+- Registry push/pull for bundle artifacts
 
 ## References and Further Reading
 

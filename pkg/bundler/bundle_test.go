@@ -6,25 +6,73 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/errors"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
 
-// MockBundler for testing.
-type mockBundler struct{}
+// mockBundler for testing.
+type mockBundler struct {
+	shouldFail bool
+}
 
 func (m *mockBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*BundleResult, error) {
 	result := NewBundleResult("mock")
+	if m.shouldFail {
+		return result, errors.New(errors.ErrCodeInternal, "mock bundler failed")
+	}
 	result.AddFile("test.txt", 100)
 	result.MarkSuccess()
 	return result, nil
 }
 
-func init() {
-	Register("mock", &mockBundler{})
+// mockValidatingBundler for testing validation.
+type mockValidatingBundler struct {
+	shouldFail bool
 }
 
-func TestMake(t *testing.T) {
+func (m *mockValidatingBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*BundleResult, error) {
+	result := NewBundleResult("mock-validator")
+	result.AddFile("test.txt", 100)
+	result.MarkSuccess()
+	return result, nil
+}
+
+func (m *mockValidatingBundler) Validate(_ context.Context, _ *recipe.Recipe) error {
+	if m.shouldFail {
+		return errors.New(errors.ErrCodeInvalidRequest, "validation failed")
+	}
+	return nil
+}
+
+// mockConfigurableBundler for testing configuration.
+type mockConfigurableBundler struct {
+	config *BundlerConfig
+}
+
+func (m *mockConfigurableBundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) (*BundleResult, error) {
+	result := NewBundleResult("mock-configurable")
+	result.AddFile("test.txt", 100)
+	result.MarkSuccess()
+	return result, nil
+}
+
+func (m *mockConfigurableBundler) Configure(config *BundlerConfig) error {
+	if config == nil {
+		return errors.New(errors.ErrCodeInvalidRequest, "config cannot be nil")
+	}
+	m.config = config
+	return nil
+}
+
+func init() {
+	defaultRegistry.Register("mock", &mockBundler{})
+	defaultRegistry.Register("mock-validator", &mockValidatingBundler{})
+	defaultRegistry.Register("mock-configurable", &mockConfigurableBundler{})
+	defaultRegistry.Register("mock-fail", &mockBundler{shouldFail: true})
+}
+
+func TestDefaultBundler_Make(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
@@ -45,7 +93,8 @@ func TestMake(t *testing.T) {
 		},
 	}
 
-	output, err := Make(ctx, rec, tmpDir, WithBundlers("mock"))
+	bundler := New(WithBundlerTypes([]BundleType{"mock"}))
+	output, err := bundler.Make(ctx, rec, tmpDir)
 	if err != nil {
 		t.Fatalf("Make() error = %v", err)
 	}
@@ -61,19 +110,28 @@ func TestMake(t *testing.T) {
 	if output.OutputDir != tmpDir {
 		t.Errorf("OutputDir = %s, want %s", output.OutputDir, tmpDir)
 	}
+
+	if output.TotalFiles != 1 {
+		t.Errorf("TotalFiles = %d, want 1", output.TotalFiles)
+	}
+
+	if output.TotalSize != 100 {
+		t.Errorf("TotalSize = %d, want 100", output.TotalSize)
+	}
 }
 
-func TestMakeWithNilRecipe(t *testing.T) {
+func TestDefaultBundler_MakeWithNilRecipe(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
-	_, err := Make(ctx, nil, tmpDir)
+	bundler := New()
+	_, err := bundler.Make(ctx, nil, tmpDir)
 	if err == nil {
 		t.Error("Make() with nil recipe should return error")
 	}
 }
 
-func TestMakeWithEmptyMeasurements(t *testing.T) {
+func TestDefaultBundler_MakeWithEmptyMeasurements(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
@@ -81,13 +139,14 @@ func TestMakeWithEmptyMeasurements(t *testing.T) {
 		Measurements: []*measurement.Measurement{},
 	}
 
-	_, err := Make(ctx, rec, tmpDir)
+	bundler := New()
+	_, err := bundler.Make(ctx, rec, tmpDir)
 	if err == nil {
 		t.Error("Make() with empty measurements should return error")
 	}
 }
 
-func TestMakeWithOptions(t *testing.T) {
+func TestDefaultBundler_MakeWithOptions(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
@@ -110,11 +169,11 @@ func TestMakeWithOptions(t *testing.T) {
 	config := DefaultBundlerConfig()
 	config.Namespace = "test-namespace"
 
-	output, err := Make(ctx, rec, tmpDir,
-		WithBundlers("mock"),
+	bundler := New(
+		WithBundlerTypes([]BundleType{"mock"}),
 		WithConfig(config),
-		WithParallel(),
 	)
+	output, err := bundler.Make(ctx, rec, tmpDir)
 	if err != nil {
 		t.Fatalf("Make() error = %v", err)
 	}
@@ -124,7 +183,7 @@ func TestMakeWithOptions(t *testing.T) {
 	}
 }
 
-func TestMakeCreatesDirectory(t *testing.T) {
+func TestDefaultBundler_MakeCreatesDirectory(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := filepath.Join(t.TempDir(), "nested", "dir")
 
@@ -144,7 +203,8 @@ func TestMakeCreatesDirectory(t *testing.T) {
 		},
 	}
 
-	_, err := Make(ctx, rec, tmpDir, WithBundlers("mock"))
+	bundler := New(WithBundlerTypes([]BundleType{"mock"}))
+	_, err := bundler.Make(ctx, rec, tmpDir)
 	if err != nil {
 		t.Fatalf("Make() error = %v", err)
 	}
@@ -155,7 +215,7 @@ func TestMakeCreatesDirectory(t *testing.T) {
 	}
 }
 
-func TestMakeWithDryRun(t *testing.T) {
+func TestDefaultBundler_MakeWithDryRun(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
@@ -175,7 +235,11 @@ func TestMakeWithDryRun(t *testing.T) {
 		},
 	}
 
-	output, err := Make(ctx, rec, tmpDir, WithBundlers("mock"), WithDryRun())
+	bundler := New(
+		WithBundlerTypes([]BundleType{"mock"}),
+		WithDryRun(true),
+	)
+	output, err := bundler.Make(ctx, rec, tmpDir)
 	if err != nil {
 		t.Fatalf("Make() error = %v", err)
 	}
@@ -187,6 +251,352 @@ func TestMakeWithDryRun(t *testing.T) {
 	// In dry run mode, no files should be created
 	if output.TotalFiles > 0 {
 		t.Errorf("DryRun should not create files, got %d files", output.TotalFiles)
+	}
+}
+
+func TestDefaultBundler_MakeWithParallel(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	rec := &recipe.Recipe{
+		Measurements: []*measurement.Measurement{
+			{
+				Type: measurement.TypeK8s,
+				Subtypes: []measurement.Subtype{
+					{
+						Name: "cluster",
+						Data: map[string]measurement.Reading{
+							"version": measurement.Str("1.28.0"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Parallel is the default (Sequential=false)
+	bundler := New(
+		WithBundlerTypes([]BundleType{"mock", "mock-validator"}),
+	)
+	output, err := bundler.Make(ctx, rec, tmpDir)
+	if err != nil {
+		t.Fatalf("Make() error = %v", err)
+	}
+
+	if output == nil {
+		t.Fatal("Make() returned nil output")
+	}
+
+	// Should have results from both bundlers
+	if len(output.Results) != 2 {
+		t.Errorf("Expected 2 results, got %d", len(output.Results))
+	}
+}
+
+func TestDefaultBundler_MakeWithSequential(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	rec := &recipe.Recipe{
+		Measurements: []*measurement.Measurement{
+			{
+				Type: measurement.TypeK8s,
+				Subtypes: []measurement.Subtype{
+					{
+						Name: "cluster",
+						Data: map[string]measurement.Reading{
+							"version": measurement.Str("1.28.0"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Explicitly enable sequential execution
+	bundler := New(
+		WithBundlerTypes([]BundleType{"mock", "mock-validator"}),
+		WithSequential(true),
+	)
+	output, err := bundler.Make(ctx, rec, tmpDir)
+	if err != nil {
+		t.Fatalf("Make() error = %v", err)
+	}
+
+	if output == nil {
+		t.Fatal("Make() returned nil output")
+	}
+
+	// Should have results from both bundlers executed sequentially
+	if len(output.Results) != 2 {
+		t.Errorf("Expected 2 results, got %d", len(output.Results))
+	}
+}
+
+func TestDefaultBundler_MakeWithFailFast(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	rec := &recipe.Recipe{
+		Measurements: []*measurement.Measurement{
+			{
+				Type: measurement.TypeK8s,
+				Subtypes: []measurement.Subtype{
+					{
+						Name: "cluster",
+						Data: map[string]measurement.Reading{
+							"version": measurement.Str("1.28.0"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundler := New(
+		WithBundlerTypes([]BundleType{"mock-fail", "mock"}),
+		WithFailFast(true),
+	)
+	_, err := bundler.Make(ctx, rec, tmpDir)
+	if err == nil {
+		t.Error("Expected error with FailFast and failing bundler")
+	}
+}
+
+func TestDefaultBundler_MakeWithoutFailFast(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	rec := &recipe.Recipe{
+		Measurements: []*measurement.Measurement{
+			{
+				Type: measurement.TypeK8s,
+				Subtypes: []measurement.Subtype{
+					{
+						Name: "cluster",
+						Data: map[string]measurement.Reading{
+							"version": measurement.Str("1.28.0"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundler := New(
+		WithBundlerTypes([]BundleType{"mock-fail", "mock"}),
+		WithFailFast(false),
+	)
+	output, err := bundler.Make(ctx, rec, tmpDir)
+	if err != nil {
+		t.Fatalf("Make() error = %v", err)
+	}
+
+	// Should collect errors but continue execution
+	if !output.HasErrors() {
+		t.Error("Expected errors to be collected")
+	}
+
+	// Should still have results from successful bundler
+	if len(output.Results) == 0 {
+		t.Error("Expected at least one result")
+	}
+}
+
+func TestDefaultBundler_MakeWithValidation(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	rec := &recipe.Recipe{
+		Measurements: []*measurement.Measurement{
+			{
+				Type: measurement.TypeK8s,
+				Subtypes: []measurement.Subtype{
+					{
+						Name: "cluster",
+						Data: map[string]measurement.Reading{
+							"version": measurement.Str("1.28.0"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundler := New(WithBundlerTypes([]BundleType{"mock-validator"}))
+	output, err := bundler.Make(ctx, rec, tmpDir)
+	if err != nil {
+		t.Fatalf("Make() error = %v", err)
+	}
+
+	if output == nil {
+		t.Fatal("Make() returned nil output")
+	}
+}
+
+func TestDefaultBundler_MakeWithValidationFailure(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	rec := &recipe.Recipe{
+		Measurements: []*measurement.Measurement{
+			{
+				Type: measurement.TypeK8s,
+				Subtypes: []measurement.Subtype{
+					{
+						Name: "cluster",
+						Data: map[string]measurement.Reading{
+							"version": measurement.Str("1.28.0"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Register a failing validator
+	defaultRegistry.Register("mock-validator-fail", &mockValidatingBundler{shouldFail: true})
+
+	bundler := New(
+		WithBundlerTypes([]BundleType{"mock-validator-fail"}),
+		WithFailFast(true), // Enable fail-fast to get error
+	)
+	_, err := bundler.Make(ctx, rec, tmpDir)
+	if err == nil {
+		t.Error("Expected validation error")
+	}
+}
+
+func TestDefaultBundler_MakeWithConfiguration(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	rec := &recipe.Recipe{
+		Measurements: []*measurement.Measurement{
+			{
+				Type: measurement.TypeK8s,
+				Subtypes: []measurement.Subtype{
+					{
+						Name: "cluster",
+						Data: map[string]measurement.Reading{
+							"version": measurement.Str("1.28.0"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	config := DefaultBundlerConfig()
+	config.Namespace = "custom-namespace"
+
+	bundler := New(
+		WithBundlerTypes([]BundleType{"mock-configurable"}),
+		WithConfig(config),
+	)
+	output, err := bundler.Make(ctx, rec, tmpDir)
+	if err != nil {
+		t.Fatalf("Make() error = %v", err)
+	}
+
+	if output == nil {
+		t.Fatal("Make() returned nil output")
+	}
+}
+
+func TestDefaultBundler_MakeWithAllBundlers(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	rec := &recipe.Recipe{
+		Measurements: []*measurement.Measurement{
+			{
+				Type: measurement.TypeK8s,
+				Subtypes: []measurement.Subtype{
+					{
+						Name: "cluster",
+						Data: map[string]measurement.Reading{
+							"version": measurement.Str("1.28.0"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// No bundler types specified - should use all registered bundlers
+	bundler := New()
+	output, err := bundler.Make(ctx, rec, tmpDir)
+	if err != nil {
+		t.Fatalf("Make() error = %v", err)
+	}
+
+	if output == nil {
+		t.Fatal("Make() returned nil output")
+	}
+
+	// Should have results from all registered bundlers
+	if len(output.Results) == 0 {
+		t.Error("Expected results from registered bundlers")
+	}
+}
+
+func TestDefaultBundler_MakeWithEmptyDirectory(t *testing.T) {
+	ctx := context.Background()
+
+	rec := &recipe.Recipe{
+		Measurements: []*measurement.Measurement{
+			{
+				Type: measurement.TypeK8s,
+				Subtypes: []measurement.Subtype{
+					{
+						Name: "cluster",
+						Data: map[string]measurement.Reading{
+							"version": measurement.Str("1.28.0"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Empty dir should default to current directory
+	bundler := New(WithBundlerTypes([]BundleType{"mock"}))
+	output, err := bundler.Make(ctx, rec, "")
+	if err != nil {
+		t.Fatalf("Make() error = %v", err)
+	}
+
+	if output.OutputDir != "." {
+		t.Errorf("Expected output dir to be '.', got %s", output.OutputDir)
+	}
+}
+
+func TestDefaultBundler_MakeWithNoBundlers(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	rec := &recipe.Recipe{
+		Measurements: []*measurement.Measurement{
+			{
+				Type: measurement.TypeK8s,
+				Subtypes: []measurement.Subtype{
+					{
+						Name: "cluster",
+						Data: map[string]measurement.Reading{
+							"version": measurement.Str("1.28.0"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Specify non-existent bundler type
+	bundler := New(WithBundlerTypes([]BundleType{"non-existent"}))
+	_, err := bundler.Make(ctx, rec, tmpDir)
+	if err == nil {
+		t.Error("Expected error when no bundlers are selected")
 	}
 }
 

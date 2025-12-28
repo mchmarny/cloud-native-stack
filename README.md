@@ -116,6 +116,50 @@ eidos recipe \
 
 The recipe command analyzes your environment (from query parameters or snapshot) and generates optimized configuration recommendations based on the specified workload intent.
 
+#### Generate Deployment Bundle
+
+Generate deployment-ready bundles from recipes containing Helm values, Kubernetes manifests, installation scripts, and documentation:
+
+```shell
+# Generate GPU Operator bundle from recipe
+eidos bundle --recipe recipe.yaml --output ./bundles
+
+# Generate from snapshot with workload intent
+eidos bundle --snapshot system.yaml --intent training --output ./bundles
+
+# Specify bundler types explicitly
+eidos bundle --recipe recipe.yaml --bundler gpu-operator --output ./bundles
+```
+
+**Bundle contents** for GPU Operator:
+```
+gpu-operator/
+├── values.yaml                    # Helm chart configuration
+├── manifests/
+│   └── clusterpolicy.yaml        # ClusterPolicy custom resource
+├── scripts/
+│   ├── install.sh                # Installation automation
+│   └── uninstall.sh              # Cleanup automation
+├── README.md                      # Deployment instructions
+└── checksums.txt                  # SHA256 verification
+```
+
+**Available flags:**
+- `--recipe` – Path to recipe file
+- `--snapshot` – Path to snapshot file (generates recipe first)
+- `--intent` – Workload intent when using snapshot (training, inference)
+- `--bundler` – Bundler type(s) to use (gpu-operator, network-operator)
+- `--output` – Output directory (default: ./bundles)
+- `--namespace` – Kubernetes namespace for deployment
+- `--dry-run` – Validate without creating files
+
+**Installation using generated bundle:**
+```bash
+cd bundles/gpu-operator
+chmod +x scripts/install.sh
+./scripts/install.sh
+```
+
 ### Deploy the Eidos Agent
 
 Eidos can also be deployed as an agent into your Kubernetes cluster as a Job to automatically capture cluster configuration snapshots. This is useful for auditing, troubleshooting, and configuration management.

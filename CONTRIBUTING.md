@@ -105,6 +105,9 @@ cloud-native-stack/
 │   └── eidos-api-server/    # API server binary
 ├── pkg/                      # Core packages
 │   ├── api/                 # HTTP API layer and handlers
+│   ├── bundler/             # Bundle generation framework
+│   │   ├── examples/       # Example bundler implementations
+│   │   └── gpuoperator/    # GPU Operator bundler with templates
 │   ├── cli/                 # CLI commands (urfave/cli v3)
 │   ├── collector/           # System configuration collectors
 │   │   ├── gpu/            # GPU hardware collectors
@@ -184,6 +187,25 @@ cloud-native-stack/
 - **Output**: Complete snapshot with metadata and all collector measurements
 - **Usage**: CLI command, Kubernetes Job agent
 - **Format**: Structured snapshot (snapshot.dgxc.io/v1)
+
+#### Bundler Framework
+- **Location**: `pkg/bundler/`
+- **Pattern**: Registry-based with pluggable bundler implementations
+- **Purpose**: Generate deployment bundles from recipes (Helm values, K8s manifests, scripts)
+- **Bundlers**:
+  - **GPU Operator**: Generates complete GPU Operator deployment bundle
+    - Helm values.yaml with version management
+    - Kubernetes ClusterPolicy manifest
+    - Installation/uninstallation scripts
+    - README with deployment instructions
+    - SHA256 checksums for verification
+- **Features**:
+  - Template-based generation with go:embed
+  - Functional options pattern for configuration
+  - Parallel bundle generation with errgroup
+  - Dry-run mode for validation
+  - Prometheus metrics for observability
+- **Extensibility**: Implement `Bundler` interface to add new bundle types
 
 ### Common Make Targets
 
@@ -621,6 +643,201 @@ kubectl logs -n gpu-operator job/eidos -f
 # Get snapshot output
 kubectl logs -n gpu-operator job/eidos > snapshot.yaml
 ```
+
+### Adding a New Bundler
+
+If adding a new deployment bundler (like a Network Operator bundler):
+
+1. Create bundler package in `pkg/bundler/<bundler-name>/`:
+```go
+// pkg/bundler/networkoperator/bundler.go
+package networkoperator
+
+import (
+    "context"
+    "github.com/NVIDIA/cloud-native-stack/pkg/bundler"
+    "github.com/NVIDIA/cloud-native-stack/pkg/recipe"
+)
+
+const bundlerType = bundler.BundleType("network-operator")
+
+func init() {
+    // Self-register bundler in global registry
+    bundler.Register(bundlerType, func() bundler.Bundler {
+        return NewBundler()
+    })
+}
+
+type Bundler struct {
+    config *bundler.BundlerConfig
+}
+
+func NewBundler(opts ...bundler.Option) *Bundler {
+    b := &Bundler{
+        config: bundler.DefaultBundlerConfig(),
+    }
+    for _, opt := range opts {
+        opt(b.config)
+    }
+    return b
+}
+
+func (b *Bundler) Type() bundler.BundleType {
+    return bundlerType
+}
+
+func (b *Bundler) Validate(ctx context.Context, r *recipe.Recipe) error {
+    // Validate recipe has required measurements
+    return nil
+}
+
+func (b *Bundler) Make(ctx context.Context, r *recipe.Recipe, 
+    outputDir string) (*bundler.BundleResult, error) {
+    
+    // Extract data from recipe measurements
+    config := b.extractConfig(r)
+    
+    // Generate bundle files in parallel
+    // Return BundleResult with files, checksums, metadata
+    return result, nil
+}
+```
+
+2. Create templates directory with embedded templates:
+```
+pkg/bundler/networkoperator/templates/
+├── values.yaml.tmpl      # Helm chart values
+├── manifest.yaml.tmpl    # Kubernetes manifests
+├── install.sh.tmpl       # Installation script
+└── README.md.tmpl        # Documentation
+```
+
+3. Embed templates using go:embed:
+```go
+//go:embed templates/*.tmpl
+var templatesFS embed.FS
+
+func (b *Bundler) renderTemplate(name string, 
+    data map[string]interface{}) (string, error) {
+    
+    tmpl, err := template.New(name).
+        ParseFS(templatesFS, "templates/"+name+".tmpl")
+    if err != nil {
+        return "", fmt.Errorf("failed to parse template: %w", err)
+    }
+    
+    var buf bytes.Buffer
+    if err := tmpl.Execute(&buf, data); err != nil {
+        return "", fmt.Errorf("failed to execute template: %w", err)
+    }
+    
+    return buf.String(), nil
+}
+```
+
+4. Write comprehensive tests:
+```go
+// pkg/bundler/networkoperator/bundler_test.go
+func TestBundler_Make(t *testing.T) {
+    tests := []struct {
+        name    string
+        recipe  *recipe.Recipe
+        wantErr bool
+    }{
+        {
+            name:    "valid recipe",
+            recipe:  createTestRecipe(),
+            wantErr: false,
+        },
+        {
+            name:    "missing required measurements",
+            recipe:  &recipe.Recipe{},
+            wantErr: true,
+        },
+    }
+    
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            ctx := context.Background()
+            tmpDir := t.TempDir()
+            
+            b := NewBundler()
+            result, err := b.Make(ctx, tt.recipe, tmpDir)
+            
+            if (err != nil) != tt.wantErr {
+                t.Errorf("Make() error = %v, wantErr %v", err, tt.wantErr)
+                return
+            }
+            
+            if !tt.wantErr {
+                // Verify expected files exist
+                if len(result.Files) == 0 {
+                    t.Error("expected generated files, got none")
+                }
+                
+                // Verify checksums
+                if len(result.Checksums) != len(result.Files) {
+                    t.Error("checksum count mismatch")
+                }
+            }
+        })
+    }
+}
+
+func createTestRecipe() *recipe.Recipe {
+    return &recipe.Recipe{
+        APIVersion: "v1",
+        Kind:       "Recipe",
+        Measurements: []*measurement.Measurement{
+            {
+                Type: measurement.TypeK8s,
+                Subtypes: []*measurement.Subtype{
+                    {
+                        Name: "image",
+                        Data: map[string]measurement.Reading{
+                            "network-operator": measurement.Str("v25.4.0"),
+                            "ofed-driver":      measurement.Str("24.07"),
+                        },
+                    },
+                    {
+                        Name: "config",
+                        Data: map[string]measurement.Reading{
+                            "rdma":   measurement.Bool(true),
+                            "sr-iov": measurement.Bool(true),
+                        },
+                    },
+                },
+            },
+        },
+    }
+}
+```
+
+5. Test bundle generation:
+```bash
+# Build CLI with new bundler
+make build
+
+# Test bundle generation
+./dist/eidos_*/eidos bundle \
+  --recipe examples/recipe.yaml \
+  --bundler network-operator \
+  --output ./test-bundles \
+  --dry-run
+
+# Verify bundle structure
+ls -la test-bundles/network-operator/
+```
+
+**Bundler Best Practices**:
+- Use functional options pattern for configuration
+- Generate files in parallel with errgroup
+- Embed templates with go:embed for portability
+- Compute SHA256 checksums for verification
+- Support dry-run mode for validation
+- Add structured logging with slog
+- Expose Prometheus metrics
+- Write integration tests with real recipes
 
 ## Code Quality Standards
 

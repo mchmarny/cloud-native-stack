@@ -2,6 +2,7 @@ package bundler
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
@@ -27,7 +28,31 @@ type BundleType string
 const (
 	// BundleTypeGpuOperator generates GPU Operator bundles.
 	BundleTypeGpuOperator BundleType = "gpu-operator"
-
-	// BundleTypeNetworkOperator generates Network Operator bundles.
-	BundleTypeNetworkOperator BundleType = "network-operator"
 )
+
+// ParseBundleType converts a string to a BundleType.
+func ParseBundleType(s string) (BundleType, error) {
+	switch s {
+	case string(BundleTypeGpuOperator):
+		return BundleTypeGpuOperator, nil
+	default:
+		return "", fmt.Errorf("unknown bundle type: %s", s)
+	}
+}
+
+// SupportedBundleTypes returns a list of all supported bundle types.
+func SupportedBundleTypes() []BundleType {
+	return []BundleType{
+		BundleTypeGpuOperator,
+	}
+}
+
+// SupportedBundleTypesAsStrings returns supported bundle types as strings.
+func SupportedBundleTypesAsStrings() []string {
+	types := SupportedBundleTypes()
+	strs := make([]string, len(types))
+	for i, t := range types {
+		strs[i] = string(t)
+	}
+	return strs
+}

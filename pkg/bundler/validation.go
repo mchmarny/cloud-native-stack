@@ -43,10 +43,6 @@ func ValidateRecipeStructure(recipe *recipe.Recipe) error {
 		return fmt.Errorf("recipe is nil")
 	}
 
-	if recipe.Measurements == nil {
-		return fmt.Errorf("measurements are nil")
-	}
-
 	if len(recipe.Measurements) == 0 {
 		return fmt.Errorf("no measurements in recipe")
 	}

@@ -54,17 +54,20 @@ func bundleCmd() *cli.Command {
 				return err
 			}
 
-			b, err := bundler.Make(ctx, rec, outputDir)
+			// Create bundler instance using default configuration
+			b := bundler.New()
+
+			out, err := b.Make(ctx, rec, outputDir)
 			if err != nil {
 				slog.Error("bundle generation failed", "error", err)
 				return err
 			}
 
 			slog.Info("bundle generation completed",
-				"success", b.SuccessCount(),
-				"errors", len(b.Errors),
-				"duration_sec", b.TotalDuration.Seconds(),
-				"summary", b.Summary(),
+				"success", out.SuccessCount(),
+				"errors", len(out.Errors),
+				"duration_sec", out.TotalDuration.Seconds(),
+				"summary", out.Summary(),
 			)
 
 			return nil

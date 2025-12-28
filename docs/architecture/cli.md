@@ -1663,6 +1663,508 @@ export EIDOS_PROXY_CA_CERT=/etc/ssl/certs/corp-ca.pem
 eidos recipe --os ubuntu --gpu h100
 ```
 
+## Bundle Command: Deployment Artifact Generation
+
+The `bundle` command generates deployment-ready bundles from configuration recipes. It transforms recipe data into complete deployment artifacts including Helm charts, Kubernetes manifests, installation scripts, and documentation.
+
+### Overview
+
+**Purpose**: Convert Cloud Native Stack recipes into deployment-ready bundles containing:
+- **Helm Values**: Chart configuration with version management
+- **Kubernetes Manifests**: ClusterPolicy and custom resources
+- **Scripts**: Installation and uninstallation automation
+- **Documentation**: Deployment instructions and verification steps
+- **Checksums**: SHA256 verification for all generated files
+
+**Key Features**:
+✅ Registry-based bundler framework - pluggable implementations  
+✅ Parallel generation - fast bundle creation with errgroup  
+✅ Template system - embedded templates with go:embed  
+✅ Dry-run mode - validation without file system changes  
+✅ Functional options - flexible configuration  
+✅ Type safety - compile-time bundler type checking  
+✅ Metrics - Prometheus observability  
+
+### Command Flow
+
+```mermaid
+flowchart TD
+    A[User Invocation] --> B[Parse Flags]
+    B --> C{Recipe or Snapshot?}
+    C -->|Recipe| D[Load Recipe]
+    C -->|Snapshot| E[Generate Recipe<br/>from Snapshot]
+    E --> D
+    D --> F[Get Bundlers<br/>from Registry]
+    F --> G[Validate Recipe]
+    G --> H[Parallel Bundle<br/>Generation]
+    H --> I[Write Output]
+    I --> J[Display Summary]
+    
+    style H fill:#ffeb3b
+```
+
+### Usage Examples
+
+```bash
+# Generate GPU Operator bundle from recipe
+eidos bundle --recipe recipe.yaml --output ./bundles
+
+# Generate from snapshot with workload intent
+eidos bundle --snapshot system.yaml --intent training --output ./bundles
+
+# Specify bundler types explicitly
+eidos bundle --recipe recipe.yaml --bundler gpu-operator --output ./bundles
+
+# Dry-run mode (validate without writing files)
+eidos bundle --recipe recipe.yaml --dry-run
+
+# Custom namespace
+eidos bundle --recipe recipe.yaml --namespace custom-gpu-ns
+```
+
+### Bundler Framework Architecture
+
+#### Component Diagram
+
+```mermaid
+flowchart TD
+    subgraph "Bundler Framework"
+        REG[Registry] --> FAC[Factory Functions]
+        FAC --> B1[GPU Operator Bundler]
+        FAC --> B2[Network Operator Bundler]
+        FAC --> BN[Custom Bundlers...]
+    end
+    
+    subgraph "Bundle Generation"
+        MAKE[Make Function] --> VAL[Validate Recipe]
+        VAL --> PAR[Parallel Execution]
+        
+        PAR --> G1[Generate Helm Values]
+        PAR --> G2[Generate Manifests]
+        PAR --> G3[Generate Scripts]
+        PAR --> G4[Generate README]
+        PAR --> G5[Generate Checksums]
+        
+        G1 --> RES[Bundle Result]
+        G2 --> RES
+        G3 --> RES
+        G4 --> RES
+        G5 --> RES
+    end
+    
+    RECIPE[Recipe] --> MAKE
+    RES --> OUTPUT[Output Directory]
+```
+
+#### Data Flow
+
+```mermaid
+sequenceDiagram
+    participant CLI
+    participant Bundle
+    participant Bundler
+    participant Template
+    participant FileSystem
+    
+    CLI->>Bundle: Execute(recipe, bundlers, outputDir)
+    Bundle->>Bundle: Validate recipe structure
+    Bundle->>Bundle: Create output directory
+    
+    par Parallel Bundle Generation
+        Bundle->>Bundler: Bundler1.Make()
+        Bundle->>Bundler: Bundler2.Make()
+    end
+    
+    Bundler->>Bundler: Extract data from recipe
+    Bundler->>Bundler: Build config map
+    
+    par Parallel File Generation
+        Bundler->>Template: Render values.yaml
+        Bundler->>Template: Render clusterpolicy.yaml
+        Bundler->>Template: Render install.sh
+        Bundler->>Template: Render README.md
+    end
+    
+    Template-->>Bundler: Rendered content
+    
+    alt Dry Run
+        Bundler->>Bundler: Validate only
+    else Normal Mode
+        Bundler->>FileSystem: Write files
+        FileSystem-->>Bundler: File paths
+    end
+    
+    Bundler->>Bundler: Compute checksums
+    Bundler-->>Bundle: BundleResult
+    Bundle-->>CLI: BundleOutput
+```
+
+### Design Patterns
+
+#### 1. Registry Pattern
+
+**Problem**: How to support multiple bundler implementations without tight coupling?
+
+**Solution**: Global registry with factory functions for bundler instantiation.
+
+```go
+// pkg/bundler/registry.go
+var (
+    registry = make(map[BundleType]BundlerFactory)
+    mu       sync.RWMutex
+)
+
+type BundlerFactory func() Bundler
+
+// Register adds a bundler factory to the registry
+func Register(bundleType BundleType, factory BundlerFactory) {
+    mu.Lock()
+    defer mu.Unlock()
+    registry[bundleType] = factory
+}
+
+// GetBundlers returns bundlers for specified types
+func GetBundlers(types ...BundleType) []Bundler {
+    mu.RLock()
+    defer mu.RUnlock()
+    
+    var bundlers []Bundler
+    for _, t := range types {
+        if factory, ok := registry[t]; ok {
+            bundlers = append(bundlers, factory())
+        }
+    }
+    return bundlers
+}
+```
+
+**Benefits**:
+- ✅ Decoupled registration - bundlers self-register via init()
+- ✅ Runtime extensibility - add bundlers without modifying core
+- ✅ Type safety - BundleType prevents string typos
+- ✅ Thread-safe - RWMutex protects concurrent access
+
+#### 2. Functional Options Pattern
+
+**Problem**: How to configure bundlers without breaking API compatibility?
+
+**Solution**: Variadic option functions for flexible configuration.
+
+```go
+// Configuration options
+type Option func(*Bundler)
+
+func WithNamespace(ns string) Option {
+    return func(b *Bundler) {
+        b.config.Namespace = ns
+    }
+}
+
+func WithDryRun(dryRun bool) Option {
+    return func(b *Bundler) {
+        b.config.DryRun = dryRun
+    }
+}
+
+// Constructor with options
+func NewBundler(opts ...Option) *Bundler {
+    b := &Bundler{
+        config: DefaultBundlerConfig(),
+    }
+    for _, opt := range opts {
+        opt(b)
+    }
+    return b
+}
+```
+
+#### 3. Template-Based Generation
+
+**Problem**: How to separate content structure from generation logic?
+
+**Solution**: Embedded text templates with data-driven rendering.
+
+```go
+//go:embed templates/*.tmpl
+var templatesFS embed.FS
+
+func (b *Bundler) renderTemplate(name string, 
+    data map[string]interface{}) (string, error) {
+    
+    tmpl, err := template.New(name).
+        Funcs(templateFuncs()).
+        ParseFS(templatesFS, "templates/"+name+".tmpl")
+    if err != nil {
+        return "", fmt.Errorf("failed to parse template: %w", err)
+    }
+    
+    var buf bytes.Buffer
+    if err := tmpl.Execute(&buf, data); err != nil {
+        return "", fmt.Errorf("failed to execute template: %w", err)
+    }
+    
+    return buf.String(), nil
+}
+```
+
+### GPU Operator Bundler
+
+The GPU Operator bundler generates a complete deployment bundle for NVIDIA GPU Operator, extracting configuration from recipe measurements.
+
+#### Recipe Data Extraction
+
+**K8s Measurements** (`measurement.TypeK8s`):
+
+1. **Image Subtype** - Component versions:
+   ```yaml
+   - subtype: image
+     data:
+       gpu-operator: v25.3.3
+       driver: 580.82.07
+       container-toolkit: v1.17.8
+       k8s-device-plugin: v0.17.4
+       dcgm: 4.3.1-1
+       dcgm-exporter: 4.3.1
+   ```
+
+2. **Config Subtype** - Boolean flags:
+   ```yaml
+   - subtype: config
+     data:
+       cdi: true
+       mig: false
+       rdma: true
+       useOpenKernelModule: true
+   ```
+
+**GPU Measurements** (`measurement.TypeGPU`):
+
+```yaml
+- subtype: smi
+  data:
+    driver-version: 580.82.07
+    cuda-version: "13.1"
+```
+
+#### Generated Bundle Structure
+
+```
+gpu-operator/
+├── values.yaml                    # Helm chart configuration
+├── manifests/
+│   └── clusterpolicy.yaml        # ClusterPolicy custom resource
+├── scripts/
+│   ├── install.sh                # Installation automation
+│   └── uninstall.sh              # Cleanup automation
+├── README.md                      # Deployment instructions
+└── checksums.txt                  # SHA256 verification
+```
+
+#### Template Files
+
+**values.yaml.tmpl** - Helm chart values:
+```yaml
+# Generated: {{ .Timestamp }}
+# GPU Operator Helm Values
+
+operator:
+  version: {{ .GPUOperatorVersion }}
+
+driver:
+  enabled: {{ .EnableDriver }}
+  version: {{ .DriverVersion }}
+  useOpenKernelModule: {{ .UseOpenKernelModule }}
+  repository: {{ .DriverRegistry }}
+
+toolkit:
+  version: {{ .NvidiaContainerToolkitVersion }}
+
+devicePlugin:
+  version: {{ .DevicePluginVersion }}
+
+dcgm:
+  version: {{ .DCGMVersion }}
+
+dcgmExporter:
+  version: {{ .DCGMExporterVersion }}
+
+mig:
+  strategy: {{ .MIGStrategy }}
+
+gds:
+  enabled: {{ .EnableGDS }}
+```
+
+**install.sh.tmpl** - Installation script:
+```bash
+#!/bin/bash
+# Generated: {{ .Timestamp }}
+# GPU Operator Installation Script
+
+set -euo pipefail
+
+NAMESPACE="{{ .Namespace }}"
+HELM_REPO="{{ .HelmRepository }}"
+HELM_CHART="{{ .HelmChart }}"
+
+echo "Adding Helm repository..."
+helm repo add nvidia "$HELM_REPO"
+helm repo update
+
+echo "Installing GPU Operator..."
+helm install gpu-operator nvidia/gpu-operator \
+  --namespace "$NAMESPACE" \
+  --create-namespace \
+  --values values.yaml \
+  --wait
+
+echo "Applying ClusterPolicy..."
+kubectl apply -f manifests/clusterpolicy.yaml
+
+echo "Installation complete!"
+```
+
+### Observability
+
+#### Metrics
+
+Prometheus metrics exposed by bundler framework:
+
+```promql
+# Duration histogram
+bundler_make_duration_seconds{bundler_type="gpu-operator"} 0.245
+
+# Total operations counter
+bundler_make_total{bundler_type="gpu-operator",result="success"} 42
+bundler_make_total{bundler_type="gpu-operator",result="error"} 3
+
+# Files generated gauge
+bundler_files_generated_total{bundler_type="gpu-operator"} 6
+
+# Bytes generated gauge
+bundler_bytes_generated_total{bundler_type="gpu-operator"} 15360
+
+# Validation failures counter
+bundler_validation_failures_total{bundler_type="gpu-operator"} 2
+```
+
+#### Structured Logging
+
+slog integration for structured log output:
+
+```go
+// Bundle generation start
+slog.Info("generating bundle",
+    "bundler_type", bundlerType,
+    "output_dir", outputDir,
+    "dry_run", dryRun,
+)
+
+// Bundle generation complete
+slog.Info("bundle generated successfully",
+    "bundler_type", bundlerType,
+    "files", len(result.Files),
+    "bytes", result.TotalBytes,
+    "duration", result.Duration,
+)
+```
+
+### Creating Custom Bundlers
+
+#### Step-by-Step Guide
+
+1. **Create Package Structure**:
+   ```
+   pkg/bundler/myoperator/
+   ├── bundler.go         # Main bundler implementation
+   ├── config.go          # Configuration structs
+   ├── templates/         # Embedded templates
+   │   ├── values.yaml.tmpl
+   │   └── install.sh.tmpl
+   ├── bundler_test.go    # Unit tests
+   └── doc.go             # Package documentation
+   ```
+
+2. **Define Bundler Type**:
+   ```go
+   const bundlerType = bundler.BundleType("my-operator")
+   
+   func init() {
+       bundler.Register(bundlerType, func() bundler.Bundler {
+           return NewBundler()
+       })
+   }
+   ```
+
+3. **Implement Bundler Interface**:
+   ```go
+   type Bundler struct {
+       config *bundler.BundlerConfig
+   }
+   
+   func (b *Bundler) Type() bundler.BundleType {
+       return bundlerType
+   }
+   
+   func (b *Bundler) Validate(ctx context.Context, 
+       recipe *recipe.Recipe) error {
+       // Validation logic
+   }
+   
+   func (b *Bundler) Make(ctx context.Context, 
+       recipe *recipe.Recipe, outputDir string) (*bundler.BundleResult, error) {
+       // Generation logic
+   }
+   ```
+
+4. **Write Comprehensive Tests**:
+   ```go
+   func TestBundler_Make(t *testing.T) {
+       ctx := context.Background()
+       tmpDir := t.TempDir()
+       
+       recipe := createTestRecipe()
+       b := NewBundler()
+       
+       result, err := b.Make(ctx, recipe, tmpDir)
+       if err != nil {
+           t.Fatalf("Make() error = %v", err)
+       }
+       
+       // Verify expected files exist
+   }
+   ```
+
+### Best Practices
+
+**Template Design**:
+- ✅ Keep templates simple and focused
+- ✅ Use descriptive variable names
+- ✅ Add comments for complex logic
+- ✅ Validate template rendering in tests
+- ❌ Don't put business logic in templates
+
+**Error Handling**:
+- ✅ Use structured errors with context
+- ✅ Wrap errors with meaningful messages
+- ✅ Validate early (before starting generation)
+- ✅ Clean up resources on error
+- ❌ Don't swallow errors silently
+
+**Testing**:
+- ✅ Test with realistic recipe data
+- ✅ Use table-driven tests for coverage
+- ✅ Test error paths explicitly
+- ✅ Verify generated file content
+- ❌ Don't skip integration tests
+
+**Performance**:
+- ✅ Use parallel generation for multiple files
+- ✅ Stream large files instead of buffering
+- ✅ Reuse template instances when possible
+- ✅ Profile bundle generation for bottlenecks
+- ❌ Don't generate synchronously without reason
+
 ## References
 
 ### Official Documentation

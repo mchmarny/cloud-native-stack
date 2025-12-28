@@ -12,19 +12,97 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// DefaultBundler provides default options for bundling operations.
+//
+// Thread-safety: DefaultBundler is safe for concurrent reads (multiple goroutines
+// calling Make() concurrently). However, bundlers retrieved from the registry may
+// be shared instances. If ConfigurableBundler.Configure() modifies bundler state,
+// concurrent Make() calls may have race conditions. Ensure bundlers are either
+// stateless or use synchronization for shared mutable state.
+type DefaultBundler struct {
+	// BundlerTypes specifies which bundlers to execute.
+	// If empty, all registered bundlers are executed.
+	BundlerTypes []BundleType
+
+	// Sequential indicates whether to run bundlers sequentially.
+	// If false, bundlers run in parallel. Default is false (parallel).
+	Sequential bool
+
+	// FailFast stops execution on first bundler error.
+	// Default is false (continues and collects all errors).
+	FailFast bool
+
+	// Config provides bundler-specific configuration.
+	Config *BundlerConfig
+
+	// DryRun simulates bundle generation without writing files.
+	DryRun bool
+}
+
+// Option defines a functional option for configuring DefaultBundler.
+type Option func(*DefaultBundler)
+
+// WithBundlerTypes sets the bundler types to execute.
+// If not set, all registered bundlers are executed.
+func WithBundlerTypes(types []BundleType) Option {
+	return func(db *DefaultBundler) {
+		db.BundlerTypes = types
+	}
+}
+
+// WithSequential enables or disables sequential execution of bundlers.
+// If true, bundlers run sequentially. If false, bundlers run in parallel.
+// Default is false (parallel execution).
+func WithSequential(sequential bool) Option {
+	return func(db *DefaultBundler) {
+		db.Sequential = sequential
+	}
+}
+
+// WithFailFast enables or disables fail-fast behavior.
+// If enabled, bundling stops on the first error encountered.
+// Default is false.
+func WithFailFast(failFast bool) Option {
+	return func(db *DefaultBundler) {
+		db.FailFast = failFast
+	}
+}
+
+// WithConfig sets the bundler configuration.
+// If nil, default configuration is used.
+func WithConfig(config *BundlerConfig) Option {
+	return func(db *DefaultBundler) {
+		db.Config = config
+	}
+}
+
+// WithDryRun enables or disables dry-run mode.
+// In dry-run mode, no files are written to disk.
+// Default is false.
+func WithDryRun(dryRun bool) Option {
+	return func(db *DefaultBundler) {
+		db.DryRun = dryRun
+	}
+}
+
+// New creates a new DefaultBundler with the given options.
+// By default, all registered bundlers are executed unless WithBundlerTypes is specified.
+func New(opts ...Option) *DefaultBundler {
+	db := &DefaultBundler{
+		Config: DefaultBundlerConfig(),
+	}
+	for _, opt := range opts {
+		opt(db)
+	}
+	return db
+}
+
 // Make generates bundles from the given recipe into the specified directory.
 // It accepts various options to customize the bundling process.
 // Returns a BundleOutput summarizing the results of the bundling operation.
 // Errors encountered during the process are returned as well.
-func Make(ctx context.Context, recipe *recipe.Recipe, dir string, opts ...MakeOption) (*BundleOutput, error) {
+func (b *DefaultBundler) Make(ctx context.Context, recipe *recipe.Recipe, dir string) (*BundleOutput, error) {
 	start := time.Now()
-
-	// Apply options
-	options := &MakeOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
-	options.applyDefaults()
 
 	// Validate input
 	if recipe == nil {
@@ -40,7 +118,7 @@ func Make(ctx context.Context, recipe *recipe.Recipe, dir string, opts ...MakeOp
 	}
 
 	// Create output directory
-	if !options.DryRun {
+	if !b.DryRun {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return nil, errors.Wrap(errors.ErrCodeInternal,
 				fmt.Sprintf("failed to create directory %s", dir), err)
@@ -48,7 +126,7 @@ func Make(ctx context.Context, recipe *recipe.Recipe, dir string, opts ...MakeOp
 	}
 
 	// Select bundlers to execute
-	bundlers := selectBundlers(options.BundlerTypes)
+	bundlers := selectBundlers(b.BundlerTypes)
 	if len(bundlers) == 0 {
 		return nil, errors.New(errors.ErrCodeInvalidRequest, "no bundlers selected")
 	}
@@ -56,18 +134,18 @@ func Make(ctx context.Context, recipe *recipe.Recipe, dir string, opts ...MakeOp
 	slog.Info("starting bundle generation",
 		"bundler_count", len(bundlers),
 		"output_dir", dir,
-		"parallel", options.Parallel,
-		"dry_run", options.DryRun,
+		"sequential", b.Sequential,
+		"dry_run", b.DryRun,
 	)
 
 	// Generate bundles
 	var output *BundleOutput
 	var err error
 
-	if options.Parallel {
-		output, err = makeParallel(ctx, recipe, dir, bundlers, options)
+	if b.Sequential {
+		output, err = b.makeSequential(ctx, recipe, dir, bundlers)
 	} else {
-		output, err = makeSequential(ctx, recipe, dir, bundlers, options)
+		output, err = b.makeParallel(ctx, recipe, dir, bundlers)
 	}
 
 	if err != nil {
@@ -83,16 +161,14 @@ func Make(ctx context.Context, recipe *recipe.Recipe, dir string, opts ...MakeOp
 }
 
 // makeSequential executes bundlers sequentially.
-func makeSequential(ctx context.Context, recipe *recipe.Recipe, dir string,
-	bundlers map[BundleType]Bundler, options *MakeOptions) (*BundleOutput, error) {
-
+func (b *DefaultBundler) makeSequential(ctx context.Context, recipe *recipe.Recipe, dir string, bundlers map[BundleType]Bundler) (*BundleOutput, error) {
 	output := &BundleOutput{
 		Results: make([]*BundleResult, 0, len(bundlers)),
 		Errors:  make([]BundleError, 0),
 	}
 
-	for bundlerType, b := range bundlers {
-		result, err := executeBundler(ctx, bundlerType, b, recipe, dir, options)
+	for bundlerType, bundler := range bundlers {
+		result, err := b.executeBundler(ctx, bundlerType, bundler, recipe, dir)
 		output.Results = append(output.Results, result)
 
 		if result.Success {
@@ -112,14 +188,14 @@ func makeSequential(ctx context.Context, recipe *recipe.Recipe, dir string,
 				"error", err,
 			)
 
-			if options.FailFast {
+			if b.FailFast {
 				return output, errors.Wrap(errors.ErrCodeInternal,
 					fmt.Sprintf("bundler %s failed", bundlerType), err)
 			}
 		}
 	}
 
-	if len(output.Errors) > 0 && options.FailFast {
+	if len(output.Errors) > 0 && b.FailFast {
 		return output, errors.New(errors.ErrCodeInternal,
 			fmt.Sprintf("%d bundler(s) failed", len(output.Errors)))
 	}
@@ -128,9 +204,7 @@ func makeSequential(ctx context.Context, recipe *recipe.Recipe, dir string,
 }
 
 // makeParallel executes bundlers concurrently.
-func makeParallel(ctx context.Context, recipe *recipe.Recipe, dir string,
-	bundlers map[BundleType]Bundler, options *MakeOptions) (*BundleOutput, error) {
-
+func (b *DefaultBundler) makeParallel(ctx context.Context, recipe *recipe.Recipe, dir string, bundlers map[BundleType]Bundler) (*BundleOutput, error) {
 	output := &BundleOutput{
 		Results: make([]*BundleResult, 0, len(bundlers)),
 		Errors:  make([]BundleError, 0),
@@ -140,12 +214,13 @@ func makeParallel(ctx context.Context, recipe *recipe.Recipe, dir string,
 	resultChan := make(chan *BundleResult, len(bundlers))
 	errorChan := make(chan BundleError, len(bundlers))
 
-	for bundlerType, b := range bundlers {
-		bundlerType := bundlerType // capture loop variable
-		b := b
+	for bundlerType, bundler := range bundlers {
+		// Capture loop variables for goroutine
+		bundlerType := bundlerType
+		bundler := bundler
 
 		g.Go(func() error {
-			result, err := executeBundler(gctx, bundlerType, b, recipe, dir, options)
+			result, err := b.executeBundler(gctx, bundlerType, bundler, recipe, dir)
 			resultChan <- result
 
 			if err != nil {
@@ -154,7 +229,7 @@ func makeParallel(ctx context.Context, recipe *recipe.Recipe, dir string,
 					Error:       err.Error(),
 				}
 
-				if options.FailFast {
+				if b.FailFast {
 					return err
 				}
 			}
@@ -181,7 +256,7 @@ func makeParallel(ctx context.Context, recipe *recipe.Recipe, dir string,
 		output.Errors = append(output.Errors, bundleErr)
 	}
 
-	if err != nil && options.FailFast {
+	if err != nil && b.FailFast {
 		return output, errors.Wrap(errors.ErrCodeInternal, "bundler execution failed", err)
 	}
 
@@ -189,8 +264,8 @@ func makeParallel(ctx context.Context, recipe *recipe.Recipe, dir string,
 }
 
 // executeBundler executes a single bundler and records metrics.
-func executeBundler(ctx context.Context, bundlerType BundleType, b Bundler,
-	recipe *recipe.Recipe, dir string, options *MakeOptions) (*BundleResult, error) {
+func (b *DefaultBundler) executeBundler(ctx context.Context, bundlerType BundleType, bundler Bundler,
+	recipe *recipe.Recipe, dir string) (*BundleResult, error) {
 
 	start := time.Now()
 	result := NewBundleResult(bundlerType)
@@ -201,15 +276,17 @@ func executeBundler(ctx context.Context, bundlerType BundleType, b Bundler,
 	)
 
 	// Configure bundler if it supports configuration
-	if cb, ok := b.(ConfigurableBundler); ok && options.Config != nil {
-		if err := cb.Configure(options.Config); err != nil {
+	// NOTE: If bundler stores mutable state, Configure() should use synchronization
+	// for thread-safety when DefaultBundler.Make() is called concurrently.
+	if cb, ok := bundler.(ConfigurableBundler); ok && b.Config != nil {
+		if err := cb.Configure(b.Config); err != nil {
 			recordBundleError(bundlerType, "configuration")
 			return result, err
 		}
 	}
 
 	// Validate if bundler supports validation
-	if v, ok := b.(Validator); ok {
+	if v, ok := bundler.(Validator); ok {
 		if err := v.Validate(ctx, recipe); err != nil {
 			recordValidationFailure(bundlerType)
 			recordBundleError(bundlerType, "validation")
@@ -218,8 +295,8 @@ func executeBundler(ctx context.Context, bundlerType BundleType, b Bundler,
 	}
 
 	// Execute bundler
-	if !options.DryRun {
-		bundlerResult, err := b.Make(ctx, recipe, dir)
+	if !b.DryRun {
+		bundlerResult, err := bundler.Make(ctx, recipe, dir)
 		if err != nil {
 			result.Duration = time.Since(start)
 			recordBundleGenerated(bundlerType, false)
