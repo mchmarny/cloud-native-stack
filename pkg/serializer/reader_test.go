@@ -860,6 +860,7 @@ func TestFromFile_Success(t *testing.T) {
 
 		if result == nil {
 			t.Fatal("Expected non-nil result")
+			return
 		}
 
 		if result.Name != "fromfile" || result.Value != 999 {

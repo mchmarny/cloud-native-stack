@@ -90,6 +90,7 @@ func TestDefaultBundler_Make(t *testing.T) {
 
 	if output == nil {
 		t.Fatal("Make() returned nil output")
+		return
 	}
 
 	if len(output.Results) == 0 {
@@ -237,6 +238,7 @@ func TestDefaultBundler_MakeWithMultipleBundlers(t *testing.T) {
 
 	if output == nil {
 		t.Fatal("Make() returned nil output")
+		return
 	}
 
 	// Should have results from both bundlers
@@ -382,6 +384,7 @@ func TestDefaultBundler_MakeWithAllBundlers(t *testing.T) {
 
 	if output == nil {
 		t.Fatal("Make() returned nil output")
+		return
 	}
 
 	// Should have results from all registered bundlers

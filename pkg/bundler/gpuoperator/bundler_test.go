@@ -27,6 +27,7 @@ func TestBundler_Make(t *testing.T) {
 
 	if result == nil {
 		t.Fatal("Make() returned nil result")
+		return
 	}
 
 	if !result.Success {
@@ -123,6 +124,7 @@ func TestGenerateHelmValues(t *testing.T) {
 
 	if values == nil {
 		t.Fatal("GenerateHelmValues() returned nil")
+		return
 	}
 
 	if values.Namespace != testNamespace {
@@ -180,6 +182,7 @@ func TestGenerateManifestData(t *testing.T) {
 
 	if data == nil {
 		t.Fatal("GenerateManifestData() returned nil")
+		return
 	}
 
 	if data.Namespace != testNamespace {
@@ -214,6 +217,7 @@ func TestGenerateScriptData(t *testing.T) {
 
 	if data == nil {
 		t.Fatal("GenerateScriptData() returned nil")
+		return
 	}
 
 	if data.HelmRepository != "https://test.repo" {

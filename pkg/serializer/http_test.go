@@ -176,6 +176,7 @@ func TestNewHttpReader_Defaults(t *testing.T) {
 
 	if reader == nil {
 		t.Fatal("expected non-nil HttpReader")
+		return
 	}
 
 	if reader.Client == nil {
