@@ -2,10 +2,10 @@
 
 Cloud Native Stack (CNS) provides tooling and comprehensive documentation to help you deploy, validate, and operate optimized AI workloads in your GPU-accelerated Kubernetes clusters:
 
+- **CLI (Eidos)** – Three-step workflow: capture system snapshots, generate optimization recipes, and create deployment bundles
+- **API** – REST API for recipe generation and integration with automation pipelines
+- **Agent** – Kubernetes job for automated cluster snapshot collection
 - **Documentation** – Installation guides, playbooks, optimizations, and troubleshooting for GPU infrastructure
-- **CLI** – Command-line tool for system snapshots and CNS recipe generation
-- **Agent** – Kubernetes job for automated cluster configuration and optimization using NCS recipes
-- **API** - REST API for optimized configuration generation based on input parameters
 
 ## Quick Start
 
@@ -25,7 +25,23 @@ eidos --version
 
 ### CLI Commands
 
-#### Snapshot System Configuration
+Eidos follows a three-step workflow to capture, optimize, and deploy GPU infrastructure:
+
+```
+┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│   Snapshot   │─────▶│    Recipe    │─────▶│    Bundle    │
+└──────────────┘      └──────────────┘      └──────────────┘
+   Capture system      Generate optimized    Create deployment
+   configuration        recommendations       artifacts
+```
+
+**Step 1: Snapshot** – Captures current system state (OS, GPU, Kubernetes, SystemD services)
+**Step 2: Recipe** – Generates optimized configuration based on snapshot or query parameters  
+**Step 3: Bundle** – Creates deployment-ready artifacts (Helm values, manifests, scripts)
+
+> **Note:** Eidos is fully self-contained. It does not connect to external services and never transmits captured configuration data outside your cluster.
+
+#### Step 1: Snapshot System Configuration
 
 Capture a comprehensive snapshot of your system including CPU/GPU settings, kernel parameters, systemd services, and Kubernetes configuration:
 
@@ -62,9 +78,9 @@ eidos snapshot --output system.yaml --format json
   - Driver version, CUDA version, and firmware details
   - GPU-specific settings (MIG mode, persistence mode, addressing mode)
 
-**Snapshot** output formats**: JSON, YAML, table
+**Output formats:** JSON, YAML, table
 
-#### Generate Configuration Recipe
+#### Step 2: Generate Configuration Recipe
 
 Generate optimized configuration recipes based on your environment. The recipe command supports two modes:
 
@@ -116,51 +132,108 @@ eidos recipe \
 
 The recipe command analyzes your environment (from query parameters or snapshot) and generates optimized configuration recommendations based on the specified workload intent.
 
-#### Generate Deployment Bundle
-
-Generate deployment-ready bundles from recipes containing Helm values, Kubernetes manifests, installation scripts, and documentation:
-
+**Complete workflow example:**
 ```shell
-# Generate bundle from recipe (all bundlers by default)
+# 1. Capture system snapshot
+eidos snapshot --output snapshot.yaml
+
+# 2. Generate optimized recipe from snapshot
+eidos recipe --snapshot snapshot.yaml --intent training --output recipe.yaml
+
+# 3. Create deployment bundle (see next step)
 eidos bundle --recipe recipe.yaml --output ./bundles
-
-# Specify specific bundler types
-eidos bundle --recipe recipe.yaml --bundlers gpu-operator --output ./bundles
-
-# Multiple bundler types
-eidos bundle --recipe recipe.yaml --bundlers gpu-operator --bundlers network-operator --output ./bundles
 ```
 
-**Bundle contents** for GPU Operator:
+#### Step 3: Generate Deployment Bundle
+
+Generate deployment-ready bundles from recipes containing Helm values, Kubernetes manifests, installation scripts, and documentation. Bundles are self-contained deployment packages optimized for your specific environment.
+
+```shell
+# Generate bundles from recipe (all bundlers by default)
+eidos bundle --recipe recipe.yaml --output ./bundles
+
+# Generate specific bundler types only
+eidos bundle --recipe recipe.yaml --bundlers gpu-operator --output ./bundles
+
+# Generate multiple bundler types
+eidos bundle --recipe recipe.yaml \
+  --bundlers gpu-operator \
+  --bundlers network-operator \
+  --output ./bundles
+
+# Short form using aliases
+eidos bundle -f recipe.yaml -b gpu-operator -o ./bundles
+```
+
+**Available bundler types:**
+- `gpu-operator` – NVIDIA GPU Operator deployment bundle
+- `network-operator` – NVIDIA Network Operator deployment bundle (coming soon)
+
+**Bundle structure** (GPU Operator example):
 ```
 gpu-operator/
 ├── values.yaml                    # Helm chart configuration
 ├── manifests/
 │   └── clusterpolicy.yaml        # ClusterPolicy custom resource
 ├── scripts/
-│   ├── install.sh                # Installation automation
-│   └── uninstall.sh              # Cleanup automation
-├── README.md                      # Deployment instructions
-└── checksums.txt                  # SHA256 verification
+│   ├── install.sh                # Automated installation script
+│   └── uninstall.sh              # Cleanup script
+├── README.md                      # Deployment instructions and prerequisites
+└── checksums.txt                  # SHA256 checksums for file verification
 ```
 
-**Available flags:**
+**Command flags:**
 - `--recipe`, `-f` – Path to recipe file (required)
-- `--bundlers`, `-b` – Bundler type(s) to execute (gpu-operator, network-operator). If not specified, all registered bundlers are executed
+- `--bundlers`, `-b` – Bundler type(s) to execute. If omitted, generates all registered bundlers
 - `--output`, `-o` – Output directory (default: current directory)
+- `--format` – Output format for summary: json, yaml, table (default: json)
 
-**Installation using generated bundle:**
+**Deploying a generated bundle:**
 ```bash
+# Navigate to bundle directory
 cd bundles/gpu-operator
+
+# Review the generated configuration
+cat values.yaml
+cat README.md
+
+# Verify file integrity
+sha256sum -c checksums.txt
+
+# Deploy to your cluster
 chmod +x scripts/install.sh
+./scripts/install.sh
+
+# Monitor deployment
+kubectl get pods -n gpu-operator
+```
+
+**Example: End-to-End Workflow**
+```bash
+# 1. Capture system configuration
+eidos snapshot -o snapshot.yaml
+
+# 2. Generate optimized recipe for training workloads
+eidos recipe -f snapshot.yaml --intent training -o recipe.yaml
+
+# 3. Create deployment bundle
+eidos bundle -f recipe.yaml -o ./deployment
+
+# 4. Deploy GPU Operator with optimized settings
+cd deployment/gpu-operator
 ./scripts/install.sh
 ```
 
 ### Deploy the Eidos Agent
 
-Eidos can also be deployed as an agent into your Kubernetes cluster as a Job to automatically capture cluster configuration snapshots. This is useful for auditing, troubleshooting, and configuration management.
+Deploy Eidos as a Kubernetes Job to automatically capture cluster configuration snapshots. The agent collects system state from GPU nodes and outputs the snapshot to stdout for collection via `kubectl logs`. This is useful for:
 
-> NOTE: Eidos is fully self-contained CLI. Id does not connect to any external resources and never emits any of the captured configuration outside of the cluster. 
+- **Auditing** – Periodic configuration snapshots for compliance
+- **Troubleshooting** – Capture cluster state during issues
+- **Automation** – Integrate with CI/CD pipelines for drift detection
+- **Multi-cluster** – Collect configurations across clusters
+
+> **Note:** The agent only captures snapshots. Use the CLI to generate recipes and bundles from captured snapshots. 
 
 #### Prerequisites
 
@@ -221,9 +294,19 @@ The agent outputs a YAML snapshot of the cluster node configuration to stdout.
 
 ### Query the API
 
-The Eidos API provides a REST interface for generating configuration recipes without requiring CLI installation. It's designed for integration with automation tools, CI/CD pipelines, and web applications.
+The Eidos API provides a REST interface for generating configuration recipes without CLI installation. Use it to integrate recipe generation into automation tools, CI/CD pipelines, and web applications.
 
-> NOTE: The API does not store any query data. All recipe generation happens in real-time using embedded configuration templates.
+**What the API does:**
+- Generates optimized recipes based on environment parameters
+- Returns recommendations in real-time (no storage or tracking)
+- Supports version negotiation and rate limiting
+
+**What the API does NOT do:**
+- Does not capture snapshots (use CLI or Agent)
+- Does not generate deployment bundles (use CLI)
+- Does not store or track any request data
+
+> **Note:** For complete workflows (snapshot → recipe → bundle), use the Eidos CLI.
 
 #### API Endpoint
 
