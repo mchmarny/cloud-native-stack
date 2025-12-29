@@ -58,10 +58,6 @@ flowchart TD
     F --> F3["Snapshotter Service"]
     F --> F4["Serializer<br/>(JSON/YAML/Table)"]
     F --> F5["Bundler Registry<br/>(Parallel execution)"]
-    
-    style C fill:#e8f5e9
-    style D fill:#fff9c4
-    style E fill:#e3f2fd
 ```
 
 ## Component Details
@@ -109,8 +105,6 @@ flowchart TD
     E --> F[Aggregate Measurements]
     F --> G[Serialize Output]
     G --> H[Write to stdout/file]
-    
-    style E fill:#ffeb3b
 ```
 
 #### Detailed Data Flow
@@ -142,13 +136,6 @@ flowchart TD
     
     G --> G1["Format: JSON/YAML/Table"]
     G --> G2["Output: stdout or file"]
-    
-    style D fill:#ffeb3b
-    style D1 fill:#c8e6c9
-    style D2 fill:#c8e6c9
-    style D3 fill:#c8e6c9
-    style D4 fill:#c8e6c9
-    style D5 fill:#c8e6c9
 ```
 
 #### Usage Examples
@@ -180,9 +167,6 @@ flowchart TD
     F --> G[Merge Measurements]
     G --> H[Serialize Output]
     H --> I[Write to stdout/file]
-    
-    style E fill:#fff9c4
-    style F fill:#ffccbc
 ```
 
 #### Detailed Data Flow
@@ -204,10 +188,6 @@ flowchart TD
     C5 --> C6["Recipe Structure:<br/>request,<br/>measurements"]
     
     C6 --> D["serializer.NewFileWriterOrStdout<br/>(JSON/YAML/Table)"]
-    
-    style C1 fill:#fff9c4
-    style C3 fill:#ffccbc
-    style C4 fill:#c5cae9
 ```
 
 #### Recipe Matching Algorithm
@@ -283,8 +263,6 @@ flowchart TD
     F --> G[Generate Recipe]
     G --> H[Serialize Output]
     H --> I[Write to stdout/file]
-    
-    style D fill:#ffeb3b
 ```
 
 #### Snapshot Mode
@@ -301,9 +279,6 @@ flowchart TD
     G --> H[Generate Recipe]
     H --> I[Serialize Output]
     H --> J[Write to stdout/file]
-    
-    style D fill:#ffeb3b
-    style E fill:#c8e6c9
 ```
 
 #### Query Extraction from Snapshot
@@ -421,8 +396,6 @@ flowchart TD
     G --> H[Check for Errors]
     H --> I[Log Summary]
     I --> J[Return Status]
-    
-    style F fill:#ffeb3b
 ```
 
 #### Detailed Data Flow

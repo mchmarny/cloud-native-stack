@@ -179,9 +179,6 @@ flowchart TD
     I --> J[Request ID in Response]
     J --> K[Metrics Complete]
     K --> L[HTTP Response]
-    
-    style E fill:#fff9c4
-    style G fill:#e8f5e9
 ```
 
 ### Recipe Handler: `pkg/recipe/handler.go`
