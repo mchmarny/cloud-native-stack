@@ -4,6 +4,12 @@ import (
 	"testing"
 )
 
+const (
+	testLabelValue      = "label"
+	testAnnotationValue = "annotation"
+	testValue1          = "value1"
+)
+
 func TestNewConfig(t *testing.T) {
 	cfg := NewConfig()
 
@@ -149,29 +155,29 @@ func TestConfig_Merge(t *testing.T) {
 
 	t.Run("merge labels and annotations", func(t *testing.T) {
 		cfg := NewConfig()
-		cfg.CustomLabels["existing"] = "label"
-		cfg.CustomAnnotations["existing"] = "annotation"
+		cfg.CustomLabels["existing"] = testLabelValue
+		cfg.CustomAnnotations["existing"] = testAnnotationValue
 
 		other := &Config{
-			CustomLabels:      map[string]string{"new": "label"},
-			CustomAnnotations: map[string]string{"new": "annotation"},
+			CustomLabels:      map[string]string{"new": testLabelValue},
+			CustomAnnotations: map[string]string{"new": testAnnotationValue},
 		}
 
 		cfg.Merge(other)
 
-		if cfg.CustomLabels["existing"] != "label" {
+		if cfg.CustomLabels["existing"] != testLabelValue {
 			t.Error("Merge should preserve existing labels")
 		}
 
-		if cfg.CustomLabels["new"] != "label" {
+		if cfg.CustomLabels["new"] != testLabelValue {
 			t.Error("Merge should add new labels")
 		}
 
-		if cfg.CustomAnnotations["existing"] != "annotation" {
+		if cfg.CustomAnnotations["existing"] != testAnnotationValue {
 			t.Error("Merge should preserve existing annotations")
 		}
 
-		if cfg.CustomAnnotations["new"] != "annotation" {
+		if cfg.CustomAnnotations["new"] != testAnnotationValue {
 			t.Error("Merge should add new annotations")
 		}
 	})
@@ -231,8 +237,8 @@ func TestConfig_Clone(t *testing.T) {
 	original.OutputFormat = "json"
 	original.Namespace = "test-namespace"
 	original.Compression = true
-	original.CustomLabels["key1"] = "value1"
-	original.CustomAnnotations["anno1"] = "value1"
+	original.CustomLabels["key1"] = testValue1
+	original.CustomAnnotations["anno1"] = testValue1
 
 	clone := original.Clone()
 
@@ -250,7 +256,7 @@ func TestConfig_Clone(t *testing.T) {
 	}
 
 	// Verify maps are deep copied
-	if clone.CustomLabels["key1"] != "value1" {
+	if clone.CustomLabels["key1"] != testValue1 {
 		t.Error("Clone should have same label values")
 	}
 
