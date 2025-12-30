@@ -11,53 +11,15 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/types"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/gpuoperator"
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/networkoperator"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/registry"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/result"
 	"github.com/NVIDIA/cloud-native-stack/pkg/errors"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
+
+	// Import bundler packages for auto-registration via init()
+	_ "github.com/NVIDIA/cloud-native-stack/pkg/bundler/gpuoperator"
+	_ "github.com/NVIDIA/cloud-native-stack/pkg/bundler/networkoperator"
 )
-
-// idempotencyCache provides thread-safe caching of bundle results
-// for duplicate request prevention.
-type idempotencyCache struct {
-	cache map[string]*result.Output
-	mu    sync.RWMutex
-	ttl   time.Duration
-}
-
-// newIdempotencyCache creates a new idempotency cache with the given TTL.
-func newIdempotencyCache(ttl time.Duration) *idempotencyCache {
-	return &idempotencyCache{
-		cache: make(map[string]*result.Output),
-		ttl:   ttl,
-	}
-}
-
-// Get retrieves a cached result by idempotency key.
-func (c *idempotencyCache) Get(key string) (*result.Output, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	output, exists := c.cache[key]
-	return output, exists
-}
-
-// Set stores a result with the given idempotency key and schedules expiration.
-func (c *idempotencyCache) Set(key string, output *result.Output) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	c.cache[key] = output
-
-	// Schedule automatic expiration
-	go func() {
-		time.Sleep(c.ttl)
-		c.mu.Lock()
-		delete(c.cache, key)
-		c.mu.Unlock()
-	}()
-}
 
 // DefaultBundler provides default options for bundling operations.
 //
@@ -80,9 +42,6 @@ type DefaultBundler struct {
 
 	// Registry to retrieve bundlers from.
 	Registry *registry.Registry
-
-	// idempotencyCache caches results by idempotency key to prevent duplicate work.
-	idempotencyCache *idempotencyCache
 }
 
 // Option defines a functional option for configuring DefaultBundler.
@@ -130,7 +89,7 @@ func WithRegistry(registry *registry.Registry) Option {
 // If no options are provided, default settings are used.
 //
 // Default behavior:
-//   - Creates a new registry with GPU Operator bundler auto-registered
+//   - Creates a registry populated with all globally registered bundlers
 //   - Executes all registered bundlers (use WithBundlerTypes to filter)
 //   - Runs bundlers in parallel
 //   - Continues on errors (use WithFailFast to stop on first error)
@@ -144,17 +103,15 @@ func WithRegistry(registry *registry.Registry) Option {
 //	)
 func New(opts ...Option) *DefaultBundler {
 	cfg := config.NewConfig()
-	reg := registry.NewRegistry()
 
-	// Register default bundlers
-	reg.Register(types.BundleTypeGpuOperator, gpuoperator.NewBundler(cfg))
-	reg.Register(types.BundleTypeNetworkOperator, networkoperator.NewBundler(cfg))
+	// Create registry populated with all globally registered bundlers
+	// Bundlers register themselves via init() in their packages
+	reg := registry.NewFromGlobal(cfg)
 
 	// Create DefaultBundler with defaults
 	db := &DefaultBundler{
-		Config:           cfg,
-		Registry:         reg,
-		idempotencyCache: newIdempotencyCache(24 * time.Hour),
+		Config:   cfg,
+		Registry: reg,
 	}
 
 	// Apply options

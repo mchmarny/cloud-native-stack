@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/result"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/types"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
@@ -16,12 +17,69 @@ type Bundler interface {
 	Make(ctx context.Context, recipe *recipe.Recipe, dir string) (*result.Result, error)
 }
 
+// Factory is a function that creates a new Bundler instance.
+// Used for dynamic bundler registration via init() functions.
+type Factory func(cfg *config.Config) Bundler
+
 // ValidatableBundler is an optional interface that bundlers can implement
 // to validate recipes before processing. This provides type-safe validation
 // without reflection.
 type ValidatableBundler interface {
 	Bundler
 	Validate(ctx context.Context, recipe *recipe.Recipe) error
+}
+
+// Global registry for bundler factories.
+// Bundlers register themselves via init() functions.
+var (
+	globalFactories = make(map[types.BundleType]Factory)
+	globalMu        sync.RWMutex
+)
+
+// Register registers a bundler factory globally.
+// This is typically called from init() functions in bundler packages.
+// Panics if a bundler with the same type is already registered.
+func Register(bundleType types.BundleType, factory Factory) {
+	globalMu.Lock()
+	defer globalMu.Unlock()
+
+	if _, exists := globalFactories[bundleType]; exists {
+		panic(fmt.Sprintf("bundler type %s already registered", bundleType))
+	}
+
+	globalFactories[bundleType] = factory
+}
+
+// MustRegister is a convenience function that panics on registration error.
+// Use this in init() functions where registration must succeed.
+func MustRegister(bundleType types.BundleType, factory Factory) {
+	Register(bundleType, factory)
+}
+
+// NewFromGlobal creates a new Registry populated with all globally registered bundlers.
+// Each bundler is instantiated using the provided config.
+func NewFromGlobal(cfg *config.Config) *Registry {
+	globalMu.RLock()
+	defer globalMu.RUnlock()
+
+	reg := NewRegistry()
+	for bundleType, factory := range globalFactories {
+		reg.Register(bundleType, factory(cfg))
+	}
+
+	return reg
+}
+
+// GlobalTypes returns all globally registered bundler types.
+func GlobalTypes() []types.BundleType {
+	globalMu.RLock()
+	defer globalMu.RUnlock()
+
+	types := make([]types.BundleType, 0, len(globalFactories))
+	for t := range globalFactories {
+		types = append(types, t)
+	}
+	return types
 }
 
 // Registry manages registered bundlers with thread-safe operations.
