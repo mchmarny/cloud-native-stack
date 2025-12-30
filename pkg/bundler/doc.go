@@ -12,15 +12,15 @@ The package uses these design patterns:
   - Registry Pattern: Thread-safe bundler registry with sync.RWMutex
   - Factory Pattern: DefaultBundler orchestrates bundle generation
   - Functional Options: Configuration via WithBundlerTypes, WithConfig, etc.
-  - Builder Pattern: bundle.Result for constructing bundler outputs
+  - Builder Pattern: result.Result for constructing bundler outputs
 
 # Core Components
 
   - DefaultBundler: Main orchestrator for bundle generation
   - Registry: Thread-safe storage for bundler implementations
   - bundle.Bundler: Interface that all bundlers must implement
-  - bundle.Result: Individual bundler execution result
-  - bundle.Output: Aggregated results from all bundlers
+  - result.Result: Individual bundler execution result
+  - result.Output: Aggregated results from all bundlers
   - config.Config: Configuration options for bundlers
 
 # Quick Start
@@ -163,9 +163,9 @@ Registry operations are thread-safe:
 
 ## Individual Results
 
-Each bundler returns a bundle.Result:
+Each bundler returns a result.Result:
 
-	result := &bundle.Result{
+	result := &result.Result{
 		Type:     types.BundleTypeGpuOperator,
 		Files:    []string{"values.yaml", "scripts/install.sh"},
 		Duration: 250 * time.Millisecond,
@@ -175,14 +175,14 @@ Each bundler returns a bundle.Result:
 
 ## Aggregated Output
 
-DefaultBundler.Make() returns bundle.Output:
+DefaultBundler.Make() returns result.Output:
 
-	output := &bundle.Output{
-		Results:       []*bundle.Result{result1, result2},
+	output := &result.Output{
+		Results:       []*result.Result{result1, result2},
 		TotalSize:     8192,
 		TotalFiles:    5,
 		TotalDuration: 500 * time.Millisecond,
-		Errors:        []bundle.BundleError{},
+		Errors:        []result.BundleError{},
 		OutputDir:     "./bundles",
 	}
 
@@ -251,7 +251,7 @@ Implement the bundle.Bundler interface:
 
 	import (
 		"context"
-		"github.com/NVIDIA/cloud-native-stack/pkg/bundler/bundle"
+		"github.com/NVIDIA/cloud-native-stack/pkg/bundler/result"
 		"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 		"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 	)
@@ -270,9 +270,9 @@ Implement the bundle.Bundler interface:
 	}
 
 	func (b *Bundler) Make(ctx context.Context, recipe *recipe.Recipe,
-		dir string) (*bundle.Result, error) {
+		dir string) (*result.Result, error) {
 
-		result := bundle.NewResult(BundleTypeMyBundler)
+		result := result.New(BundleTypeMyBundler)
 
 		// Validate recipe
 		if err := recipe.ValidateMeasurementExists(measurement.TypeK8s); err != nil {
@@ -293,7 +293,7 @@ Best practices:
   - Validate recipe early
   - Check context cancellation for long operations
   - Add structured logging
-  - Use bundle.Result to track files and errors
+  - Use result.Result to track files and errors
 
 # Examples
 

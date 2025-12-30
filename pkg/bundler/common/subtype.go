@@ -1,9 +1,9 @@
 package common
 
-// ConfigValue holds a configuration value with its context/explanation.
+// ValueWithContext holds a configuration value with its context/explanation.
 // This is used to track both the value and the reason/source for that value
 // from the recipe measurements.
-type ConfigValue struct {
+type ValueWithContext struct {
 	Value   interface{}
 	Context string // Human-readable explanation from recipe
 }

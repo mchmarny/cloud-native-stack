@@ -262,8 +262,8 @@ func TestHelmValues_Validate(t *testing.T) {
 			name: "valid values",
 			values: &HelmValues{
 				Namespace:      "test",
-				DriverRegistry: common.ConfigValue{Value: "nvcr.io/nvidia"},
-				MIGStrategy:    common.ConfigValue{Value: "single"},
+				DriverRegistry: common.ValueWithContext{Value: "nvcr.io/nvidia"},
+				MIGStrategy:    common.ValueWithContext{Value: "single"},
 			},
 			wantErr: false,
 		},
@@ -271,8 +271,8 @@ func TestHelmValues_Validate(t *testing.T) {
 			name: "empty namespace",
 			values: &HelmValues{
 				Namespace:      "",
-				DriverRegistry: common.ConfigValue{Value: "nvcr.io/nvidia"},
-				MIGStrategy:    common.ConfigValue{Value: "single"},
+				DriverRegistry: common.ValueWithContext{Value: "nvcr.io/nvidia"},
+				MIGStrategy:    common.ValueWithContext{Value: "single"},
 			},
 			wantErr: true,
 		},
@@ -280,8 +280,8 @@ func TestHelmValues_Validate(t *testing.T) {
 			name: "invalid MIG strategy",
 			values: &HelmValues{
 				Namespace:      "test",
-				DriverRegistry: common.ConfigValue{Value: "nvcr.io/nvidia"},
-				MIGStrategy:    common.ConfigValue{Value: "invalid"},
+				DriverRegistry: common.ValueWithContext{Value: "nvcr.io/nvidia"},
+				MIGStrategy:    common.ValueWithContext{Value: "invalid"},
 			},
 			wantErr: true,
 		},
