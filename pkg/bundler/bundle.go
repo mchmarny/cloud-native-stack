@@ -25,7 +25,7 @@ import (
 type DefaultBundler struct {
 	// BundlerTypes specifies which bundlers to execute.
 	// If empty, all registered bundlers are executed.
-	BundlerTypes []common.Type
+	BundlerTypes []common.BundleType
 
 	// FailFast stops execution on first bundler error.
 	// Default is false (continues and collects all errors).
@@ -44,7 +44,7 @@ type Option func(*DefaultBundler)
 // WithBundlerTypes sets the bundler types to execute.
 // If not set, all registered bundlers are executed.
 // Nil or empty slice means all bundlers as well.
-func WithBundlerTypes(types []common.Type) Option {
+func WithBundlerTypes(types []common.BundleType) Option {
 	return func(db *DefaultBundler) {
 		if len(types) > 0 {
 			db.BundlerTypes = types
@@ -92,7 +92,7 @@ func WithRegistry(registry *Registry) Option {
 // Example:
 //
 //	b := bundler.New(
-//		bundler.WithBundlerTypes([]common.Type{common.BundleTypeGpuOperator}),
+//		bundler.WithBundlerTypes([]common.BundleType{common.BundleTypeGpuOperator}),
 //		bundler.WithFailFast(true),
 //	)
 func New(opts ...Option) *DefaultBundler {
@@ -175,7 +175,7 @@ func (b *DefaultBundler) Make(ctx context.Context, recipe *recipe.Recipe, dir st
 }
 
 // makeParallel executes bundlers concurrently.
-func (b *DefaultBundler) makeParallel(ctx context.Context, recipe *recipe.Recipe, dir string, bundlers map[common.Type]common.Bundler) (*common.Output, error) {
+func (b *DefaultBundler) makeParallel(ctx context.Context, recipe *recipe.Recipe, dir string, bundlers map[common.BundleType]common.Bundler) (*common.Output, error) {
 	output := &common.Output{
 		Results: make([]*common.Result, 0, len(bundlers)),
 		Errors:  make([]common.BundleError, 0),
@@ -247,7 +247,7 @@ func (b *DefaultBundler) makeParallel(ctx context.Context, recipe *recipe.Recipe
 }
 
 // executeBundler executes a single bundler and records metrics.
-func (b *DefaultBundler) executeBundler(ctx context.Context, bundlerType common.Type, bundler common.Bundler,
+func (b *DefaultBundler) executeBundler(ctx context.Context, bundlerType common.BundleType, bundler common.Bundler,
 	recipe *recipe.Recipe, dir string) (*common.Result, error) {
 
 	start := time.Now()
@@ -302,13 +302,13 @@ func (b *DefaultBundler) executeBundler(ctx context.Context, bundlerType common.
 }
 
 // selectBundlers selects which bundlers to execute based on options.
-func (b *DefaultBundler) selectBundlers(types []common.Type) map[common.Type]common.Bundler {
+func (b *DefaultBundler) selectBundlers(types []common.BundleType) map[common.BundleType]common.Bundler {
 	if len(types) == 0 {
 		return b.Registry.GetAll()
 	}
 
 	// Return only specified bundlers
-	selected := make(map[common.Type]common.Bundler)
+	selected := make(map[common.BundleType]common.Bundler)
 	for _, t := range types {
 		if b, ok := b.Registry.Get(t); ok {
 			selected[t] = b

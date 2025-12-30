@@ -12,7 +12,7 @@ import (
 
 // Registry manages registered bundlers with thread-safe operations.
 type Registry struct {
-	bundlers map[common.Type]common.Bundler
+	bundlers map[common.BundleType]common.Bundler
 
 	mu sync.RWMutex
 }
@@ -20,7 +20,7 @@ type Registry struct {
 // NewRegistry creates a new Registry instance.
 func NewRegistry(cfg *config.Config) *Registry {
 	return &Registry{
-		bundlers: map[common.Type]common.Bundler{
+		bundlers: map[common.BundleType]common.Bundler{
 			common.BundleTypeGpuOperator:     gpuoperator.NewBundler(cfg),
 			common.BundleTypeNetworkOperator: networkoperator.NewBundler(cfg),
 		},
@@ -28,14 +28,14 @@ func NewRegistry(cfg *config.Config) *Registry {
 }
 
 // Register registers a bundler in this registry.
-func (r *Registry) Register(bundleType common.Type, b common.Bundler) {
+func (r *Registry) Register(bundleType common.BundleType, b common.Bundler) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.bundlers[bundleType] = b
 }
 
 // Get retrieves a bundler by type from this registry.
-func (r *Registry) Get(bundleType common.Type) (common.Bundler, bool) {
+func (r *Registry) Get(bundleType common.BundleType) (common.Bundler, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	b, ok := r.bundlers[bundleType]
@@ -43,11 +43,11 @@ func (r *Registry) Get(bundleType common.Type) (common.Bundler, bool) {
 }
 
 // GetAll returns all registered bundlers.
-func (r *Registry) GetAll() map[common.Type]common.Bundler {
+func (r *Registry) GetAll() map[common.BundleType]common.Bundler {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	bundlers := make(map[common.Type]common.Bundler, len(r.bundlers))
+	bundlers := make(map[common.BundleType]common.Bundler, len(r.bundlers))
 	for k, v := range r.bundlers {
 		bundlers[k] = v
 	}
@@ -55,11 +55,11 @@ func (r *Registry) GetAll() map[common.Type]common.Bundler {
 }
 
 // List returns all registered bundler types.
-func (r *Registry) List() []common.Type {
+func (r *Registry) List() []common.BundleType {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	types := make([]common.Type, 0, len(r.bundlers))
+	types := make([]common.BundleType, 0, len(r.bundlers))
 	for k := range r.bundlers {
 		types = append(types, k)
 	}
@@ -67,7 +67,7 @@ func (r *Registry) List() []common.Type {
 }
 
 // Unregister removes a bundler from this registry.
-func (r *Registry) Unregister(bundleType common.Type) error {
+func (r *Registry) Unregister(bundleType common.BundleType) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

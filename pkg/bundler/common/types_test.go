@@ -8,7 +8,7 @@ func TestParseType(t *testing.T) {
 	tests := []struct {
 		name    string
 		input   string
-		want    Type
+		want    BundleType
 		wantErr bool
 	}{
 		{
@@ -110,7 +110,7 @@ func TestSupportedBundleTypesAsStrings(t *testing.T) {
 func TestType_String(t *testing.T) {
 	tests := []struct {
 		name string
-		typ  Type
+		typ  BundleType
 		want string
 	}{
 		{

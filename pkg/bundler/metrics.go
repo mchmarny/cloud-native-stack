@@ -64,7 +64,7 @@ var (
 )
 
 // recordBundleGenerated records a bundle generation event.
-func recordBundleGenerated(bundlerType common.Type, success bool) {
+func recordBundleGenerated(bundlerType common.BundleType, success bool) {
 	status := "success"
 	if !success {
 		status = "failure"
@@ -73,26 +73,26 @@ func recordBundleGenerated(bundlerType common.Type, success bool) {
 }
 
 // recordBundleDuration records the duration of bundle generation.
-func recordBundleDuration(bundlerType common.Type, seconds float64) {
+func recordBundleDuration(bundlerType common.BundleType, seconds float64) {
 	bundleDurationSeconds.WithLabelValues(string(bundlerType)).Observe(seconds)
 }
 
 // recordBundleSize records the size of the generated common.
-func recordBundleSize(bundlerType common.Type, bytes int64) {
+func recordBundleSize(bundlerType common.BundleType, bytes int64) {
 	bundleSizeBytes.WithLabelValues(string(bundlerType)).Set(float64(bytes))
 }
 
 // recordBundleFiles records the number of files in the common.
-func recordBundleFiles(bundlerType common.Type, count int) {
+func recordBundleFiles(bundlerType common.BundleType, count int) {
 	bundleFilesTotal.WithLabelValues(string(bundlerType)).Set(float64(count))
 }
 
 // recordBundleError records an error during bundle generation.
-func recordBundleError(bundlerType common.Type, errorType string) {
+func recordBundleError(bundlerType common.BundleType, errorType string) {
 	bundleErrorsTotal.WithLabelValues(string(bundlerType), errorType).Inc()
 }
 
 // recordValidationFailure records a validation failure.
-func recordValidationFailure(bundlerType common.Type) {
+func recordValidationFailure(bundlerType common.BundleType) {
 	bundleValidationFailuresTotal.WithLabelValues(string(bundlerType)).Inc()
 }

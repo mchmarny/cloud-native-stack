@@ -9,14 +9,14 @@ import (
 
 const (
 	// BundleTypeGpuOperator generates GPU Operator bundles.
-	BundleTypeGpuOperator Type = "gpu-operator"
+	BundleTypeGpuOperator BundleType = "gpu-operator"
 
 	// BundleTypeNetworkOperator generates Network Operator bundles.
-	BundleTypeNetworkOperator Type = "network-operator"
+	BundleTypeNetworkOperator BundleType = "network-operator"
 )
 
 // BundleType identifies different types of bundles.
-type Type string
+type BundleType string
 
 // Bundler defines the interface for creating application bundles.
 // Implementations generate deployment artifacts from recipes.
@@ -25,7 +25,7 @@ type Bundler interface {
 }
 
 // ParseType converts a string to a BundleType.
-func ParseType(s string) (Type, error) {
+func ParseType(s string) (BundleType, error) {
 	switch s {
 	case string(BundleTypeGpuOperator):
 		return BundleTypeGpuOperator, nil
@@ -37,8 +37,8 @@ func ParseType(s string) (Type, error) {
 }
 
 // SupportedTypes returns a list of all supported bundle types.
-func SupportedTypes() []Type {
-	return []Type{
+func SupportedTypes() []BundleType {
+	return []BundleType{
 		BundleTypeGpuOperator,
 		BundleTypeNetworkOperator,
 	}

@@ -53,7 +53,7 @@ func bundleCmd() *cli.Command {
 			bundlerTypesStr := cmd.StringSlice("bundlers")
 
 			// Parse bundler types
-			var bundlerTypes []common.Type
+			var bundlerTypes []common.BundleType
 			for _, t := range bundlerTypesStr {
 				bt, err := common.ParseType(t)
 				if err != nil {

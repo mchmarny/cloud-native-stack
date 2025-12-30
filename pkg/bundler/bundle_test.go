@@ -81,7 +81,7 @@ func TestDefaultBundler_Make(t *testing.T) {
 
 	bundler := New(
 		WithRegistry(testReg),
-		WithBundlerTypes([]common.Type{"mock"}),
+		WithBundlerTypes([]common.BundleType{"mock"}),
 	)
 	output, err := bundler.Make(ctx, rec, tmpDir)
 	if err != nil {
@@ -159,7 +159,7 @@ func TestDefaultBundler_MakeWithOptions(t *testing.T) {
 	config := config.NewConfig()
 	config.Namespace = "test-namespace"
 
-	bundler := New(WithRegistry(testReg), WithBundlerTypes([]common.Type{"mock"}),
+	bundler := New(WithRegistry(testReg), WithBundlerTypes([]common.BundleType{"mock"}),
 		WithConfig(config),
 	)
 	output, err := bundler.Make(ctx, rec, tmpDir)
@@ -194,7 +194,7 @@ func TestDefaultBundler_MakeCreatesDirectory(t *testing.T) {
 
 	bundler := New(
 		WithRegistry(testReg),
-		WithBundlerTypes([]common.Type{"mock"}),
+		WithBundlerTypes([]common.BundleType{"mock"}),
 	)
 	_, err := bundler.Make(ctx, rec, tmpDir)
 	if err != nil {
@@ -269,7 +269,7 @@ func TestDefaultBundler_MakeWithFailFast(t *testing.T) {
 
 	bundler := New(
 		WithRegistry(testReg),
-		WithBundlerTypes([]common.Type{"mock-fail", "mock"}),
+		WithBundlerTypes([]common.BundleType{"mock-fail", "mock"}),
 		WithFailFast(true),
 	)
 	_, err := bundler.Make(ctx, rec, tmpDir)
@@ -300,7 +300,7 @@ func TestDefaultBundler_MakeWithoutFailFast(t *testing.T) {
 
 	bundler := New(
 		WithRegistry(testReg),
-		WithBundlerTypes([]common.Type{"mock-fail", "mock"}),
+		WithBundlerTypes([]common.BundleType{"mock-fail", "mock"}),
 		WithFailFast(false),
 	)
 	output, err := bundler.Make(ctx, rec, tmpDir)
@@ -342,7 +342,7 @@ func TestDefaultBundler_MakeWithConfiguration(t *testing.T) {
 	config := config.NewConfig()
 	config.Namespace = "custom-namespace"
 
-	bundler := New(WithRegistry(testReg), WithBundlerTypes([]common.Type{"mock-configurable"}),
+	bundler := New(WithRegistry(testReg), WithBundlerTypes([]common.BundleType{"mock-configurable"}),
 		WithConfig(config),
 	)
 	output, err := bundler.Make(ctx, rec, tmpDir)
@@ -415,7 +415,7 @@ func TestDefaultBundler_MakeWithEmptyDirectory(t *testing.T) {
 	// Empty dir should default to current directory
 	bundler := New(
 		WithRegistry(testReg),
-		WithBundlerTypes([]common.Type{"mock"}),
+		WithBundlerTypes([]common.BundleType{"mock"}),
 	)
 	output, err := bundler.Make(ctx, rec, "")
 	if err != nil {
@@ -448,7 +448,7 @@ func TestDefaultBundler_MakeWithNoBundlers(t *testing.T) {
 	}
 
 	// Specify non-existent bundler type
-	bundler := New(WithBundlerTypes([]common.Type{"non-existent"}))
+	bundler := New(WithBundlerTypes([]common.BundleType{"non-existent"}))
 	_, err := bundler.Make(ctx, rec, tmpDir)
 	if err == nil {
 		t.Error("Expected error when no bundlers are selected")

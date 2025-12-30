@@ -37,7 +37,7 @@ Basic usage with default settings (generates GPU Operator bundle):
 Customize with functional options:
 
 	b := bundler.New(
-		bundler.WithBundlerTypes([]bundle.Type{bundle.BundleTypeGpuOperator}),
+		bundler.WithBundlerTypes([]bundle.BundleType{bundle.BundleTypeGpuOperator}),
 		bundler.WithFailFast(true),
 		bundler.WithDryRun(true),
 	)
@@ -256,7 +256,7 @@ Implement the bundle.Bundler interface:
 		"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 	)
 
-	const BundleTypeMyBundler bundle.Type = "my-bundler"
+	const BundleTypeMyBundler bundle.BundleType = "my-bundler"
 
 	type Bundler struct {
 		config *config.Config
@@ -317,7 +317,7 @@ Best practices:
 		cfg.CustomLabels["env"] = "prod"
 
 		b := bundler.New(
-			bundler.WithBundlerTypes([]bundle.Type{bundle.BundleTypeGpuOperator}),
+			bundler.WithBundlerTypes([]bundle.BundleType{bundle.BundleTypeGpuOperator}),
 			bundler.WithConfig(cfg),
 			bundler.WithFailFast(true),
 		)
