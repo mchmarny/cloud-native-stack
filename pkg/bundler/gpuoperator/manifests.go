@@ -104,5 +104,7 @@ func (m *ManifestData) ToMap() map[string]interface{} {
 		"EnableCDI":           m.EnableCDI,
 		"CustomLabels":        m.CustomLabels,
 		"CustomAnnotations":   m.CustomAnnotations,
+		"Version":             m.Version,
+		"RecipeVersion":       m.RecipeVersion,
 	}
 }

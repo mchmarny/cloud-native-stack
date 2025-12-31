@@ -108,5 +108,7 @@ func (m *ManifestData) ToMap() map[string]interface{} {
 		"ContainerRuntimeSocket": m.ContainerRuntimeSocket,
 		"CustomLabels":           m.CustomLabels,
 		"CustomAnnotations":      m.CustomAnnotations,
+		"Version":                m.Version,
+		"RecipeVersion":          m.RecipeVersion,
 	}
 }

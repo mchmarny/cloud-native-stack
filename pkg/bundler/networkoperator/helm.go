@@ -233,6 +233,8 @@ func (v *HelmValues) ToMap() map[string]interface{} {
 		"ContainerRuntimeSocket": v.ContainerRuntimeSocket,
 		"CustomLabels":           v.CustomLabels,
 		"Namespace":              v.Namespace,
+		"Version":                v.Version,
+		"RecipeVersion":          v.RecipeVersion,
 	}
 }
 

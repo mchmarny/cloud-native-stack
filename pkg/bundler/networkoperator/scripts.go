@@ -66,6 +66,8 @@ func (s *ScriptData) ToMap() map[string]interface{} {
 		"K8sVersion":       s.K8sVersion,
 		"EnableRDMA":       s.EnableRDMA,
 		"EnableSRIOV":      s.EnableSRIOV,
+		"Version":          s.Version,
+		"RecipeVersion":    s.RecipeVersion,
 	}
 
 	if s.Request != nil {

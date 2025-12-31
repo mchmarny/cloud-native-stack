@@ -59,6 +59,8 @@ func (s *ScriptData) ToMap() map[string]interface{} {
 		"HelmChartVersion": s.HelmChartVersion,
 		"K8sVersion":       s.K8sVersion,
 		"GPUType":          s.GPUType,
+		"Version":          s.Version,
+		"RecipeVersion":    s.RecipeVersion,
 	}
 
 	if s.Request != nil {

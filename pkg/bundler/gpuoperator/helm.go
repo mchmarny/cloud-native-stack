@@ -209,6 +209,8 @@ func (v *HelmValues) ToMap() map[string]interface{} {
 		"EnableSecureBoot":              v.EnableSecureBoot,
 		"CustomLabels":                  v.CustomLabels,
 		"Namespace":                     v.Namespace,
+		"Version":                       v.Version,
+		"RecipeVersion":                 v.RecipeVersion,
 	}
 }
 
