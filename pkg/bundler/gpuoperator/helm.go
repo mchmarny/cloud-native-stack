@@ -31,6 +31,8 @@ type HelmValues struct {
 	EnableSecureBoot              common.ValueWithContext
 	CustomLabels                  map[string]string
 	Namespace                     string
+	Version                       string
+	RecipeVersion                 string
 }
 
 // GenerateHelmValues generates Helm values from a recipe.
@@ -44,6 +46,8 @@ func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmVa
 		EnableSecureBoot: common.ValueWithContext{Value: false},
 		CustomLabels:     common.ExtractCustomLabels(config),
 		Namespace:        common.GetConfigValue(config, "namespace", Name),
+		Version:          common.GetBundlerVersion(config),
+		RecipeVersion:    common.GetRecipeBundlerVersion(recipe.Metadata),
 	}
 
 	// Extract GPU Operator configuration from recipe measurements

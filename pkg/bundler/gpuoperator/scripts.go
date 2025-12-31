@@ -17,6 +17,8 @@ type ScriptData struct {
 	K8sVersion       string
 	GPUType          string
 	Request          *recipe.Query
+	Version          string
+	RecipeVersion    string
 }
 
 // GenerateScriptData creates script data from a recipe and config.
@@ -27,6 +29,8 @@ func GenerateScriptData(recipe *recipe.Recipe, config map[string]string) *Script
 		HelmRepository: common.GetConfigValue(config, "helm_repository", "https://helm.ngc.nvidia.com/nvidia"),
 		HelmChart:      "nvidia/gpu-operator",
 		Request:        recipe.Request,
+		Version:        common.GetBundlerVersion(config),
+		RecipeVersion:  common.GetRecipeBundlerVersion(recipe.Metadata),
 	}
 
 	// Extract chart version from config or recipe

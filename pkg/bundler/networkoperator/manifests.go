@@ -22,6 +22,8 @@ type ManifestData struct {
 	ContainerRuntimeSocket string
 	CustomLabels           map[string]string
 	CustomAnnotations      map[string]string
+	Version                string
+	RecipeVersion          string
 }
 
 // GenerateManifestData creates manifest data from a recipe and config.
@@ -38,6 +40,8 @@ func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *Mani
 		ContainerRuntimeSocket: "/var/run/containerd/containerd.sock",
 		CustomLabels:           common.ExtractCustomLabels(config),
 		CustomAnnotations:      common.ExtractCustomAnnotations(config),
+		Version:                common.GetBundlerVersion(config),
+		RecipeVersion:          common.GetRecipeBundlerVersion(recipe.Metadata),
 	}
 
 	// Extract values from recipe (similar to HelmValues)

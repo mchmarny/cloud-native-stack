@@ -22,6 +22,8 @@ type ManifestData struct {
 	EnableCDI           bool
 	CustomLabels        map[string]string
 	CustomAnnotations   map[string]string
+	Version             string
+	RecipeVersion       string
 }
 
 // GenerateManifestData creates manifest data from a recipe and config.
@@ -36,6 +38,8 @@ func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *Mani
 		EnableCDI:         false,
 		CustomLabels:      common.ExtractCustomLabels(config),
 		CustomAnnotations: common.ExtractCustomAnnotations(config),
+		Version:           common.GetBundlerVersion(config),
+		RecipeVersion:     common.GetRecipeBundlerVersion(recipe.Metadata),
 	}
 
 	// Extract values from recipe (similar to HelmValues)
