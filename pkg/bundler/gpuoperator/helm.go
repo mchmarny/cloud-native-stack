@@ -190,30 +190,6 @@ func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 	}
 }
 
-// ToMap converts HelmValues to a map for template rendering.
-func (v *HelmValues) ToMap() map[string]interface{} {
-	return map[string]interface{}{
-		"Timestamp":                     v.Timestamp,
-		"DriverRegistry":                v.DriverRegistry,
-		"GPUOperatorVersion":            v.GPUOperatorVersion,
-		"EnableDriver":                  v.EnableDriver,
-		"DriverVersion":                 v.DriverVersion,
-		"UseOpenKernelModule":           v.UseOpenKernelModule,
-		"NvidiaContainerToolkitVersion": v.NvidiaContainerToolkitVersion,
-		"DevicePluginVersion":           v.DevicePluginVersion,
-		"DCGMVersion":                   v.DCGMVersion,
-		"DCGMExporterVersion":           v.DCGMExporterVersion,
-		"MIGStrategy":                   v.MIGStrategy,
-		"EnableGDS":                     v.EnableGDS,
-		"VGPULicenseServer":             v.VGPULicenseServer,
-		"EnableSecureBoot":              v.EnableSecureBoot,
-		"CustomLabels":                  v.CustomLabels,
-		"Namespace":                     v.Namespace,
-		"Version":                       v.Version,
-		"RecipeVersion":                 v.RecipeVersion,
-	}
-}
-
 // Validate validates the Helm values.
 func (v *HelmValues) Validate() error {
 	if v.Namespace == "" {

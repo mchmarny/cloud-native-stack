@@ -94,21 +94,3 @@ func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *Mani
 }
 
 // ToMap converts ManifestData to a map for template rendering.
-func (m *ManifestData) ToMap() map[string]interface{} {
-	return map[string]interface{}{
-		"Timestamp":              m.Timestamp,
-		"Namespace":              m.Namespace,
-		"EnableRDMA":             m.EnableRDMA,
-		"EnableSRIOV":            m.EnableSRIOV,
-		"EnableHostDevice":       m.EnableHostDevice,
-		"EnableIPAM":             m.EnableIPAM,
-		"DeployOFED":             m.DeployOFED,
-		"OFEDVersion":            m.OFEDVersion,
-		"NicType":                m.NicType,
-		"ContainerRuntimeSocket": m.ContainerRuntimeSocket,
-		"CustomLabels":           m.CustomLabels,
-		"CustomAnnotations":      m.CustomAnnotations,
-		"Version":                m.Version,
-		"RecipeVersion":          m.RecipeVersion,
-	}
-}

@@ -1,9 +1,9 @@
 # NVIDIA GPU Operator Bundle
 
 Generated from Cloud Native Stack Recipe  
-Timestamp: {{ .Timestamp }}
-Bundler Version: {{ .Version }}
-Recipe Bundler Version: {{ .RecipeVersion }}
+Timestamp: {{ .Script.Timestamp }}
+Bundler Version: {{ .Script.Version }}
+Recipe Bundler Version: {{ .Script.RecipeVersion }}
 
 ## Overview
 
@@ -19,11 +19,11 @@ This bundle contains everything needed to deploy the NVIDIA GPU Operator on your
 
 ## Prerequisites
 
-- Kubernetes cluster ({{ if .K8sVersion }}{{ .K8sVersion }}{{ else }}1.21+{{ end }})
+- Kubernetes cluster ({{ if .Script.K8sVersion }}{{ .Script.K8sVersion }}{{ else }}1.21+{{ end }})
 - Helm 3
 - kubectl configured
-{{- if .GPUType }}
-- GPU nodes with {{ .GPUType }} GPUs
+{{- if .Script.GPUType }}
+- GPU nodes with {{ .Script.GPUType }} GPUs
 {{- end }}
 
 ## Installation
@@ -39,17 +39,17 @@ chmod +x scripts/install.sh
 
 ```bash
 # Add Helm repository
-helm repo add nvidia {{ .HelmRepository }}
+helm repo add nvidia {{ .Script.HelmRepository }}
 helm repo update
 
 # Create namespace
-kubectl create namespace {{ .Namespace }}
+kubectl create namespace {{ .Helm.Namespace }}
 
 # Install GPU Operator
 helm upgrade --install gpu-operator nvidia/gpu-operator \
-  --namespace {{ .Namespace }} \
-  {{- if .HelmChartVersion }}
-  --version {{ .HelmChartVersion }} \
+  --namespace {{ .Helm.Namespace }} \
+  {{- if .Script.HelmChartVersion }}
+  --version {{ .Script.HelmChartVersion }} \
   {{- end }}
   --values values.yaml \
   --wait
@@ -66,7 +66,7 @@ kubectl apply -f clusterpolicy.yaml
 Check the GPU Operator pods:
 
 ```bash
-kubectl get pods -n {{ .Namespace }}
+kubectl get pods -n {{ .Helm.Namespace }}
 ```
 
 Verify GPU nodes:
@@ -88,16 +88,16 @@ kubectl run gpu-test --rm -it --restart=Never \
 
 ### Key Settings
 
-{{- if .DriverVersion }}
-- **Driver Version**: {{ .DriverVersion }}
+{{- if .Script.DriverVersion }}
+- **Driver Version**: {{ .Script.DriverVersion }}
 {{- end }}
-{{- if .MIGStrategy }}
-- **MIG Strategy**: {{ .MIGStrategy }}
+{{- if .Script.MIGStrategy }}
+- **MIG Strategy**: {{ .Script.MIGStrategy }}
 {{- end }}
-{{- if .EnableGDS }}
+{{- if .Script.EnableGDS }}
 - **GPUDirect Storage**: Enabled
 {{- end }}
-{{- if .EnableCDI }}
+{{- if .Script.EnableCDI }}
 - **CDI**: Enabled
 {{- end }}
 
@@ -122,7 +122,7 @@ chmod +x scripts/uninstall.sh
 Or manually:
 
 ```bash
-helm uninstall gpu-operator -n {{ .Namespace }}
+helm uninstall gpu-operator -n {{ .Helm.Namespace }}
 kubectl delete crd clusterpolicies.nvidia.com
 ```
 
@@ -131,13 +131,13 @@ kubectl delete crd clusterpolicies.nvidia.com
 ### Check GPU Operator logs
 
 ```bash
-kubectl logs -n {{ .Namespace }} -l app=nvidia-driver-daemonset
+kubectl logs -n {{ .Helm.Namespace }} -l app=nvidia-driver-daemonset
 ```
 
 ### Check ClusterPolicy status
 
 ```bash
-kubectl describe clusterpolicy -n {{ .Namespace }}
+kubectl describe clusterpolicy -n {{ .Helm.Namespace }}
 ```
 
 ### Common Issues
@@ -153,19 +153,19 @@ kubectl describe clusterpolicy -n {{ .Namespace }}
 
 ## Generated Configuration
 
-{{- if .Request }}
+{{- if .Script.Request }}
 **Recipe Query:**
-- OS: {{ .Request.Os }}
-{{- if .Request.OsVersion }}
-- OS Version: {{ .Request.OsVersion }}
+- OS: {{ .Script.Request.Os }}
+{{- if .Script.Request.OsVersion }}
+- OS Version: {{ .Script.Request.OsVersion }}
 {{- end }}
-{{- if .Request.Service }}
-- Service: {{ .Request.Service }}
+{{- if .Script.Request.Service }}
+- Service: {{ .Script.Request.Service }}
 {{- end }}
-{{- if .Request.GPU }}
-- GPU: {{ .Request.GPU }}
+{{- if .Script.Request.GPU }}
+- GPU: {{ .Script.Request.GPU }}
 {{- end }}
-{{- if .Request.Intent }}
-- Intent: {{ .Request.Intent }}
+{{- if .Script.Request.Intent }}
+- Intent: {{ .Script.Request.Intent }}
 {{- end }}
 {{- end }}

@@ -192,7 +192,7 @@ func (b *Bundler) generateHelmValues(ctx context.Context, r *recipe.Recipe, conf
 	}
 
 	path := filepath.Join(outputDir, "values.yaml")
-	return b.GenerateFileFromTemplate(ctx, GetTemplate, "values.yaml", path, values.ToMap(), 0644)
+	return b.GenerateFileFromTemplate(ctx, GetTemplate, "values.yaml", path, values, 0644)
 }
 
 // generateNicClusterPolicy creates the NicClusterPolicy manifest.
@@ -201,7 +201,7 @@ func (b *Bundler) generateNicClusterPolicy(ctx context.Context, r *recipe.Recipe
 
 	data := GenerateManifestData(r, configMap)
 	path := filepath.Join(manifestsDir, "nicclusterpolicy.yaml")
-	return b.GenerateFileFromTemplate(ctx, GetTemplate, "nicclusterpolicy", path, data.ToMap(), 0644)
+	return b.GenerateFileFromTemplate(ctx, GetTemplate, "nicclusterpolicy", path, data, 0644)
 }
 
 // generateScripts creates installation and uninstallation scripts.
@@ -209,17 +209,16 @@ func (b *Bundler) generateScripts(ctx context.Context, r *recipe.Recipe, configM
 	scriptsDir string) error {
 
 	scriptData := GenerateScriptData(r, configMap)
-	data := scriptData.ToMap()
 
 	// Generate install script
 	installPath := filepath.Join(scriptsDir, "install.sh")
-	if err := b.GenerateFileFromTemplate(ctx, GetTemplate, "install.sh", installPath, data, 0755); err != nil {
+	if err := b.GenerateFileFromTemplate(ctx, GetTemplate, "install.sh", installPath, scriptData, 0755); err != nil {
 		return err
 	}
 
 	// Generate uninstall script
 	uninstallPath := filepath.Join(scriptsDir, "uninstall.sh")
-	return b.GenerateFileFromTemplate(ctx, GetTemplate, "uninstall.sh", uninstallPath, data, 0755)
+	return b.GenerateFileFromTemplate(ctx, GetTemplate, "uninstall.sh", uninstallPath, scriptData, 0755)
 }
 
 // generateReadme creates the README.md file.
@@ -230,8 +229,8 @@ func (b *Bundler) generateReadme(ctx context.Context, r *recipe.Recipe, configMa
 	helmValues := GenerateHelmValues(r, configMap)
 
 	data := map[string]interface{}{
-		"Script": scriptData.ToMap(),
-		"Helm":   helmValues.ToMap(),
+		"Script": scriptData,
+		"Helm":   helmValues,
 	}
 
 	path := filepath.Join(outputDir, "README.md")

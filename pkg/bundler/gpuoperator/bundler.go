@@ -252,7 +252,7 @@ func (b *Bundler) generateHelmValues(ctx context.Context, r *recipe.Recipe,
 
 	filePath := filepath.Join(bundleDir, "values.yaml")
 	return b.GenerateFileFromTemplate(ctx, GetTemplate, "values.yaml",
-		filePath, helmValues.ToMap(), 0644)
+		filePath, helmValues, 0644)
 }
 
 // generateClusterPolicy generates ClusterPolicy manifest.
@@ -263,7 +263,7 @@ func (b *Bundler) generateClusterPolicy(ctx context.Context, r *recipe.Recipe,
 	filePath := filepath.Join(dir, "clusterpolicy.yaml")
 
 	return b.GenerateFileFromTemplate(ctx, GetTemplate, "clusterpolicy",
-		filePath, manifestData.ToMap(), 0644)
+		filePath, manifestData, 0644)
 }
 
 // generateScripts generates installation and uninstallation scripts.
@@ -271,28 +271,35 @@ func (b *Bundler) generateScripts(ctx context.Context, r *recipe.Recipe,
 	dir string, config map[string]string) error {
 
 	scriptData := GenerateScriptData(r, config)
-	data := scriptData.ToMap()
 
 	// Generate install script
 	installPath := filepath.Join(dir, "install.sh")
 	if err := b.GenerateFileFromTemplate(ctx, GetTemplate, "install.sh",
-		installPath, data, 0755); err != nil {
+		installPath, scriptData, 0755); err != nil {
 		return err
 	}
 
 	// Generate uninstall script
 	uninstallPath := filepath.Join(dir, "uninstall.sh")
 	return b.GenerateFileFromTemplate(ctx, GetTemplate, "uninstall.sh",
-		uninstallPath, data, 0755)
+		uninstallPath, scriptData, 0755)
 }
 
 // generateReadme generates README documentation.
 func (b *Bundler) generateReadme(ctx context.Context, recipe *recipe.Recipe,
 	dir string, config map[string]string) error {
 
+	helmValues := GenerateHelmValues(recipe, config)
 	scriptData := GenerateScriptData(recipe, config)
+
+	// Combine both data structures for README
+	data := map[string]interface{}{
+		"Helm":   helmValues,
+		"Script": scriptData,
+	}
+
 	filePath := filepath.Join(dir, "README.md")
 
 	return b.GenerateFileFromTemplate(ctx, GetTemplate, "README.md",
-		filePath, scriptData.ToMap(), 0644)
+		filePath, data, 0644)
 }

@@ -217,27 +217,6 @@ func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 }
 
 // ToMap converts HelmValues to a map for template rendering.
-func (v *HelmValues) ToMap() map[string]interface{} {
-	return map[string]interface{}{
-		"Timestamp":              v.Timestamp,
-		"NetworkOperatorVersion": v.NetworkOperatorVersion,
-		"OFEDVersion":            v.OFEDVersion,
-		"EnableRDMA":             v.EnableRDMA,
-		"EnableSRIOV":            v.EnableSRIOV,
-		"EnableHostDevice":       v.EnableHostDevice,
-		"EnableIPAM":             v.EnableIPAM,
-		"EnableMultus":           v.EnableMultus,
-		"EnableWhereabouts":      v.EnableWhereabouts,
-		"DeployOFED":             v.DeployOFED,
-		"NicType":                v.NicType,
-		"ContainerRuntimeSocket": v.ContainerRuntimeSocket,
-		"CustomLabels":           v.CustomLabels,
-		"Namespace":              v.Namespace,
-		"Version":                v.Version,
-		"RecipeVersion":          v.RecipeVersion,
-	}
-}
-
 // Validate validates the Helm values.
 func (v *HelmValues) Validate() error {
 	if v.Namespace == "" {

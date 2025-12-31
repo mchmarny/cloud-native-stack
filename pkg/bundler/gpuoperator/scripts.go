@@ -7,7 +7,7 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
 
-// ScriptData represents data for generating installation scripts.
+// ScriptData represents data for generating installation scripts and documentation.
 type ScriptData struct {
 	Timestamp        string
 	Namespace        string
@@ -16,6 +16,10 @@ type ScriptData struct {
 	HelmChartVersion string
 	K8sVersion       string
 	GPUType          string
+	DriverVersion    string
+	MIGStrategy      string
+	EnableGDS        bool
+	EnableCDI        bool
 	Request          *recipe.Query
 	Version          string
 	RecipeVersion    string
@@ -38,6 +42,26 @@ func GenerateScriptData(recipe *recipe.Recipe, config map[string]string) *Script
 		data.HelmChartVersion = val
 	}
 
+	// Extract driver version
+	if val, ok := config["driver_version"]; ok && val != "" {
+		data.DriverVersion = val
+	}
+
+	// Extract MIG strategy
+	if val, ok := config["mig_strategy"]; ok && val != "" {
+		data.MIGStrategy = val
+	}
+
+	// Extract GDS enabled flag
+	if val, ok := config["enable_gds"]; ok {
+		data.EnableGDS = val == "true" || val == "1"
+	}
+
+	// Extract CDI enabled flag
+	if val, ok := config["enable_cdi"]; ok {
+		data.EnableCDI = val == "true" || val == "1"
+	}
+
 	// Extract GPU type from request
 	if recipe.Request != nil {
 		data.GPUType = recipe.Request.GPU.String()
@@ -50,30 +74,3 @@ func GenerateScriptData(recipe *recipe.Recipe, config map[string]string) *Script
 }
 
 // ToMap converts ScriptData to a map for template rendering.
-func (s *ScriptData) ToMap() map[string]interface{} {
-	m := map[string]interface{}{
-		"Timestamp":        s.Timestamp,
-		"Namespace":        s.Namespace,
-		"HelmRepository":   s.HelmRepository,
-		"HelmChart":        s.HelmChart,
-		"HelmChartVersion": s.HelmChartVersion,
-		"K8sVersion":       s.K8sVersion,
-		"GPUType":          s.GPUType,
-		"Version":          s.Version,
-		"RecipeVersion":    s.RecipeVersion,
-	}
-
-	if s.Request != nil {
-		m["Request"] = map[string]interface{}{
-			"Os":         s.Request.Os.String(),
-			"OsVersion":  s.Request.OsVersionString(),
-			"Kernel":     s.Request.K8sString(),
-			"Kubernetes": s.Request.K8sString(),
-			"Service":    s.Request.Service.String(),
-			"GPU":        s.Request.GPU.String(),
-			"Intent":     s.Request.Intent.String(),
-		}
-	}
-
-	return m
-}

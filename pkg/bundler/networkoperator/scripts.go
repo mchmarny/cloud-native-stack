@@ -56,31 +56,3 @@ func GenerateScriptData(recipe *recipe.Recipe, config map[string]string) *Script
 }
 
 // ToMap converts ScriptData to a map for template rendering.
-func (s *ScriptData) ToMap() map[string]interface{} {
-	m := map[string]interface{}{
-		"Timestamp":        s.Timestamp,
-		"Namespace":        s.Namespace,
-		"HelmRepository":   s.HelmRepository,
-		"HelmChart":        s.HelmChart,
-		"HelmChartVersion": s.HelmChartVersion,
-		"K8sVersion":       s.K8sVersion,
-		"EnableRDMA":       s.EnableRDMA,
-		"EnableSRIOV":      s.EnableSRIOV,
-		"Version":          s.Version,
-		"RecipeVersion":    s.RecipeVersion,
-	}
-
-	if s.Request != nil {
-		m["Request"] = map[string]interface{}{
-			"Os":         s.Request.Os.String(),
-			"OsVersion":  s.Request.OsVersionString(),
-			"Kernel":     s.Request.KernelString(),
-			"Kubernetes": s.Request.K8sString(),
-			"Service":    s.Request.Service.String(),
-			"GPU":        s.Request.GPU.String(),
-			"Intent":     s.Request.Intent.String(),
-		}
-	}
-
-	return m
-}
