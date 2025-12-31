@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler"
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/types"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
@@ -76,11 +77,17 @@ func bundleCmd() *cli.Command {
 				return err
 			}
 
+			// Create bundler config
+			cfg := config.NewConfig(
+				config.WithVersion(version),
+			)
+
 			// Create bundler instance
 			b := bundler.New(
 				// If bundler types are not specified, all supported bundlers are used.
 				// An empty or nil slice means all bundlers as well.
 				bundler.WithBundlerTypes(bundlerTypes),
+				bundler.WithConfig(cfg),
 			)
 
 			out, err := b.Make(ctx, rec, outputDir)

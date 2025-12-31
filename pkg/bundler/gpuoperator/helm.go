@@ -43,7 +43,7 @@ func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmVa
 		EnableGDS:        common.ValueWithContext{Value: false},
 		EnableSecureBoot: common.ValueWithContext{Value: false},
 		CustomLabels:     common.ExtractCustomLabels(config),
-		Namespace:        common.GetConfigValue(config, "namespace", "gpu-operator"),
+		Namespace:        common.GetConfigValue(config, "namespace", Name),
 	}
 
 	// Extract GPU Operator configuration from recipe measurements

@@ -17,6 +17,8 @@ import (
 )
 
 const (
+	Name = "network-operator"
+
 	configSubtype = "config"
 )
 
@@ -47,11 +49,11 @@ func (b *Bundler) Make(ctx context.Context, r *recipe.Recipe, outputDir string) 
 
 	slog.Debug("generating Network Operator bundle",
 		"output_dir", outputDir,
-		"namespace", b.Config.Namespace(),
+		"namespace", Name,
 	)
 
 	// Create bundle directory structure
-	dirs, err := b.CreateBundleDir(outputDir, "network-operator")
+	dirs, err := b.CreateBundleDir(outputDir, Name)
 	if err != nil {
 		return b.Result, errors.Wrap(errors.ErrCodeInternal,
 			"failed to create bundle directory", err)
@@ -131,6 +133,7 @@ func (b *Bundler) validateRecipe(r *recipe.Recipe) error {
 func (b *Bundler) buildConfigMap(r *recipe.Recipe) map[string]string {
 	// Start with base config (namespace, helm settings, labels, annotations)
 	configMap := b.BuildBaseConfigMap()
+	configMap["namespace"] = Name
 
 	// Extract values from recipe measurements
 	for _, m := range r.Measurements {
@@ -167,8 +170,11 @@ func (b *Bundler) buildConfigMap(r *recipe.Recipe) map[string]string {
 					}
 				}
 			}
-		case measurement.TypeSystemD, measurement.TypeOS, measurement.TypeGPU:
-			// Not used for Network Operator configuration
+		case measurement.TypeGPU, measurement.TypeOS, measurement.TypeSystemD:
+			// GPU, OS and SystemD measurements not used for Network Operator configuration
+			continue
+		default:
+			// Other types are not used for Network Operator configuration
 			continue
 		}
 	}

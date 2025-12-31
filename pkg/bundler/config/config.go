@@ -39,6 +39,9 @@ type Config struct {
 
 	// verbose enables detailed output during bundle generation.
 	verbose bool
+
+	// version specifies the bundler version.
+	version string
 }
 
 // Getter methods for read-only access
@@ -104,6 +107,11 @@ func (c *Config) Namespace() string {
 // Verbose returns the verbose setting.
 func (c *Config) Verbose() bool {
 	return c.verbose
+}
+
+// Version returns the bundler version.
+func (c *Config) Version() string {
+	return c.version
 }
 
 // Validate checks if the Config has valid settings.
@@ -193,6 +201,12 @@ func WithVerbose(enabled bool) Option {
 	}
 }
 
+func WithVersion(version string) Option {
+	return func(c *Config) {
+		c.version = version
+	}
+}
+
 // NewConfig returns a Config with default values.
 func NewConfig(options ...Option) *Config {
 	c := &Config{
@@ -205,6 +219,7 @@ func NewConfig(options ...Option) *Config {
 		customAnnotations: make(map[string]string),
 		namespace:         "default",
 		verbose:           false,
+		version:           "dev",
 	}
 	for _, opt := range options {
 		opt(c)

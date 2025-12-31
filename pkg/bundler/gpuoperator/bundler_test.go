@@ -8,7 +8,10 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
-const testNamespace = "test-ns"
+const (
+	testNamespace = "test-ns"
+	strMixed      = "mixed"
+)
 
 func TestBundler_Make(t *testing.T) {
 	harness := internal.NewTestHarness(t, "gpu-operator").
@@ -72,6 +75,129 @@ func TestBundler_Configure(t *testing.T) {
 	// Verify default values
 	if b.Config.Namespace() != "default" {
 		t.Errorf("Configure() namespace = %s, want default", b.Config.Namespace())
+	}
+}
+
+func TestBundler_buildConfigMap(t *testing.T) {
+	b := NewBundler(config.NewConfig())
+	rec := createTestRecipe().Build()
+
+	configMap := b.buildConfigMap(rec)
+
+	// Verify namespace is set
+	if configMap["namespace"] != Name {
+		t.Errorf("namespace = %s, want %s", configMap["namespace"], Name)
+	}
+
+	// Verify K8s image versions are extracted
+	expectedImageVersions := map[string]string{
+		"gpu_operator_version":      "v25.3.3",
+		"driver_version":            "580.82.07",
+		"container_toolkit_version": "v1.17.8",
+		"device_plugin_version":     "v0.17.4",
+		"dcgm_version":              "4.3.1-1",
+		"dcgm_exporter_version":     "4.3.1",
+	}
+
+	for key, expected := range expectedImageVersions {
+		if got := configMap[key]; got != expected {
+			t.Errorf("%s = %s, want %s", key, got, expected)
+		}
+	}
+
+	// Verify K8s config flags are extracted
+	expectedConfigFlags := map[string]string{
+		"enable_cdi":             "true",
+		"enable_mig":             "false",
+		"enable_gds":             "true",
+		"use_open_kernel_module": "true",
+	}
+
+	for key, expected := range expectedConfigFlags {
+		if got := configMap[key]; got != expected {
+			t.Errorf("%s = %s, want %s", key, got, expected)
+		}
+	}
+
+	// Verify MIG strategy is NOT set to "mixed" when MIG is false
+	if val, exists := configMap["mig_strategy"]; exists {
+		t.Errorf("mig_strategy should not be set when MIG is disabled, got: %s", val)
+	}
+}
+
+func TestBundler_buildConfigMap_MIGEnabled(t *testing.T) {
+	b := NewBundler(config.NewConfig())
+
+	// Create recipe with MIG enabled
+	rec := internal.NewRecipeBuilder().
+		WithK8sMeasurement(
+			internal.ImageSubtype(map[string]string{
+				"gpu-operator": "v25.3.3",
+			}),
+			internal.ConfigSubtype(map[string]interface{}{
+				"mig": true,
+			}),
+		).Build()
+
+	configMap := b.buildConfigMap(rec)
+
+	// Verify MIG is enabled
+	if got := configMap["enable_mig"]; got != strTrue {
+		t.Errorf("enable_mig = %s, want true", got)
+	}
+
+	// Verify MIG strategy is set to "mixed" when MIG is enabled
+	if got := configMap["mig_strategy"]; got != strMixed {
+		t.Errorf("mig_strategy = %s, want mixed", got)
+	}
+}
+
+func TestBundler_buildConfigMap_GPUDriverVersion(t *testing.T) {
+	b := NewBundler(config.NewConfig())
+
+	// Create recipe with driver version only in GPU measurements (not K8s)
+	rec := internal.NewRecipeBuilder().
+		WithK8sMeasurement(
+			internal.ImageSubtype(map[string]string{
+				"gpu-operator": "v25.3.3",
+			}),
+		).
+		WithGPUMeasurement(
+			internal.SMISubtype(map[string]string{
+				"driver-version": "550.90.07",
+			}),
+		).Build()
+
+	configMap := b.buildConfigMap(rec)
+
+	// Verify driver version from GPU measurement is extracted
+	if got := configMap["driver_version"]; got != "550.90.07" {
+		t.Errorf("driver_version = %s, want 550.90.07", got)
+	}
+}
+
+func TestBundler_buildConfigMap_K8sDriverVersionTakesPrecedence(t *testing.T) {
+	b := NewBundler(config.NewConfig())
+
+	// Create recipe with driver version in both K8s and GPU measurements
+	rec := internal.NewRecipeBuilder().
+		WithK8sMeasurement(
+			internal.ImageSubtype(map[string]string{
+				"gpu-operator": "v25.3.3",
+				"driver":       "580.82.07",
+			}),
+		).
+		WithGPUMeasurement(
+			internal.SMISubtype(map[string]string{
+				"driver-version": "550.90.07",
+			}),
+		).Build()
+
+	configMap := b.buildConfigMap(rec)
+
+	// Verify K8s driver version takes precedence
+	if got := configMap["driver_version"]; got != "580.82.07" {
+		t.Errorf("driver_version = %s, want 580.82.07 (K8s version should take precedence)", got)
 	}
 }
 
