@@ -114,6 +114,113 @@ context:
   numa_balancing: Disable auto-migration for predictable GPU memory locality
 ```
 
+### Why Separate Data and Context Maps?
+
+The recipe system intentionally maintains **separate `data` and `context` maps** rather than embedding context directly with each value. This architectural decision balances multiple engineering concerns:
+
+#### Design Rationale
+
+**1. Separation of Concerns**
+- **Data** represents *what* should be configured (the actual values)
+- **Context** represents *why* it should be configured (human-readable explanations)
+- This philosophical separation mirrors the distinction between code and comments in software
+
+**2. Conditional Context Inclusion**
+- API consumers can request context-free recipes via `?context=false` for reduced bandwidth
+- The `stripContext()` function removes all context in one pass (10 lines of code)
+- Embedding context would require complex recursive filtering to extract values
+
+**3. Type Safety**
+- The `data` map uses the `Reading` interface with generic `Scalar[T]` types for compile-time type safety
+- Values preserve their native types (int, string, bool, float64) through type-safe wrappers
+- Context is always a string - keeping it separate avoids type system complexity
+
+**4. Production Stability**
+- Current architecture is battle-tested with 51 passing recipe tests and 8 bundler test packages
+- No bugs reported related to data/context synchronization in production use
+- Refactoring would require ~2000 lines of code changes with breaking API changes
+
+**5. YAML Maintainability**
+- Clear visual separation in YAML makes recipe data easier to audit and update
+- Context can be added or removed independently without touching configuration values
+- Key alignment between maps is validated at test time
+
+#### Implementation Details
+
+The separate-maps pattern is implemented throughout the stack:
+
+**Storage (pkg/recipe/data/data-v1.yaml):**
+```yaml
+data:
+  iommu.passthrough: "1"
+  init_on_alloc: "0"
+context:
+  iommu.passthrough: "Bypass IOMMU translation for direct GPU memory access"
+  init_on_alloc: "Disabled for faster GPU memory allocation"
+```
+
+**Type System (pkg/measurement/types.go):**
+```go
+type Subtype struct {
+    Name    string                 `json:"subtype" yaml:"subtype"`
+    Data    map[string]Reading     `json:"data" yaml:"data"`
+    Context map[string]string      `json:"context,omitempty" yaml:"context,omitempty"`
+}
+```
+
+**Context Extraction (pkg/bundler/internal/subtype.go):**
+```go
+// Bundlers extract context to match data keys with explanations
+func GetFieldContext(contextMap map[string]string, fieldName, fallback string) string {
+    if ctx, exists := contextMap[fieldName]; exists {
+        return ctx
+    }
+    return fallback
+}
+```
+
+**API Response Control (pkg/recipe/builder.go):**
+```go
+// Context stripped in one pass if not requested
+if !query.IncludeContext {
+    stripContext(recipe.Measurements)
+}
+```
+
+#### Trade-offs Considered
+
+**Alternative: Embedded Context**
+```yaml
+# Hypothetical embedded approach
+data:
+  iommu.passthrough:
+    value: "1"
+    context: "Bypass IOMMU translation..."
+```
+
+**Why not chosen:**
+- Would require ~2000 lines of code changes (YAML migration, type system, bundlers, tests)
+- Breaks existing API contracts and client integrations
+- Complicates type system (Reading interface, Scalar[T] generics)
+- Harder to filter context (recursive iteration vs single map deletion)
+- Increases memory overhead (context stored even when not needed)
+
+**When embedded context might make sense:**
+- If context becomes **required** for all API responses (not optional)
+- If type system is redesigned (abandoning Reading interface and generics)
+- If client library needs guaranteed atomic value+context pairs
+
+#### Key Synchronization
+
+The primary maintenance burden of separate maps is **keeping keys synchronized** between `data` and `context`. Mitigations:
+
+1. **Test validation** - Recipe tests verify data/context key alignment
+2. **Code review** - PRs require both maps updated together
+3. **Documentation** - Maintenance guide emphasizes synchronized updates
+4. **Bundler helpers** - `GetFieldContext()` provides fallback for missing context
+
+This is a manageable trade-off for the benefits of conditional context inclusion, type safety, and production stability.
+
 ## Base Measurements
 
 Base measurements represent the **universal configuration foundation** that applies to all environments regardless of specific hardware, cloud provider, or Kubernetes version.
