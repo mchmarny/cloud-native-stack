@@ -34,18 +34,14 @@ runs:
           exit 1
         fi
 
-    - name: Authenticate to GHCR
-      uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef  # v3.6.0
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ github.token }}
+    - name: Authenticate to registry
+      uses: ./.github/actions/ghcr-login
 
-    - name: Install crane
-      shell: bash
-      run: |
-        set -euo pipefail
-        go install github.com/google/go-containerregistry/cmd/crane@${{ inputs.crane_version }}
+    - name: Setup crane
+      uses: ./.github/actions/setup-build-tools
+      with:
+        install_crane: 'true'
+        crane_version: ${{ inputs.crane_version }}
 
     - name: Resolve image digest
       id: digest

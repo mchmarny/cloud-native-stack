@@ -1,0 +1,42 @@
+name: 'Go Build and Release'
+description: 'Setup build tools, authenticate to registry, and run release process'
+
+inputs:
+  registry:
+    description: 'Container registry (e.g. ghcr.io)'
+    required: false
+    default: 'ghcr.io'
+  ko_docker_repo:
+    description: 'KO_DOCKER_REPO environment variable override'
+    required: false
+    default: ''
+
+outputs:
+  release_outcome:
+    description: 'Outcome of the release step (success/failure)'
+    value: ${{ steps.release.outcome }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup build tools
+      uses: ./.github/actions/setup-build-tools
+      with:
+        install_ko: 'true'
+        install_syft: 'true'
+        install_goreleaser: 'true'
+
+    - name: Authenticate to registry
+      uses: ./.github/actions/ghcr-login
+      with:
+        registry: ${{ inputs.registry }}
+
+    - name: Build and Release
+      id: release
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        KO_DOCKER_REPO: ${{ inputs.ko_docker_repo }}
+      run: |
+        set -euo pipefail
+        make release

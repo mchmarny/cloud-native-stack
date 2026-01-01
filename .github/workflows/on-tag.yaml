@@ -38,29 +38,10 @@ jobs:
           golangci_lint_version: '${{ env.GOLANGCI_LINT_VERSION }}'
           upload_codecov: 'false'
 
-      - name: Install ko
-        uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d  # v0.9
-
-      - name: Install Syft
-        uses: anchore/sbom-action/download-syft@43a17d6e7add2b5535efe4dcae9952337c479a93  # v0.20.11
-
-      - name: Authenticate
-        shell: bash
-        run: |
-          echo ${{ secrets.GITHUB_TOKEN }} | ko login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a  # v6.4.0
-        with:
-          install-only: true
-
+      # Build and Release
       - name: Build and Release
         id: release
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          KO_DOCKER_REPO: ''
-        run: make release
+        uses: ./.github/actions/go-build-release
 
       - name: Attest eidos-api-server image
         uses: ./.github/actions/attest-image-from-tag
@@ -78,7 +59,7 @@ jobs:
 
       # Deploy to Cloud Run
       - name: Deploy API to Cloud Run
-        if: steps.release.outcome == 'success'
+        if: steps.release.outputs.release_outcome == 'success'
         uses: ./.github/actions/cloud-run-deploy
         with:
           project_id: ${{ env.PROJECT_ID }}
