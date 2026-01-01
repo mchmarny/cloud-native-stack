@@ -839,7 +839,27 @@ func TestRecipeHandler(t *testing.T) {
 
 ## Build & Deployment
 
-### Build Configuration
+### Automated CI/CD Pipeline
+
+**Production builds** are automated through GitHub Actions workflows. When a semantic version tag is pushed (e.g., `v0.8.10`), the `on-tag.yaml` workflow:
+
+1. **Validates** code with Go CI (tests + linting)
+2. **Builds** multi-platform binaries and container images with GoReleaser and ko
+3. **Generates** SBOMs (SPDX for binaries, CycloneDX for containers)
+4. **Attests** images with SLSA v1.0 provenance and SBOM attestations
+5. **Deploys** to Google Cloud Run with Workload Identity Federation
+
+**Supply Chain Security**:
+- SLSA Build Level 3 compliance
+- Cosign keyless signing with Fulcio + Rekor
+- GitHub Attestation API for provenance
+- Multi-platform builds: darwin/linux × amd64/arm64
+
+For detailed CI/CD architecture, see [../CONTRIBUTING.md#github-actions--cicd](../../CONTRIBUTING.md#github-actions--cicd) and [README.md](README.md#cicd-architecture).
+
+### Local Build Configuration
+
+For local development and testing:
 
 ```makefile
 VERSION ?= $(shell git describe --tags --always --dirty)
@@ -853,10 +873,12 @@ LDFLAGS += -X github.com/NVIDIA/cloud-native-stack/pkg/api.date=$(DATE)
 go build -ldflags="$(LDFLAGS)" -o bin/eidos-api-server ./cmd/eidos-api-server
 ```
 
-### Docker Image
+### Container Image
+
+Production images are built with ko (automated in CI/CD). For local development:
 
 ```dockerfile
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25-alpine AS builder
 WORKDIR /app
 COPY . .
 RUN go build -ldflags="-X github.com/NVIDIA/cloud-native-stack/pkg/api.version=v1.0.0" \
@@ -868,6 +890,8 @@ COPY --from=builder /bin/eidos-api-server /usr/local/bin/
 EXPOSE 8080
 ENTRYPOINT ["eidos-api-server"]
 ```
+
+**Note**: Production images use distroless base (gcr.io/distroless/static) for minimal attack surface.
 
 ### Environment Variables
 

@@ -1275,10 +1275,19 @@ None / Describe any breaking changes
 
 ### Review Process
 
-1. **Automated checks**: CI will run tests, lints, and scans
-2. **Maintainer review**: A maintainer will review your code
-3. **Feedback**: Address any requested changes by pushing new commits
-4. **Approval**: Once approved, a maintainer will merge your PR
+1. **Automated Checks** (GitHub Actions `on-push` workflow):
+   - ✓ Go tests with race detector
+   - ✓ golangci-lint (v2.6)
+   - ✓ Trivy security scan (MEDIUM, HIGH, CRITICAL)
+   - ✓ Code coverage upload to Codecov
+   - Must pass before merge
+2. **Maintainer Review**: A maintainer will review your code for:
+   - Correctness and functionality
+   - Code style and idioms
+   - Test coverage and quality
+   - Documentation completeness
+3. **Feedback**: Address requested changes by pushing new commits
+4. **Approval**: Once approved and CI passes, a maintainer will merge
 5. **Celebration**: Your contribution is now part of the project! 🎉
 
 ### Addressing Feedback
@@ -1308,6 +1317,218 @@ git pull upstream main
 git branch -d feature/your-feature-name
 git push origin --delete feature/your-feature-name
 ```
+
+## GitHub Actions & CI/CD
+
+Cloud Native Stack uses a comprehensive CI/CD pipeline powered by GitHub Actions with a three-layer composite actions architecture.
+
+### CI/CD Workflows
+
+#### on-push.yaml (Continuous Integration)
+
+**Trigger**: Push to `main` branch or pull requests to `main`
+
+**Purpose**: Validate code quality on every commit/PR
+
+**Steps**:
+1. **Checkout Code** - Clone repository with full history
+2. **Go CI Pipeline** - Uses `.github/actions/go-ci` composite action:
+   - Setup Go (version 1.25)
+   - Run tests with coverage
+   - Upload coverage to Codecov (on main branch)
+   - Run golangci-lint (version v2.6)
+3. **Security Scan** - Uses `.github/actions/security-scan` composite action:
+   - Trivy filesystem scan
+   - Check for vulnerabilities (MEDIUM, HIGH, CRITICAL)
+   - Upload SARIF results to GitHub Security tab
+
+**Permissions**:
+- `contents: read` - Read repository files
+- `id-token: write` - OIDC token for attestations
+- `security-events: write` - Upload security scan results
+
+#### on-tag.yaml (Release Pipeline)
+
+**Trigger**: Semantic version tags matching `v[0-9]+.[0-9]+.[0-9]+` (e.g., v0.8.10)
+
+**Purpose**: Build, release, attest, and deploy production artifacts
+
+**Steps**:
+1. **Checkout Code** - Clone tagged release
+2. **Go CI Pipeline** - Validate code before release (tests + lint)
+3. **Build and Release** - Uses `.github/actions/go-build-release` composite action:
+   - Authenticate to GHCR
+   - Install build tools (ko, syft, crane, goreleaser)
+   - Run `make release` (builds binaries + container images)
+   - Generate binary SBOMs (SPDX format via GoReleaser)
+   - Generate container SBOMs (CycloneDX format via Syft)
+   - Publish to GitHub Releases and ghcr.io
+4. **Attest Images** - Uses `.github/actions/attest-image-from-tag` composite action:
+   - Resolve image digest from tag using crane
+   - Generate SBOM attestations (Cosign)
+   - Generate build provenance (GitHub Attestation API)
+   - Sign with Sigstore keyless signing (Fulcio + Rekor)
+   - Achieves **SLSA Build Level 3** compliance
+5. **Deploy to Cloud Run** - Uses `.github/actions/cloud-run-deploy` composite action:
+   - Authenticate using Workload Identity Federation (keyless)
+   - Deploy eidos-api-server to Google Cloud Run
+   - Update service with new image version
+
+**Permissions**:
+- `attestations: write` - Generate attestations
+- `contents: write` - Create GitHub releases
+- `id-token: write` - OIDC authentication
+- `packages: write` - Push to GHCR
+
+### Composite Actions Architecture
+
+Cloud Native Stack uses a **three-layer architecture** for maximum reusability:
+
+#### Layer 1: Primitives (Single-Purpose Building Blocks)
+
+- **ghcr-login** - GHCR authentication with github.token
+- **setup-build-tools** - Modular tool installer (ko, syft, crane, goreleaser)
+- **security-scan** - Trivy vulnerability scanning with SARIF upload
+
+#### Layer 2: Composed Actions (Combine Primitives)
+
+- **go-ci** - Complete Go CI pipeline:
+  - Setup Go environment
+  - Run tests with race detector
+  - Upload coverage to Codecov (optional)
+  - Run golangci-lint
+  
+- **go-build-release** - Full build and release pipeline:
+  - Authenticate to GHCR (uses ghcr-login)
+  - Install build tools (uses setup-build-tools)
+  - Run `make release`
+  - Output: `release_outcome` (success/failure)
+  
+- **attest-image-from-tag** - Resolve digest and generate attestations:
+  - Install crane (uses setup-build-tools)
+  - Authenticate to GHCR (uses ghcr-login)
+  - Resolve digest from tag
+  - Generate SBOM and provenance (uses sbom-and-attest)
+  - Output: `image_digest`
+  
+- **sbom-and-attest** - Generate SBOM and attestations for known digest:
+  - Install syft (uses setup-build-tools)
+  - Generate CycloneDX SBOM
+  - Sign with Cosign (keyless)
+  - Generate GitHub attestation (provenance)
+  
+- **cloud-run-deploy** - Deploy to Google Cloud Run:
+  - Authenticate with Workload Identity Federation
+  - Deploy service with gcloud
+  - Verify deployment
+
+#### Layer 3: Workflows (Orchestrate Actions)
+
+- **on-push.yaml** - CI validation for PRs and main branch
+- **on-tag.yaml** - Release, attestation, and deployment
+
+### Supply Chain Security
+
+All releases include comprehensive supply chain security artifacts:
+
+#### SLSA Build Provenance
+
+- **Level**: SLSA Build Level 3
+- **Format**: SLSA v1.0 attestation
+- **Signing**: GitHub OIDC (keyless)
+- **Transparency**: Rekor transparency log
+- **Contents**:
+  - Build trigger (tag push event)
+  - Builder identity (GitHub Actions workflow)
+  - Source repository and commit SHA
+  - Workflow file path and run ID
+  - Build parameters and environment
+  - Resolved dependencies
+
+#### SBOM Attestations
+
+- **Binary SBOMs**: SPDX v2.3 format (GoReleaser)
+- **Container SBOMs**: CycloneDX JSON format (Syft)
+- **Signing**: Cosign keyless signing (Fulcio + Rekor)
+- **Verification**: `gh attestation verify` or `cosign verify-attestation`
+- **Contents**:
+  - All Go module dependencies
+  - Transitive dependencies
+  - Package licenses (SPDX identifiers)
+  - Package URLs (purl)
+  - Container base image layers
+
+#### Verification
+
+```bash
+# Verify image attestations (GitHub CLI - Recommended)
+gh attestation verify oci://ghcr.io/nvidia/eidos:v0.8.10 --owner nvidia
+
+# Verify with Cosign
+cosign verify-attestation \
+  --type cyclonedx \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp 'https://github.com/NVIDIA/cloud-native-stack/.github/workflows/.*' \
+  ghcr.io/nvidia/eidos:v0.8.10
+```
+
+For complete verification instructions, see [docs/SECURITY.md](docs/SECURITY.md).
+
+### Best Practices
+
+#### For Contributors
+
+1. **Test Locally First**:
+   ```bash
+   make qualify  # Run tests + lint + scan (same as CI)
+   ```
+
+2. **Use Composite Actions**:
+   - Reuse existing actions when possible
+   - Follow single responsibility principle
+   - Document inputs/outputs clearly
+
+3. **Security**:
+   - Pin external actions by SHA, not tag
+   - Use minimal required permissions
+   - Never log secrets or tokens
+   - Use OIDC for cloud authentication (no stored credentials)
+
+4. **Testing Actions**:
+   ```bash
+   # Test locally with act (GitHub Actions runner)
+   act -j validate --secret GITHUB_TOKEN="$GITHUB_TOKEN"
+   ```
+
+#### For Maintainers
+
+1. **Release Process**:
+   ```bash
+   # Create semantic version tag
+   git tag v0.9.0
+   git push origin v0.9.0
+   
+   # GitHub Actions automatically:
+   # 1. Runs tests and lints
+   # 2. Builds binaries and images
+   # 3. Generates SBOMs and attestations
+   # 4. Publishes to GitHub Releases and GHCR
+   # 5. Deploys to Cloud Run
+   ```
+
+2. **Monitoring**:
+   - Check GitHub Actions tab for workflow status
+   - Review Security tab for vulnerability scan results
+   - Monitor Cloud Run deployment health
+   - Verify attestations after release
+
+3. **Troubleshooting**:
+   - Enable debug logging: Set `ACTIONS_STEP_DEBUG=true` in repo secrets
+   - Re-run failed jobs from GitHub Actions UI
+   - Check composite action logs for detailed errors
+   - Verify OIDC token claims for authentication issues
+
+For detailed GitHub Actions architecture documentation, see [.github/actions/README.md](.github/actions/README.md).
 
 ## Developer Certificate of Origin
 

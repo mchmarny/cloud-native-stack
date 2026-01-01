@@ -433,7 +433,8 @@ iommu.passthrough=1
 **Integration Documentation:**
 - ✅ REST API reference with examples in 4 languages (cURL, Python, Go, JavaScript)
 - ✅ Data flow architecture explaining all three stages
-- ✅ CI/CD integration patterns (GitHub Actions, GitLab CI, CircleCI)
+- ✅ CI/CD integration with GitHub Actions (composite actions, SLSA attestations, supply chain security)
+- ✅ Workflow patterns for drift detection, automated validation, and policy enforcement
 - ✅ Terraform modules and Kubernetes operator integration patterns
 - ✅ Self-hosted API server deployment guide with HA configuration
 - ✅ Automation guide with drift detection and multi-cluster management

@@ -929,6 +929,133 @@ func TestBundler_Make(t *testing.T) {
 - Signature verification (cosign, GPG)
 - Registry push/pull for bundle artifacts
 
+## CI/CD Architecture
+
+Cloud Native Stack uses GitHub Actions with a three-layer composite actions architecture for continuous integration, release automation, and supply chain security.
+
+### Continuous Integration (on-push.yaml)
+
+**Trigger**: Every push to `main` or pull request
+
+**Pipeline**:
+```
+Checkout → Go CI (Setup + Test + Lint) → Security Scan → Upload Results
+```
+
+**Components**:
+- **go-ci** composite action: Go setup (1.25), tests with race detector, golangci-lint (v2.6), Codecov upload
+- **security-scan** composite action: Trivy vulnerability scanning (MEDIUM+), SARIF upload to Security tab
+
+**Permissions**: `contents: read`, `id-token: write`, `security-events: write`
+
+### Release Automation (on-tag.yaml)
+
+**Trigger**: Semantic version tags (e.g., `v0.8.10`)
+
+**Pipeline**:
+```
+Checkout → Validate (Go CI) → Build & Release → Attest Images → Deploy
+```
+
+**Build & Release** (`go-build-release` action):
+- Authenticate to GHCR (keyless with github.token)
+- Install tools: ko (container images), syft (SBOMs), crane (digest resolution), goreleaser (binaries)
+- Execute `make release`:
+  - Build multi-platform binaries (darwin/linux, amd64/arm64)
+  - Build container images (eidos, eidos-api-server) with ko
+  - Generate binary SBOMs (SPDX v2.3 format)
+  - Generate container SBOMs (CycloneDX JSON format)
+- Publish to GitHub Releases and ghcr.io
+
+**Image Attestation** (`attest-image-from-tag` action):
+- Resolve image digest from tag using crane
+- Generate SBOM attestations (Cosign keyless signing)
+- Generate SLSA v1.0 build provenance (GitHub Attestation API)
+- Record in Rekor transparency log (Sigstore)
+- Achieves **SLSA Build Level 3** compliance
+
+**Deployment** (`cloud-run-deploy` action):
+- Authenticate with Workload Identity Federation (keyless)
+- Deploy eidos-api-server to Google Cloud Run
+- Update service with new image version
+
+**Permissions**: `attestations: write`, `contents: write`, `id-token: write`, `packages: write`
+
+### Composite Actions Architecture
+
+**Three-Layer Design**:
+
+1. **Primitives** (Single-purpose building blocks):
+   - `ghcr-login`: GHCR authentication
+   - `setup-build-tools`: Modular tool installation
+   - `security-scan`: Trivy vulnerability scanning
+
+2. **Composed Actions** (Combine primitives):
+   - `go-ci`: Complete Go CI pipeline (setup → test → lint)
+   - `go-build-release`: Full build/release (auth → tools → build → publish)
+   - `attest-image-from-tag`: Digest resolution + attestation generation
+   - `sbom-and-attest`: SBOM generation + signing
+   - `cloud-run-deploy`: GCP deployment with WIF
+
+3. **Workflows** (Orchestrate actions):
+   - `on-push.yaml`: CI validation
+   - `on-tag.yaml`: Release, attestation, deployment
+
+**Benefits**:
+- **Reusability**: Actions shared across workflows
+- **Testability**: Primitives testable in isolation
+- **Maintainability**: Single source of truth for common operations
+- **Composability**: Build complex workflows from simple actions
+
+### Supply Chain Security
+
+**SLSA Build Level 3 Compliance**:
+- ✅ Build as Code (GitHub Actions workflows)
+- ✅ Provenance Available (attestations for all releases)
+- ✅ Provenance Authenticated (Sigstore keyless signing)
+- ✅ Service Generated (GitHub Actions, not self-asserted)
+- ✅ Non-falsifiable (OIDC strong authentication)
+- ✅ Dependencies Complete (full SBOM with transitive deps)
+
+**Attestation Types**:
+
+1. **Build Provenance** (SLSA v1.0):
+   - Build trigger (tag push)
+   - Builder identity (GitHub Actions workflow + runner)
+   - Source commit SHA
+   - Build parameters and environment
+   - Resolved dependencies
+
+2. **SBOM Attestations**:
+   - **Binary**: SPDX v2.3 (GoReleaser + Syft)
+   - **Container**: CycloneDX JSON (Syft)
+   - All Go modules with transitive dependencies
+   - Package licenses (SPDX identifiers)
+   - Package URLs (purl)
+
+**Verification**:
+```bash
+# Verify image attestations
+gh attestation verify oci://ghcr.io/nvidia/eidos:v0.8.10 --owner nvidia
+
+# Verify with Cosign
+cosign verify-attestation \
+  --type cyclonedx \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp 'https://github.com/NVIDIA/cloud-native-stack/.github/workflows/.*' \
+  ghcr.io/nvidia/eidos:v0.8.10
+```
+
+**Transparency**:
+- All builds logged in Rekor (public transparency log)
+- Build logs publicly accessible on GitHub Actions
+- Source code in public repository
+- Attestations queryable via `rekor-cli`
+
+For detailed CI/CD documentation, see [../.github/actions/README.md](../.github/actions/README.md) and [CONTRIBUTING.md](../../CONTRIBUTING.md#github-actions--cicd).
+
+For supply chain security verification, see [../SECURITY.md](../SECURITY.md).
+
 ## References and Further Reading
 
 ### Official Go Documentation
