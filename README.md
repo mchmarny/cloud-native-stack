@@ -63,7 +63,11 @@ Integrate Cloud Native Stack into your infrastructure automation:
 
 ### Additional Resources
 
-The manual installation guides for platform-specific deployment and optimization guides:
+Planning and reference documentation:
+
+- **[Project Roadmap](ROADMAP.md)** – Feature priorities and development timeline
+
+Platform-specific installation guides and optimizations:
 
 - **[Installation Guides](docs/v1/install-guides)** – Step-by-step setup for various platforms
 - **[Playbooks](docs/v1/playbooks)** – Ansible automation for CNS deployment

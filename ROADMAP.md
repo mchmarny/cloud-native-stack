@@ -2,17 +2,17 @@
 
 > **Project Mission**: Deliver production-grade, validated GPU-accelerated Kubernetes configurations through opinionated, battle-tested blueprints that ensure reproducible deployments across diverse platforms.
 
-This roadmap organizes feature development by priority (P0-P3) and time horizon (Now, Next, Later), using agile story format with clear acceptance criteria.
+> This is only a draft document, does not represent the official roadmap of this project until fully reviewed. 
 
 ## Table of Contents
 
-- [P0: Critical (Next Release - Blocking adoption, major user pain points, security issues)](#p0-critical)
-- [P1: High Priority (Important features that must land before launch)](#p1-high-priority)
-- [P2: Medium Priority (Backlog)](#p2-medium-priority)
+- [Next Release - Blocking adoption, major user pain points, security issues](#next-release)
+- [High Priority - Important features that must land before launch](#launch-blockers)
+- [Backlog](#backlog)
 
 ---
 
-## P0: Critical
+## Next Release
 
 ### PVC-Based Agent Output
 
@@ -58,6 +58,8 @@ This roadmap organizes feature development by priority (P0-P3) and time horizon 
 
 ---
 
+## Launch Blockers
+
 ### Differential Snapshots & Drift Detection
 
 **User Story**: As a compliance officer, I want to detect configuration drift between clusters, so I can ensure consistency across environments and catch unauthorized changes.
@@ -69,21 +71,6 @@ This roadmap organizes feature development by priority (P0-P3) and time horizon 
 - [ ] Exit code: 0=identical, 1=drifted
 - [ ] Integration examples for CI/CD drift detection
 - [ ] Ignore rules for expected differences (timestamps, unique IDs)
-
----
-
-## P1: High Priority
-
-### Long-Running Agent for Drift Detection
-
-**User Story**: As a compliance team, I want a persistent agent detecting configuration drift, so I get real-time alerts without manual polling.
-
-**Acceptance Criteria**:
-- [ ] DaemonSet deployment mode
-- [ ] Periodic snapshot collection (configurable interval)
-- [ ] Baseline comparison with diff algorithm
-- [ ] Webhook notifications on drift
-- [ ] Prometheus metrics for drift events
 
 ---
 
@@ -149,19 +136,6 @@ This roadmap organizes feature development by priority (P0-P3) and time horizon 
 
 ---
 
-### Measurement Filtering
-
-**User Story**: As a developer, I want to capture only specific measurement types, so I can reduce snapshot size and collection time for targeted use cases.
-
-**Acceptance Criteria**:
-- [ ] `eidos snapshot --filter gpu,os` includes only specified types
-- [ ] `eidos snapshot --exclude k8s` excludes specific types
-- [ ] Validation: error on unknown type names
-- [ ] Performance: skip excluded collectors entirely (not post-filter)
-- [ ] Documentation: common filter patterns (GPU-only, K8s-only, etc.)
-
----
-
 ### Schema Validation
 
 **User Story**: As a CI/CD pipeline developer, I want to validate snapshots against API version schemas, so I can catch malformed data before downstream processing.
@@ -173,6 +147,8 @@ This roadmap organizes feature development by priority (P0-P3) and time horizon 
 - [ ] Validation errors with line numbers and paths
 - [ ] Exit code: 0=valid, 1=invalid
 - [ ] CI/CD integration examples
+
+## Backlog
 
 ---
 
@@ -190,7 +166,18 @@ This roadmap organizes feature development by priority (P0-P3) and time horizon 
 
 ---
 
-## P2: Medium Priority
+### Measurement Filtering
+
+**User Story**: As a developer, I want to capture only specific measurement types, so I can reduce snapshot size and collection time for targeted use cases.
+
+**Acceptance Criteria**:
+- [ ] `eidos snapshot --filter gpu,os` includes only specified types
+- [ ] `eidos snapshot --exclude k8s` excludes specific types
+- [ ] Validation: error on unknown type names
+- [ ] Performance: skip excluded collectors entirely (not post-filter)
+- [ ] Documentation: common filter patterns (GPU-only, K8s-only, etc.)
+
+---
 
 ### Configuration Files
 
@@ -380,4 +367,4 @@ This roadmap organizes feature development by priority (P0-P3) and time horizon 
 
 ## Revision History
 
-- **2026-01-01**: Initial comprehensive roadmap based on project objectives and gap analysis 
+- **2025-01-01**: Initial comprehensive roadmap based on project objectives and gap analysis 
