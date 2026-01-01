@@ -50,14 +50,39 @@ Check job status:
 kubectl get jobs -n gpu-operator
 ```
 
-Retrieve snapshot:
+The agent exports files to `/export/` directory inside the pod. Download them using:
+
 ```shell
-kubectl logs -n gpu-operator job/eidos
+# Get pod name
+POD_NAME=$(kubectl get pods -n gpu-operator -l app.kubernetes.io/name=eidos -o jsonpath='{.items[0].metadata.name}')
+
+# Download snapshot
+kubectl cp gpu-operator/${POD_NAME}:/export/snapshot.yaml ./snapshot.yaml
+
+# Download recipe (if generated)
+kubectl cp gpu-operator/${POD_NAME}:/export/recipe.yaml ./recipe.yaml
 ```
 
-Save snapshot to file:
+**One-liner download:**
 ```shell
+kubectl cp gpu-operator/$(kubectl get pods -n gpu-operator -l app.kubernetes.io/name=eidos -o jsonpath='{.items[0].metadata.name}'):/export/snapshot.yaml ./snapshot.yaml
+```
+
+**Alternative: View via logs**
+
+If you prefer to view output in stdout:
+```shell
+# View logs
+kubectl logs -n gpu-operator job/eidos
+
+# Save to file
 kubectl logs -n gpu-operator job/eidos > snapshot.yaml
+```
+
+**Verify downloaded files:**
+```shell
+ls -lh snapshot.yaml recipe.yaml
+head -n 20 snapshot.yaml
 ```
 
 ## Customization
