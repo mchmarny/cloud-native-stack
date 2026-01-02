@@ -1361,7 +1361,7 @@ Cloud Native Stack uses a comprehensive CI/CD pipeline powered by GitHub Actions
    - Install build tools (ko, syft, crane, goreleaser)
    - Run `make release` (builds binaries + container images)
    - Generate binary SBOMs (SPDX format via GoReleaser)
-   - Generate container SBOMs (CycloneDX format via Syft)
+   - Generate container SBOMs (SPDX format via Syft)
    - Publish to GitHub Releases and ghcr.io
 4. **Attest Images** - Uses `.github/actions/attest-image-from-tag` composite action:
    - Resolve image digest from tag using crane
@@ -1413,7 +1413,7 @@ Cloud Native Stack uses a **three-layer architecture** for maximum reusability:
   
 - **sbom-and-attest** - Generate SBOM and attestations for known digest:
   - Install syft (uses setup-build-tools)
-  - Generate CycloneDX SBOM
+  - Generate SPDX SBOM
   - Sign with Cosign (keyless)
   - Generate GitHub attestation (provenance)
   
@@ -1448,7 +1448,7 @@ All releases include comprehensive supply chain security artifacts:
 #### SBOM Attestations
 
 - **Binary SBOMs**: SPDX v2.3 format (GoReleaser)
-- **Container SBOMs**: CycloneDX JSON format (Syft)
+- **Container SBOMs**: SPDX JSON format (Syft)
 - **Signing**: Cosign keyless signing (Fulcio + Rekor)
 - **Verification**: `gh attestation verify` or `cosign verify-attestation`
 - **Contents**:
@@ -1466,7 +1466,7 @@ gh attestation verify oci://ghcr.io/nvidia/eidos:v0.8.10 --owner nvidia
 
 # Verify with Cosign
 cosign verify-attestation \
-  --type cyclonedx \
+  --type spdxjson \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-identity-regexp 'https://github.com/NVIDIA/cloud-native-stack/.github/workflows/.*' \
   ghcr.io/nvidia/eidos:v0.8.10

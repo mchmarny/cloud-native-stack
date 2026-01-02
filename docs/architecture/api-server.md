@@ -845,7 +845,7 @@ func TestRecipeHandler(t *testing.T) {
 
 1. **Validates** code with Go CI (tests + linting)
 2. **Builds** multi-platform binaries and container images with GoReleaser and ko
-3. **Generates** SBOMs (SPDX for binaries, CycloneDX for containers)
+3. **Generates** SBOMs (SPDX for binaries and for containers)
 4. **Attests** images with SLSA v1.0 provenance and SBOM attestations
 5. **Deploys** to Google Cloud Run with Workload Identity Federation
 

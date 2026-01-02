@@ -964,7 +964,7 @@ Checkout → Validate (Go CI) → Build & Release → Attest Images → Deploy
   - Build multi-platform binaries (darwin/linux, amd64/arm64)
   - Build container images (eidos, eidos-api-server) with ko
   - Generate binary SBOMs (SPDX v2.3 format)
-  - Generate container SBOMs (CycloneDX JSON format)
+  - Generate container SBOMs (SPDX JSON format)
 - Publish to GitHub Releases and ghcr.io
 
 **Image Attestation** (`attest-image-from-tag` action):
@@ -1028,7 +1028,7 @@ Checkout → Validate (Go CI) → Build & Release → Attest Images → Deploy
 
 2. **SBOM Attestations**:
    - **Binary**: SPDX v2.3 (GoReleaser + Syft)
-   - **Container**: CycloneDX JSON (Syft)
+   - **Container**: SPDX JSON (Syft)
    - All Go modules with transitive dependencies
    - Package licenses (SPDX identifiers)
    - Package URLs (purl)
@@ -1040,7 +1040,7 @@ gh attestation verify oci://ghcr.io/nvidia/eidos:v0.8.10 --owner nvidia
 
 # Verify with Cosign
 cosign verify-attestation \
-  --type cyclonedx \
+  --type spdxjson \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-identity-regexp 'https://github.com/NVIDIA/cloud-native-stack/.github/workflows/.*' \
   ghcr.io/nvidia/eidos:v0.8.10

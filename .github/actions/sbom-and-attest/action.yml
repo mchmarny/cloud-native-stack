@@ -41,8 +41,8 @@ runs:
       uses: anchore/sbom-action@8e94d75ddd33f69f691467e42275782e4bfefe84  # v0.20.9
       with:
         image: "${{ inputs.image_name }}@${{ inputs.image_digest }}"
-        format: cyclonedx-json
-        output-file: sbom-${{ steps.name.outputs.safe }}.cdx.json
+        format: spdx-json
+        output-file: sbom-${{ steps.name.outputs.safe }}.spdx.json
         upload-artifact: true
         upload-release-assets: auto
 
@@ -51,7 +51,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        SBOM_FILE="sbom-${{ steps.name.outputs.safe }}.cdx.json"
+        SBOM_FILE="sbom-${{ steps.name.outputs.safe }}.spdx.json"
         if [ ! -f "$SBOM_FILE" ]; then
           echo "::error::SBOM file not found: $SBOM_FILE"
           exit 1
@@ -68,7 +68,7 @@ runs:
         cosign attest \
           --yes \
           --predicate "${{ steps.find-sbom.outputs.sbom_file }}" \
-          --type cyclonedx \
+          --type spdxjson \
           "${{ inputs.image_name }}@${{ inputs.image_digest }}"
 
     - name: Attest build provenance

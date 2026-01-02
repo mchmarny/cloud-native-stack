@@ -316,7 +316,7 @@ jobs:
 **Attestation/SBOM:**
 - Cosign uses keyless signing (Sigstore)
 - GitHub's attestation API for provenance
-- SBOM generated with Syft (CycloneDX format)
+- SBOM generated with Syft (SPDX format)
 
 ### Security Best Practices
 
