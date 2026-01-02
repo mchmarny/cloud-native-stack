@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # GPU Operator Uninstallation Script
 # Generated from Cloud Native Stack Recipe
-# Timestamp: 2026-01-01T15:36:50Z
-# Bundler Version: v0.8.9-next
-# Recipe Bundler Version: v0.8.9-next
+# Timestamp: 2026-01-02T18:02:58Z
+# Bundler Version: 0.8.12
+# Recipe Bundler Version: 0.8.12
 
 set -euo pipefail
 

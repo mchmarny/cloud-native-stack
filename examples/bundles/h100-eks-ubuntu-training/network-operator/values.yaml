@@ -1,8 +1,8 @@
 # Network Operator Helm Values
 # Generated from Cloud Native Stack Recipe
-# Timestamp: 2026-01-01T15:40:37Z
-# Bundler Version: v0.8.9-next
-# Recipe Bundler Version: v0.8.9-next
+# Timestamp: 2026-01-02T18:01:22Z
+# Bundler Version: 0.8.12
+# Recipe Bundler Version: 0.8.12
 
 operator:
   # Override from bundler configuration

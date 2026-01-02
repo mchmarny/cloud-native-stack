@@ -841,7 +841,7 @@ func TestRecipeHandler(t *testing.T) {
 
 ### Automated CI/CD Pipeline
 
-**Production builds** are automated through GitHub Actions workflows. When a semantic version tag is pushed (e.g., `v0.8.11`), the `on-tag.yaml` workflow:
+**Production builds** are automated through GitHub Actions workflows. When a semantic version tag is pushed (e.g., `v0.8.12`), the `on-tag.yaml` workflow:
 
 1. **Validates** code with Go CI (tests + linting)
 2. **Builds** multi-platform binaries and container images with GoReleaser and ko
@@ -1191,7 +1191,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: api-server
-        image: ghcr.io/nvidia/eidos-api-server:latest  # Or use specific tag like v0.8.11
+        image: ghcr.io/nvidia/eidos-api-server:latest  # Or use specific tag like v0.8.12
         ports:
         - name: http
           containerPort: 8080

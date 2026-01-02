@@ -215,7 +215,7 @@ cat eidos_${VERSION}_${OS}_${ARCH}.sbom.json
     {
       "name": "github.com/NVIDIA/cloud-native-stack",
       "SPDXID": "SPDXRef-Package-go-module-github.com-NVIDIA-cloud-native-stack-f06a66ba03567417",
-      "versionInfo": "v0.8.11",  // Example version - actual version varies by release
+      "versionInfo": "v0.8.12",  // Example version - actual version varies by release
       "supplier": "NOASSERTION",
       "downloadLocation": "NOASSERTION",
       "filesAnalyzed": false,
@@ -227,17 +227,17 @@ cat eidos_${VERSION}_${OS}_${ARCH}.sbom.json
         {
           "referenceCategory": "SECURITY",
           "referenceType": "cpe23Type",
-          "referenceLocator": "cpe:2.3:a:NVIDIA:cloud-native-stack:v0.8.11:*:*:*:*:*:*:*"  // Example CPE
+          "referenceLocator": "cpe:2.3:a:NVIDIA:cloud-native-stack:v0.8.12:*:*:*:*:*:*:*"  // Example CPE
         },
         {
           "referenceCategory": "SECURITY",
           "referenceType": "cpe23Type",
-          "referenceLocator": "cpe:2.3:a:NVIDIA:cloud_native_stack:v0.8.11:*:*:*:*:*:*:*"  // Example CPE
+          "referenceLocator": "cpe:2.3:a:NVIDIA:cloud_native_stack:v0.8.12:*:*:*:*:*:*:*"  // Example CPE
         },
         {
           "referenceCategory": "PACKAGE-MANAGER",
           "referenceType": "purl",
-          "referenceLocator": "pkg:golang/github.com/NVIDIA/cloud-native-stack@v0.8.11"  // Example purl
+          "referenceLocator": "pkg:golang/github.com/NVIDIA/cloud-native-stack@v0.8.12"  // Example purl
         }
       ]
     },
@@ -289,7 +289,7 @@ gh attestation verify oci://${IMAGE_DIGEST} --owner mchmarny --format json
     {
       "name": "github.com/NVIDIA/cloud-native-stack",
       "SPDXID": "SPDXRef-Package-go-module-github.com-NVIDIA-cloud-native-stack-f06a66ba03567417",
-      "versionInfo": "v0.8.11",  // Example version - actual version varies by release
+      "versionInfo": "v0.8.12",  // Example version - actual version varies by release
       ...
 ```
 
@@ -383,23 +383,23 @@ gh attestation verify oci://${IMAGE_DIGEST} \
     "signature": {
       "certificate": {
         "certificateIssuer": "CN=sigstore-intermediate,O=sigstore.dev",
-        "subjectAlternativeName": "https://github.com/mchmarny/cloud-native-stack/.github/workflows/on-tag.yaml@refs/tags/v0.8.11",
+        "subjectAlternativeName": "https://github.com/mchmarny/cloud-native-stack/.github/workflows/on-tag.yaml@refs/tags/v0.8.12",
         "issuer": "https://token.actions.githubusercontent.com",
         "githubWorkflowTrigger": "push",
         "githubWorkflowSHA": "ba6cbbe8b1a8fc8b72bb18454c10a3ba31d94a2e",
         "githubWorkflowName": "on_tag",
         "githubWorkflowRepository": "mchmarny/cloud-native-stack",
-        "githubWorkflowRef": "refs/tags/v0.8.11",
-        "buildSignerURI": "https://github.com/mchmarny/cloud-native-stack/.github/workflows/on-tag.yaml@refs/tags/v0.8.11",
+        "githubWorkflowRef": "refs/tags/v0.8.12",
+        "buildSignerURI": "https://github.com/mchmarny/cloud-native-stack/.github/workflows/on-tag.yaml@refs/tags/v0.8.12",
         "buildSignerDigest": "ba6cbbe8b1a8fc8b72bb18454c10a3ba31d94a2e",
         "runnerEnvironment": "github-hosted",
         "sourceRepositoryURI": "https://github.com/mchmarny/cloud-native-stack",
         "sourceRepositoryDigest": "ba6cbbe8b1a8fc8b72bb18454c10a3ba31d94a2e",
-        "sourceRepositoryRef": "refs/tags/v0.8.11",
+        "sourceRepositoryRef": "refs/tags/v0.8.12",
         "sourceRepositoryIdentifier": "1095163471",
         "sourceRepositoryOwnerURI": "https://github.com/mchmarny",
         "sourceRepositoryOwnerIdentifier": "175854",
-        "buildConfigURI": "https://github.com/mchmarny/cloud-native-stack/.github/workflows/on-tag.yaml@refs/tags/v0.8.11",
+        "buildConfigURI": "https://github.com/mchmarny/cloud-native-stack/.github/workflows/on-tag.yaml@refs/tags/v0.8.12",
         "buildConfigDigest": "ba6cbbe8b1a8fc8b72bb18454c10a3ba31d94a2e",
         "buildTrigger": "push",
         "runInvocationURI": "https://github.com/mchmarny/cloud-native-stack/actions/runs/20642050863/attempts/1",
@@ -512,7 +512,7 @@ gh run view 20642050863 --repo mchmarny/cloud-native-stack --log
 
 ```shell
 # Search Rekor for attestations
-rekor-cli search --artifact ghcr.io/mchmarny/eidos:v0.8.11
+rekor-cli search --artifact ghcr.io/mchmarny/eidos:v0.8.12
 
 # Get entry details
 rekor-cli get --uuid <entry-uuid>

@@ -1,8 +1,8 @@
 kind: Recipe
 apiVersion: recipe.dgxc.io/v1
 metadata:
-  recipe-timestamp: "2026-01-01T15:38:46Z"
-  recipe-version: v0.8.9-next
+  recipe-timestamp: "2026-01-02T18:01:22Z"
+  recipe-version: 0.8.12
 request:
   os: ubuntu
   osv:

@@ -43,9 +43,9 @@ jobs:
         run: |
           kubectl wait --for=condition=complete --timeout=300s job/eidos -n gpu-operator
       
-      - name: Capture snapshot
+      - name: Capture snapshot from ConfigMap
         run: |
-          kubectl logs -n gpu-operator job/eidos > snapshot-$(date +%Y%m%d-%H%M%S).yaml
+          kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot-$(date +%Y%m%d-%H%M%S).yaml
       
       - name: Compare with baseline
         run: |
@@ -86,7 +86,7 @@ capture_snapshot:
   script:
     - kubectl apply -f deployments/eidos-agent/2-job.yaml
     - kubectl wait --for=condition=complete job/eidos -n gpu-operator
-    - kubectl logs -n gpu-operator job/eidos > snapshot.yaml
+    - kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
   artifacts:
     paths:
       - snapshot.yaml
@@ -95,7 +95,10 @@ generate_recipe:
   stage: recipe
   image: ghcr.io/mchmarny/eidos:latest
   script:
-    - eidos recipe --snapshot snapshot.yaml --intent training --output recipe.yaml
+    # Option 1: Use ConfigMap directly (no artifact needed)
+    - eidos recipe -f cm://gpu-operator/eidos-snapshot --intent training -o recipe.yaml
+    # Option 2: Use snapshot file from previous stage
+    # - eidos recipe --snapshot snapshot.yaml --intent training --output recipe.yaml
   artifacts:
     paths:
       - recipe.yaml
@@ -221,13 +224,13 @@ for cluster_config in "${CLUSTERS[@]}"; do
   # Capture snapshot
   kubectl apply -f deployments/eidos-agent/2-job.yaml
   kubectl wait --for=condition=complete --timeout=300s job/eidos -n gpu-operator
-  kubectl logs -n gpu-operator job/eidos > "snapshot-${CLUSTER}.yaml"
+  kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > "snapshot-${CLUSTER}.yaml"
   
-  # Generate recipe
-  eidos recipe \
-    --snapshot "snapshot-${CLUSTER}.yaml" \
-    --intent training \
-    --output "recipe-${CLUSTER}.yaml"
+  # Generate recipe (can use ConfigMap directly or file)
+  # Option 1: Use ConfigMap
+  eidos recipe -f "cm://gpu-operator/eidos-snapshot" --intent training -o "recipe-${CLUSTER}.yaml"
+  # Option 2: Use saved file
+  # eidos recipe --snapshot "snapshot-${CLUSTER}.yaml" --intent training --output "recipe-${CLUSTER}.yaml"
   
   # Create bundle
   eidos bundle \
@@ -270,27 +273,28 @@ resource "kubectl_manifest" "eidos_job" {
   depends_on = [kubectl_manifest.eidos_deps]
 }
 
-# Wait for job completion
+# Wait for job completion and get snapshot from ConfigMap
 resource "null_resource" "wait_for_snapshot" {
   provisioner "local-exec" {
     command = <<-EOT
       kubectl wait --for=condition=complete \
         --timeout=300s job/eidos -n gpu-operator
-      kubectl logs -n gpu-operator job/eidos > ${var.snapshot_output}
+      kubectl get configmap eidos-snapshot -n gpu-operator \
+        -o jsonpath='{.data.snapshot\.yaml}' > ${var.snapshot_output}
     EOT
   }
   
   depends_on = [kubectl_manifest.eidos_job]
 }
 
-# Generate recipe
+# Generate recipe (can use ConfigMap directly)
 resource "null_resource" "generate_recipe" {
   provisioner "local-exec" {
     command = <<-EOT
       eidos recipe \
-        --snapshot ${var.snapshot_output} \
+        -f cm://gpu-operator/eidos-snapshot \
         --intent ${var.workload_intent} \
-        --output ${var.recipe_output}
+        -o ${var.recipe_output}
     EOT
   }
   
@@ -435,7 +439,7 @@ func (r *ConfigReconciler) waitForJob(ctx context.Context) error {
 }
 
 func (r *ConfigReconciler) getSnapshot(ctx context.Context) (string, error) {
-    // Retrieve snapshot from job logs
+    // Retrieve snapshot from ConfigMap
     return "", nil
 }
 
@@ -614,8 +618,8 @@ CLUSTER="prod-us-east-1"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 OUTPUT="snapshot-${CLUSTER}-${TIMESTAMP}.yaml"
 
-# Capture snapshot
-kubectl logs -n gpu-operator job/eidos > "$OUTPUT"
+# Capture snapshot from ConfigMap
+kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > "$OUTPUT"
 
 # Add metadata
 cat << EOF > "${OUTPUT}.meta"

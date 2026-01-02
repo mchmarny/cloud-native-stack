@@ -721,12 +721,44 @@ kubectl apply -f deployments/eidos-agent/2-job.yaml
 # Update job image for testing
 kubectl set image job/eidos -n gpu-operator eidos=<local-image>
 
-# Check logs
+# Check status and logs
 kubectl get jobs -n gpu-operator
-kubectl logs -n gpu-operator job/eidos -f
+kubectl logs -n gpu-operator job/eidos
 
-# Get snapshot output
-kubectl logs -n gpu-operator job/eidos > snapshot.yaml
+# Get snapshot from ConfigMap
+kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
+
+# Verify ConfigMap was created
+kubectl get configmap eidos-snapshot -n gpu-operator -o yaml
+```
+
+### End-to-End Testing
+
+The `tools/e2e` script validates the complete ConfigMap workflow:
+
+```bash
+# Run full E2E test (snapshot → recipe → bundle)
+./tools/e2e -s examples/snapshots/h100.yaml \
+           -r examples/recipes/h100-eks-ubuntu-training.yaml \
+           -b examples/bundles/h100-eks-ubuntu-training
+
+# Just capture snapshot
+./tools/e2e -s snapshot.yaml
+
+# Generate recipe from ConfigMap
+./tools/e2e -r recipe.yaml
+
+# Get help
+./tools/e2e --help
+```
+
+The e2e script:
+1. Deploys agent Job to cluster
+2. Waits for snapshot to be written to ConfigMap
+3. Optionally saves snapshot to file
+4. Optionally generates recipe using `cm://gpu-operator/eidos-snapshot`
+5. Optionally generates bundle from recipe
+6. Validates each step completes successfully
 ```
 
 ### Adding a New Bundler
@@ -1371,7 +1403,7 @@ Cloud Native Stack uses a comprehensive CI/CD pipeline powered by GitHub Actions
 
 #### on-tag.yaml (Release Pipeline)
 
-**Trigger**: Semantic version tags matching `v[0-9]+.[0-9]+.[0-9]+` (e.g., v0.8.11)
+**Trigger**: Semantic version tags matching `v[0-9]+.[0-9]+.[0-9]+` (e.g., v0.8.12)
 
 **Purpose**: Build, release, attest, and deploy production artifacts
 

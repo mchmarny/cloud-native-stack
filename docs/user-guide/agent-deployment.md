@@ -263,9 +263,17 @@ Retrieve historical snapshots:
 # List completed jobs
 kubectl get jobs -n gpu-operator -l job-name=eidos-snapshot
 
-# Get snapshot from specific job
+# Get latest snapshot from ConfigMap (updated by most recent job)
+kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > latest-snapshot.yaml
+
+# Check ConfigMap update timestamp
+kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.metadata.creationTimestamp}'
+
+# View job logs for debugging (if needed)
 kubectl logs -n gpu-operator job/eidos-snapshot-28405680
 ```
+
+**Note**: The ConfigMap `eidos-snapshot` is updated by each CronJob run. For historical tracking, save snapshots to external storage (S3, Git, etc.) using a post-job step.
 
 ## Post-Deployment
 

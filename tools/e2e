@@ -6,17 +6,67 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "${DIR}/common"
 ROOT=$(dirname "${DIR}")
 
-SNAPSHOT_PATH="${1:-"examples/snapshots/gb200.yaml"}"
-RECIPE_PATH="${2:-"examples/recipes/gb200-eks-ubuntu-training.yaml"}"
+# Default values
+SNAPSHOT_PATH=""
+RECIPE_PATH=""
+BUNDLE_PATH=""
 DEPLOYMENT_URL="https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/deployments"
 
+
+# Parse flags
+usage() {
+  echo "Usage: $0 [OPTIONS]"
+  echo ""
+  echo "Options:"
+  echo "  -s, --snapshot PATH   Snapshot file path (optional, saves snapshot to file)"
+  echo "  -r, --recipe PATH     Recipe file path (optional, saves recipe to file)"
+  echo "  -b, --bundle PATH     Bundle output directory (optional, generates bundle)"
+  echo "  -h, --help            Show this help message"
+  echo ""
+  echo "Examples:"
+  echo "$0 -s examples/snapshots/h100.yaml -r examples/recipes/h100-eks-ubuntu-training.yaml -b examples/bundles/h100-eks-ubuntu-training"
+  echo "$0 -s examples/snapshots/gb200.yaml -r examples/recipes/gb200-eks-ubuntu-training.yaml -b examples/bundles/gb200-eks-ubuntu-training"
+  exit 0
+}
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -s|--snapshot)
+      SNAPSHOT_PATH="$2"
+      shift 2
+      ;;
+    -r|--recipe)
+      RECIPE_PATH="$2"
+      shift 2
+      ;;
+    -b|--bundle)
+      BUNDLE_PATH="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      ;;
+    *)
+      err "Unknown option: $1"
+      usage
+      ;;
+  esac
+done
+
 # Check if required tools are installed
-has_tools kubectl
+has_tools kubectl eidos
 
 # Print debug info 
 msg "Starting E2E test for Eidos Agent..."
-msg "Using snapshot path: ${SNAPSHOT_PATH}"
-msg "Using recipe path: ${RECIPE_PATH}"
+if [ -n "$SNAPSHOT_PATH" ]; then
+  msg "Using snapshot path: ${SNAPSHOT_PATH}"
+fi
+if [ -n "$RECIPE_PATH" ]; then
+  msg "Using recipe path: ${RECIPE_PATH}"
+fi
+if [ -n "$BUNDLE_PATH" ]; then
+  msg "Using bundle path: ${BUNDLE_PATH}"
+fi
 
 # Clean up any previous deployments (ignore errors if resources don't exist)
 msg "Cleaning up previous deployments..."
@@ -66,9 +116,26 @@ if [ -n "$RECIPE_PATH" ]; then
     err "Recipe file was not created at ${RECIPE_PATH}"
   fi
   msg "Recipe saved to ${RECIPE_PATH}."
-else
-  msg "Generating recipe from snapshot and outputting to stdout..."
-  eidos recipe -f "cm://gpu-operator/eidos-snapshot" --intent training
 fi
+
+# Generate bundle from the recipe
+if [ -n "$BUNDLE_PATH" ]; then
+  msg "Generating bundle and saving to ${BUNDLE_PATH}..."
+  
+  # Use recipe file if specified, otherwise use ConfigMap
+  if [ -n "$RECIPE_PATH" ]; then
+    eidos bundle -f "${RECIPE_PATH}" -o "${BUNDLE_PATH}"
+  else
+    eidos bundle -f "cm://gpu-operator/eidos-recipe" -o "${BUNDLE_PATH}"
+  fi
+  
+  # Verify bundle directory was created
+  if [ ! -d "${BUNDLE_PATH}" ]; then
+    err "Bundle directory was not created at ${BUNDLE_PATH}"
+  fi
+  msg "Bundle saved to ${BUNDLE_PATH}."
+fi
+
+echo ""
 
 msg "E2E test completed successfully!"

@@ -950,7 +950,7 @@ Checkout → Go CI (Setup + Test + Lint) → Security Scan → Upload Results
 
 ### Release Automation (on-tag.yaml)
 
-**Trigger**: Semantic version tags (e.g., `v0.8.11`)
+**Trigger**: Semantic version tags (e.g., `v0.8.12`)
 
 **Pipeline**:
 ```
