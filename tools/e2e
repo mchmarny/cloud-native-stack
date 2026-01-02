@@ -1,0 +1,74 @@
+#!/bin/bash
+set -eo pipefail
+
+# Dir setup
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "${DIR}/common"
+ROOT=$(dirname "${DIR}")
+
+SNAPSHOT_PATH="${1:-"examples/snapshots/gb200.yaml"}"
+RECIPE_PATH="${2:-"examples/recipes/gb200-eks-ubuntu-training.yaml"}"
+DEPLOYMENT_URL="https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/deployments"
+
+# Check if required tools are installed
+has_tools kubectl
+
+# Print debug info 
+msg "Starting E2E test for Eidos Agent..."
+msg "Using snapshot path: ${SNAPSHOT_PATH}"
+msg "Using recipe path: ${RECIPE_PATH}"
+
+# Clean up any previous deployments (ignore errors if resources don't exist)
+msg "Cleaning up previous deployments..."
+kubectl delete -f "${DEPLOYMENT_URL}/eidos-agent/2-job.yaml" --ignore-not-found=true
+kubectl delete -f "${DEPLOYMENT_URL}/eidos-agent/1-deps.yaml" --ignore-not-found=true
+
+# Deploy Eidos Agent
+msg "Deploying Eidos Agent RBAC and Job..."
+kubectl apply -f "${DEPLOYMENT_URL}/eidos-agent/1-deps.yaml"
+kubectl apply -f "${DEPLOYMENT_URL}/eidos-agent/2-job.yaml"
+
+# Wait for job to complete
+msg "Waiting for Eidos Agent job to complete..."
+kubectl wait --for=condition=complete --timeout=300s job/eidos -n gpu-operator || {
+    err "Eidos Agent job did not complete in time."
+}
+msg "Eidos Agent job completed successfully."
+
+# Verify ConfigMap was created
+msg "Verifying ConfigMap was created..."
+if ! kubectl get configmap eidos-snapshot -n gpu-operator &>/dev/null; then
+    err "ConfigMap 'eidos-snapshot' was not created!"
+fi
+
+# Get the snapshot 
+if [ -n "$SNAPSHOT_PATH" ]; then
+  msg "Saving Eidos snapshot to ${SNAPSHOT_PATH}..."
+  kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > "${SNAPSHOT_PATH}"
+  # Verify snapshot was created
+  if [ ! -f "${SNAPSHOT_PATH}" ]; then
+    err "Snapshot file was not created at ${SNAPSHOT_PATH}"
+  fi
+  
+  msg "Snapshot saved to ${SNAPSHOT_PATH}."
+else 
+  msg "Retrieving snapshot from ConfigMap..."
+  kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}'
+fi
+
+# Generate recipe from the snapshot
+if [ -n "$RECIPE_PATH" ]; then
+  msg "Generating recipe from snapshot and saving to ${RECIPE_PATH}..."
+  eidos recipe -f "cm://gpu-operator/eidos-snapshot" --intent training -o "${RECIPE_PATH}"
+  
+  # Verify recipe was created
+  if [ ! -f "${RECIPE_PATH}" ]; then
+    err "Recipe file was not created at ${RECIPE_PATH}"
+  fi
+  msg "Recipe saved to ${RECIPE_PATH}."
+else
+  msg "Generating recipe from snapshot and outputting to stdout..."
+  eidos recipe -f "cm://gpu-operator/eidos-snapshot" --intent training
+fi
+
+msg "E2E test completed successfully!"

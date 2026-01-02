@@ -52,16 +52,7 @@ spec:
           args:
             - |
               set -e
-
-              # Generate snapshot
-              /ko-app/eidos --debug snapshot \
-                -o cm://gpu-operator/eidos-snapshot
-
-              # Generate recipe based on snapshot
-              /ko-app/eidos --debug recipe \
-                -f cm://gpu-operator/eidos-snapshot \
-                --intent training \
-                -o cm://gpu-operator/eidos-recipe
+              /ko-app/eidos --debug snapshot -o cm://gpu-operator/eidos-snapshot
           resources:
             requests:
               cpu: "1"
