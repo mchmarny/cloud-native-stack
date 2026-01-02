@@ -73,7 +73,8 @@ The recipe can be output in JSON, YAML, or table format.`,
 			&cli.StringFlag{
 				Name:    "snapshot",
 				Aliases: []string{"f"},
-				Usage: `File path or URL to previously generated configuration snapshot from which to build the recipe. 
+				Usage: `Path/URI to previously generated configuration snapshot from which to build the recipe.
+	Supports: file paths, HTTP/HTTPS URLs, or ConfigMap URIs (cm://namespace/name).
 	If provided, all other query flags with the exception of intent are ignored.`,
 			},
 			outputFlag,
@@ -126,8 +127,10 @@ The recipe can be output in JSON, YAML, or table format.`,
 
 			ser := serializer.NewFileWriterOrStdout(outFormat, cmd.String("output"))
 			defer func() {
-				if err := ser.Close(); err != nil {
-					slog.Warn("failed to close serializer", "error", err)
+				if closer, ok := ser.(interface{ Close() error }); ok {
+					if err := closer.Close(); err != nil {
+						slog.Warn("failed to close serializer", "error", err)
+					}
 				}
 			}()
 

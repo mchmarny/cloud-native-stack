@@ -40,8 +40,13 @@ eidos snapshot [flags]
 **Flags:**
 | Flag | Short | Type | Default | Description |
 |------|-------|------|---------|-------------|
-| `--output` | `-o` | string | stdout | Output file path |
+| `--output` | `-o` | string | stdout | Output destination: file path, ConfigMap URI (cm://namespace/name), or stdout |
 | `--format` | `-f` | string | yaml | Output format: json, yaml, table |
+
+**Output Destinations:**
+- **stdout**: Default when no `-o` flag specified
+- **File**: Local file path (`/path/to/snapshot.yaml`)
+- **ConfigMap**: Kubernetes ConfigMap URI (`cm://namespace/configmap-name`)
 
 **What it captures:**
 - **SystemD Services**: containerd, docker, kubelet configurations
@@ -58,6 +63,9 @@ eidos snapshot
 # Save to file (JSON)
 eidos snapshot --output system.json --format json
 
+# Save to Kubernetes ConfigMap (requires cluster access)
+eidos snapshot --output cm://gpu-operator/eidos-snapshot
+
 # Debug mode
 eidos --debug snapshot
 
@@ -65,7 +73,27 @@ eidos --debug snapshot
 eidos snapshot --format table
 ```
 
-**Output structure:**
+**ConfigMap Output:**
+
+When using ConfigMap URIs (`cm://namespace/name`), the snapshot is stored directly in Kubernetes:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eidos-snapshot
+  namespace: gpu-operator
+  labels:
+    app.kubernetes.io/name: eidos
+    app.kubernetes.io/component: snapshot
+data:
+  snapshot.yaml: |
+    # Full snapshot content
+  format: yaml
+  timestamp: "2025-12-31T10:30:00Z"
+```
+
+**Snapshot Structure:**
 ```yaml
 apiVersion: snapshot.dgxc.io/v1
 kind: Snapshot
@@ -140,16 +168,31 @@ Generate recipes from captured snapshots:
 **Flags:**
 | Flag | Short | Type | Description |
 |------|-------|------|-------------|
-| `--snapshot` | `-f` | string | Path to snapshot file (required) |
+| `--snapshot` | `-f` | string | Path/URI to snapshot (file path, URL, or cm://namespace/name) |
 | `--intent` | `-i` | string | Workload intent: training, inference |
-| `--output` | `-o` | string | Output file (default: stdout) |
+| `--output` | `-o` | string | Output destination (file, ConfigMap URI, or stdout) |
 | `--format` | | string | Format: json, yaml, table (default: json) |
 | `--context` | | bool | Include context metadata |
 
+**Snapshot Sources:**
+- **File**: Local file path (`./snapshot.yaml`)
+- **URL**: HTTP/HTTPS URL (`https://example.com/snapshot.yaml`)
+- **ConfigMap**: Kubernetes ConfigMap URI (`cm://namespace/configmap-name`)
+
 **Examples:**
 ```shell
-# Generate recipe from snapshot
+# Generate recipe from local snapshot file
 eidos recipe --snapshot system.yaml --intent training
+
+# From ConfigMap (requires cluster access)
+eidos recipe --snapshot cm://gpu-operator/eidos-snapshot --intent training
+
+# Output to ConfigMap
+eidos recipe -f system.yaml -o cm://gpu-operator/eidos-recipe
+
+# Chain snapshot → recipe with ConfigMaps
+eidos snapshot -o cm://default/snapshot
+eidos recipe -f cm://default/snapshot -o cm://default/recipe
 
 # With custom output
 eidos recipe -f system.yaml -i inference -o recipe.yaml --format yaml

@@ -30,3 +30,9 @@ package serializer
 type Serializer interface {
 	Serialize(snapshot any) error
 }
+
+// Closer is an optional interface that Serializers can implement
+// if they need to release resources (e.g., close file handles).
+type Closer interface {
+	Close() error
+}

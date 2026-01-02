@@ -75,10 +75,22 @@ func NewWriter(format Format, output io.Writer) *Writer {
 // NewFileWriterOrStdout creates a new Writer that outputs to the specified file path in the given format.
 // If the file cannot be created or path is empty, it falls back to stdout.
 // Remember to call Close() on the returned Writer to ensure the file is properly closed.
-func NewFileWriterOrStdout(format Format, path string) *Writer {
+//
+// Supports ConfigMap URIs in the format cm://namespace/name for Kubernetes ConfigMap output.
+func NewFileWriterOrStdout(format Format, path string) Serializer {
 	trimmed := strings.TrimSpace(path)
 	if trimmed == "" {
 		return NewStdoutWriter(format)
+	}
+
+	// Check for ConfigMap URI (cm://namespace/name)
+	if strings.HasPrefix(trimmed, "cm://") {
+		namespace, name, err := parseConfigMapURI(trimmed)
+		if err != nil {
+			slog.Error("invalid ConfigMap URI, falling back to stdout", "error", err, "uri", trimmed)
+			return NewStdoutWriter(format)
+		}
+		return NewConfigMapWriter(namespace, name, format)
 	}
 
 	file, err := os.Create(trimmed)
@@ -229,4 +241,52 @@ func joinKey(prefix, suffix string) string {
 		return prefix
 	}
 	return prefix + "." + suffix
+}
+
+// serializeJSON serializes data to JSON format and returns the bytes.
+// This is used by ConfigMapWriter to serialize data without needing an io.Writer.
+func serializeJSON(data any) ([]byte, error) {
+	content, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize to JSON: %w", err)
+	}
+	return content, nil
+}
+
+// serializeYAML serializes data to YAML format and returns the bytes.
+// This is used by ConfigMapWriter to serialize data without needing an io.Writer.
+func serializeYAML(data any) ([]byte, error) {
+	content, err := yaml.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize to YAML: %w", err)
+	}
+	return content, nil
+}
+
+// serializeTable serializes data to table format and returns the bytes.
+// This is used by ConfigMapWriter to serialize data without needing an io.Writer.
+func serializeTable(data any) ([]byte, error) {
+	flat := make(map[string]any)
+	flattenValue(flat, reflect.ValueOf(data), "")
+	if len(flat) == 0 {
+		return []byte("<empty>\n"), nil
+	}
+
+	keys := make([]string, 0, len(flat))
+	for k := range flat {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var builder strings.Builder
+	tw := tabwriter.NewWriter(&builder, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "FIELD\tVALUE")
+	fmt.Fprintln(tw, "-----\t-----")
+	for _, key := range keys {
+		fmt.Fprintf(tw, "%s\t%v\n", key, flat[key])
+	}
+	if err := tw.Flush(); err != nil {
+		return nil, fmt.Errorf("failed to flush table: %w", err)
+	}
+	return []byte(builder.String()), nil
 }

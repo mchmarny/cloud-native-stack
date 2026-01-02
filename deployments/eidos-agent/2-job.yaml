@@ -52,10 +52,16 @@ spec:
           args:
             - |
               set -e
-              /ko-app/eidos --debug snapshot -o /export/snapshot.yaml
-              cat /export/snapshot.yaml
-              /ko-app/eidos --debug recipe -f /export/snapshot.yaml -o /export/recipe.yaml
-              cat /export/recipe.yaml
+
+              # Generate snapshot
+              /ko-app/eidos --debug snapshot \
+                -o cm://gpu-operator/eidos-snapshot
+
+              # Generate recipe based on snapshot
+              /ko-app/eidos --debug recipe \
+                -f cm://gpu-operator/eidos-snapshot \
+                --intent training \
+                -o cm://gpu-operator/eidos-recipe
           resources:
             requests:
               cpu: "1"
@@ -78,8 +84,6 @@ spec:
               readOnly: true
             - name: tmp
               mountPath: /tmp
-            - name: export
-              mountPath: /export
       volumes:
         - name: run-systemd
           hostPath:
@@ -87,5 +91,3 @@ spec:
             type: Directory
         - name: tmp
           emptyDir: {}
-        - name: export
-          emptyDir: {}  # map this to PVC for shared dat exports

@@ -31,7 +31,7 @@ var (
 	outputFlag = &cli.StringFlag{
 		Name:    "output",
 		Aliases: []string{"o"},
-		Usage:   "output file path (default: stdout)",
+		Usage:   "output destination: file path, ConfigMap URI (cm://namespace/name), or stdout (default)",
 	}
 
 	formatFlag = &cli.StringFlag{

@@ -169,8 +169,10 @@ func TestNewFileWriterOrStdout_EmptyPath(t *testing.T) {
 			t.Fatalf("Expected non-nil writer for empty path %q", path)
 		}
 		// Should default to stdout, so Close should be safe
-		if err := writer.Close(); err != nil {
-			t.Errorf("Close failed for empty path writer: %v", err)
+		if closer, ok := writer.(Closer); ok {
+			if err := closer.Close(); err != nil {
+				t.Errorf("Close failed for empty path writer: %v", err)
+			}
 		}
 	}
 }
@@ -192,9 +194,11 @@ func TestNewFileWriterOrStdout_Success(t *testing.T) {
 	}
 
 	// Close the writer
-	err = writer.Close()
-	if err != nil {
-		t.Fatalf("Close failed: %v", err)
+	if closer, ok := writer.(Closer); ok {
+		err = closer.Close()
+		if err != nil {
+			t.Fatalf("Close failed: %v", err)
+		}
 	}
 
 	// Verify file exists and has content
@@ -228,8 +232,10 @@ func TestNewFileWriterOrStdout_InvalidPath(t *testing.T) {
 	}
 
 	// Close should be safe
-	if err := writer.Close(); err != nil {
-		t.Errorf("Close should not error on fallback writer: %v", err)
+	if closer, ok := writer.(Closer); ok {
+		if err := closer.Close(); err != nil {
+			t.Errorf("Close should not error on fallback writer: %v", err)
+		}
 	}
 }
 

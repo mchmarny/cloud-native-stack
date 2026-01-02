@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,9 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/NVIDIA/cloud-native-stack/pkg/collector/k8s"
 )
 
 // FormatFromPath determines the serialization format based on file extension.
@@ -279,7 +283,40 @@ func (r *Reader) Close() error {
 //
 // Note: This is a higher-level API. Use NewFileReader directly if you need
 // more control over the Reader lifecycle or want to reuse it.
+// FromFile reads and deserializes data from a file path, URL, or ConfigMap URI into type T.
+//
+// Supported input sources:
+//   - Local file paths: /path/to/file.json, ./config.yaml
+//   - HTTP URLs: http://example.com/data.json, https://api.example.com/config.yaml
+//   - ConfigMap URIs: cm://namespace/configmap-name
+//
+// Format detection:
+//   - File paths: Determined by extension (.json, .yaml, .yml)
+//   - URLs: Determined by URL path extension or response Content-Type
+//   - ConfigMap: Always YAML format (ConfigMaps store data as YAML)
+//
+// Returns:
+//   - Pointer to deserialized object of type T
+//   - Error if file/URL/ConfigMap not found, network error, or deserialization fails
+//
+// ConfigMap Format:
+//   - Reads from ConfigMap data field "snapshot.{json|yaml}"
+//   - Falls back to "snapshot.yaml" if specific format field not found
+//   - Requires Kubernetes cluster access (kubeconfig)
+//
+// Example:
+//
+//	snap, err := FromFile[Snapshot]("cm://gpu-operator/eidos-snapshot")
 func FromFile[T any](path string) (*T, error) {
+	// Check for ConfigMap URI
+	if strings.HasPrefix(path, "cm://") {
+		namespace, name, err := parseConfigMapURI(path)
+		if err != nil {
+			return nil, fmt.Errorf("invalid ConfigMap URI: %w", err)
+		}
+		return fromConfigMap[T](namespace, name)
+	}
+
 	fileFormat := FormatFromPath(path)
 	slog.Debug("determined file format",
 		slog.String("path", path),
@@ -315,4 +352,62 @@ func FromFile[T any](path string) (*T, error) {
 	)
 
 	return &r, nil
+}
+
+// fromConfigMap reads and deserializes data from a Kubernetes ConfigMap.
+func fromConfigMap[T any](namespace, name string) (*T, error) {
+	client, _, err := k8s.GetKubeClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get kubernetes client: %w", err)
+	}
+
+	ctx := context.Background()
+	cm, err := client.CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ConfigMap %s/%s: %w", namespace, name, err)
+	}
+
+	// Try to get format from ConfigMap metadata
+	format := FormatYAML // default
+	if formatStr, ok := cm.Data["format"]; ok {
+		format = Format(formatStr)
+	}
+
+	// Try to read data with format-specific key first
+	var content string
+	dataKey := fmt.Sprintf("snapshot.%s", format)
+	if data, ok := cm.Data[dataKey]; ok {
+		content = data
+	} else {
+		// Fall back to trying all known extensions
+		for _, ext := range []string{"yaml", "json", "txt"} {
+			if data, ok := cm.Data[fmt.Sprintf("snapshot.%s", ext)]; ok {
+				content = data
+				format = Format(ext)
+				break
+			}
+		}
+		if content == "" {
+			return nil, fmt.Errorf("ConfigMap %s/%s has no snapshot data", namespace, name)
+		}
+	}
+
+	slog.Debug("reading from ConfigMap",
+		"namespace", namespace,
+		"name", name,
+		"format", format,
+		"size", len(content))
+
+	// Deserialize content
+	reader, err := NewReader(format, strings.NewReader(content))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create reader for ConfigMap data: %w", err)
+	}
+
+	var result T
+	if err := reader.Deserialize(&result); err != nil {
+		return nil, fmt.Errorf("failed to deserialize ConfigMap data: %w", err)
+	}
+
+	return &result, nil
 }
