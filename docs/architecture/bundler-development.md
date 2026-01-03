@@ -12,6 +12,11 @@ Bundlers transform recipes into deployment-ready artifacts (Helm values, Kuberne
 - **Type-safe data extraction** - Helper functions for recipe parsing
 - **Template generation** - go:embed for portable templates
 - **Testing infrastructure** - TestHarness for consistent testing
+- **E2E validation** - Tested with `tools/e2e` script for complete workflow
+
+**Current Bundlers:**
+- **GPU Operator** - Helm values, ClusterPolicy, scripts (production-ready)
+- **Network Operator** - Network configuration and RDMA support (production-ready)
 
 ## Quick Start
 

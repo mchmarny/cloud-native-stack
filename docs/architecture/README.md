@@ -8,6 +8,8 @@ This directory contains architecture documentation for the Cloud Native Stack (C
   - **Complete workflow**: Snapshot → Recipe → Bundle
   - **Commands**: `snapshot`, `recipe`, `bundle`
   - **Modes**: Query mode and snapshot mode for recipe generation
+  - **ConfigMap Integration**: Read/write support for Kubernetes-native storage (`cm://namespace/name`)
+  - **E2E Testing**: Validated with `tools/e2e` script for complete workflow
 - **[API Server Architecture](api-server.md)** - Architecture of the HTTP API server
   - **Recipe generation only** (Step 2 of workflow)
   - **Endpoint**: `GET /v1/recipe`
@@ -32,25 +34,29 @@ Cloud Native Stack provides a three-step workflow for optimizing GPU infrastruct
 ### Step 1: Snapshot – Capture System Configuration
 Captures comprehensive system state including OS, kernel, GPU, Kubernetes, and SystemD configurations.
 - **CLI**: `eidos snapshot` command
-- **Agent**: Kubernetes Job for automated cluster snapshots
+- **Agent**: Kubernetes Job for automated cluster snapshots (writes to ConfigMap)
 - **Output**: YAML/JSON snapshot with all system measurements
+- **Storage**: File, stdout, or **Kubernetes ConfigMap** (`cm://namespace/name` URI)
 
 ### Step 2: Recipe – Generate Configuration Recommendations
 Produces optimized configuration recipes based on environment parameters or captured snapshots.
 - **CLI**: `eidos recipe` command (supports query mode and snapshot mode)
   - **Query Mode**: Direct recipe generation from system parameters (OS, GPU, K8s, etc.)
   - **Snapshot Mode**: Analyzes captured snapshots and generates tailored recipes based on workload intent
-- **API Server**: `GET /v1/recipe` endpoint for programmatic access
+  - **ConfigMap Input**: Can read snapshots from ConfigMap URIs (`cm://namespace/name`)
+- **API Server**: `GET /v1/recipe` endpoint for programmatic access (query mode only)
 - **Output**: Recipe with matched rules and configuration measurements
+- **Storage**: File, stdout, or **Kubernetes ConfigMap**
 
 ### Step 3: Bundle – Create Deployment Artifacts
 Generates deployment-ready bundles (Helm values, Kubernetes manifests, installation scripts) from recipes.
 - **CLI**: `eidos bundle` command
+- **ConfigMap Input**: Can read recipes from ConfigMap URIs
 - **Parallel execution** of multiple bundlers by default
-- **Available bundlers**: GPU Operator, Network Operator (coming soon)
+- **Available bundlers**: GPU Operator, Network Operator
 - **Output**: Complete deployment bundle with values, manifests, scripts, and checksums
 
-**Note:** The API Server only supports recipe generation (Step 2). For complete workflow including bundle generation, use the CLI.
+**Note:** The API Server only supports recipe generation (Step 2). For complete workflow including snapshot capture and bundle generation, use the CLI.
 
 ## Key Design Principles
 
@@ -154,24 +160,32 @@ flowchart TD
 
 ### Topology 3: Kubernetes Job Agent
 **Use Case**: Automated cluster auditing, scheduled configuration checks  
-**Architecture**: Job running on GPU nodes with host access  
-**Scaling**: One Job per node or node-group
+**Architecture**: Job running on GPU nodes with ConfigMap output (no volumes needed)  
+**Scaling**: One Job per node or node-group  
+**Features**: RBAC-secured, ConfigMap-native storage, no file dependencies
 
 ```mermaid
 flowchart TD
     subgraph K8S["Kubernetes Cluster"]
-        subgraph NODE1["GPU Node 1"]
-            JOB1["Eidos Job"] --> OUT1["stdout"]
+        direction LR
+        
+        subgraph NODE["GPU Node"]
+            JOB["Eidos Agent Job"] 
         end
         
-        subgraph NODE2["GPU Node 2"]
-            JOB2["Eidos Job"] --> OUT2["stdout"]
+        JOB -->|"Write snapshot"| CM["ConfigMap<br/>eidos-snapshot<br/>(Kubernetes API)"]
+        
+        CLI["eidos CLI<br/>(External)"] -->|"Read cm://ns/name"| CM
+        CLI -->|"Generate recipe"| RECIPE["ConfigMap<br/>eidos-recipe"]
+        CLI -->|"Create bundle"| BUNDLE["Bundle Files"]
+        
+        subgraph RBAC["RBAC"]
+            SA["ServiceAccount: eidos"]
+            ROLE["Role: ConfigMap RW"]
+            BIND["RoleBinding"]
         end
         
-        OUT1 --> STORE
-        OUT2 --> STORE
-        
-        STORE["ConfigMap / Secret<br/>(Snapshots stored here)"]
+        JOB -.->|"Uses"| SA
     end
 ```
 
@@ -208,20 +222,22 @@ flowchart TD
     PKG --> LOG
     PKG --> SVR
     PKG --> BUN
+    PKG --> SNAP
     
-    COLL["collector/<br/>System data collection<br/>(OS, K8s, GPU, SystemD)"]
-    MEAS["measurement/<br/>Data model for<br/>collected metrics"]
-    REC["recipe/<br/>Recipe building,<br/>query matching, and<br/>snapshot analysis"]
+    COLL["collector/<br/>System data collection<br/>(OS, K8s, GPU, SystemD)<br/>Parallel with errgroup"]
+    MEAS["measurement/<br/>Data model for<br/>collected metrics<br/>Builder pattern"]
+    REC["recipe/<br/>Recipe building,<br/>query matching, and<br/>snapshot analysis<br/>Query & Snapshot modes"]
     VER["version/<br/>Semantic version<br/>parsing & comparison<br/>(with vendor extras)"]
-    SER["serializer/<br/>Output formatting<br/>(JSON, YAML, table)"]
-    LOG["logging/<br/>Structured logging"]
-    SVR["server/<br/>HTTP server<br/>infrastructure (API only)"]
+    SER["serializer/<br/>Output formatting<br/>(JSON, YAML, table)<br/>ConfigMap reader/writer<br/>URI scheme: cm://ns/name"]
+    LOG["logging/<br/>Structured logging<br/>(slog)"]
+    SVR["server/<br/>HTTP server<br/>infrastructure (API only)<br/>Rate limiting, metrics"]
     BUN["bundler/<br/>Parallel bundle generation<br/>(Helm, manifests, scripts)<br/>Registry pattern + BaseBundler helper<br/>Internal utilities (15+ helpers)<br/>TestHarness for standardized testing"]
+    SNAP["snapshotter/<br/>Orchestrates parallel<br/>collector execution<br/>Measurement aggregation"]
 ```
 
 ## Data Flow
 
-### Complete Three-Step Workflow
+### Complete Three-Step Workflow (File-based)
 ```mermaid
 flowchart LR
     A[User] --> B[Step 1: Snapshot]
@@ -234,6 +250,21 @@ flowchart LR
     B -.-> |CLI/Agent| C
     D -.-> |CLI/API| E
     F -.-> |CLI only| G
+```
+
+### Complete Three-Step Workflow (ConfigMap-based)
+```mermaid
+flowchart LR
+    A[User/Agent] --> B[Step 1: Snapshot]
+    B --> C["ConfigMap<br/>eidos-snapshot<br/>cm://ns/name"]
+    C --> D[Step 2: Recipe]
+    D --> E["ConfigMap<br/>eidos-recipe<br/>cm://ns/name"]
+    E --> F[Step 3: Bundle]
+    F --> G["Local Bundle<br/>deployment/"]
+    
+    B -.-> |"Agent writes<br/>CLI writes"| C
+    D -.-> |"CLI reads<br/>cm:// URI"| E
+    F -.-> |"CLI reads<br/>cm:// URI"| G
 ```
 
 ### CLI Snapshot Flow (Step 1)
@@ -321,6 +352,31 @@ retry.OnError(retry.DefaultBackoff, func(err error) bool {
 - Graceful degradation: Return empty GPU measurements  
 - Log warning with actionable message  
 - Continue with other collectors
+
+### ConfigMap Write Failure (Agent)
+**Failure**: Kubernetes API unavailable, RBAC permissions insufficient  
+**Detection**: HTTP 403 Forbidden, 500 Internal Server Error  
+**Recovery**:  
+- Retry with exponential backoff (3 attempts)  
+- Verify RBAC RoleBinding references correct namespace  
+- Fallback to stdout output (manual collection)  
+- Log detailed error with kubeconfig context
+
+**Common Causes**:  
+- RoleBinding namespace mismatch (should be `gpu-operator`)
+- ServiceAccount not created or not mounted
+- NetworkPolicy blocking Kubernetes API access
+- API server rate limiting
+
+**Troubleshooting**:
+```bash
+# Verify RBAC configuration
+kubectl get role,rolebinding -n gpu-operator
+kubectl auth can-i create configmaps --as=system:serviceaccount:gpu-operator:eidos -n gpu-operator
+
+# Check agent logs
+kubectl logs job/eidos -n gpu-operator
+```
 
 ### Rate Limit Exceeded (API Server)
 **Failure**: HTTP 429 Too Many Requests  
@@ -1058,6 +1114,106 @@ cosign verify-attestation \
 For detailed CI/CD documentation, see [../.github/actions/README.md](../.github/actions/README.md) and [CONTRIBUTING.md](../../CONTRIBUTING.md#github-actions--cicd).
 
 For supply chain security verification, see [../SECURITY.md](../SECURITY.md).
+
+## E2E Testing Architecture
+
+Cloud Native Stack includes an end-to-end testing framework that validates the complete workflow from snapshot capture through bundle generation.
+
+### E2E Testing Workflow
+
+```mermaid
+flowchart TD
+    A["tools/e2e script"] --> B["Deploy Agent Job"]
+    B --> C["Wait for Completion"]
+    C --> D{"ConfigMap<br/>Created?"}
+    D -->|Yes| E["Export Snapshot<br/>(optional)"]
+    D -->|No| FAIL1["FAIL: Snapshot"]
+    
+    E --> F{"Recipe<br/>Requested?"}
+    F -->|Yes| G["Generate Recipe<br/>from ConfigMap"]
+    F -->|No| SUCCESS1["SUCCESS"]
+    
+    G --> H{"Recipe<br/>Valid?"}
+    H -->|Yes| I{"Bundle<br/>Requested?"}
+    H -->|No| FAIL2["FAIL: Recipe"]
+    
+    I -->|Yes| J["Generate Bundle<br/>from Recipe"]
+    I -->|No| SUCCESS2["SUCCESS"]
+    
+    J --> K{"Bundle<br/>Valid?"}
+    K -->|Yes| SUCCESS3["SUCCESS"]
+    K -->|No| FAIL3["FAIL: Bundle"]
+```
+
+### E2E Script Features
+
+**Command-Line Interface**:
+- `-s/--snapshot PATH`: Save snapshot to file (optional)
+- `-r/--recipe PATH`: Generate and save recipe (optional)
+- `-b/--bundle DIR`: Generate bundle to directory (optional)
+- `-h/--help`: Show usage information
+- Order-independent flags (can specify in any order)
+
+**Validation Steps**:
+1. **Agent Deployment**: Apply RBAC manifests and Job
+2. **Job Completion**: Wait for Job success with timeout
+3. **ConfigMap Verification**: Check `eidos-snapshot` exists with data
+4. **Recipe Generation**: Use ConfigMap URI input (`cm://gpu-operator/eidos-snapshot`)
+5. **Bundle Generation**: Create deployment artifacts from recipe
+6. **Artifact Verification**: Validate file creation and structure
+
+**Smart Execution**:
+- Uses recipe file if provided, otherwise reads from ConfigMap
+- Skips steps if corresponding flags not provided
+- No cleanup on failure (preserves resources for debugging)
+- Comprehensive error messages with context
+
+**Example Usage**:
+```bash
+# Full workflow (snapshot → recipe → bundle)
+./tools/e2e -s examples/snapshots/h100.yaml \
+           -r examples/recipes/h100-eks-ubuntu-training.yaml \
+           -b examples/bundles/h100-eks-ubuntu-training
+
+# Just capture snapshot from agent
+./tools/e2e -s snapshot.yaml
+
+# Generate recipe and bundle (skip snapshot file)
+./tools/e2e -r recipe.yaml -b ./bundles
+```
+
+### Integration with CI/CD
+
+The e2e script is designed for integration with CI/CD pipelines:
+
+```yaml
+# Example GitHub Actions workflow
+steps:
+  - name: Setup Kubernetes cluster
+    uses: actions/setup-kind@v1
+    
+  - name: Run E2E tests
+    run: |
+      ./tools/e2e \
+        -s /tmp/snapshot.yaml \
+        -r /tmp/recipe.yaml \
+        -b /tmp/bundles
+      
+  - name: Upload artifacts
+    uses: actions/upload-artifact@v4
+    with:
+      name: e2e-results
+      path: /tmp/
+```
+
+**Benefits**:
+- **Automated Validation**: Validates complete workflow in CI/CD
+- **Regression Detection**: Catches breaking changes early
+- **ConfigMap Testing**: Validates Kubernetes-native storage pattern
+- **Agent Testing**: Validates RBAC permissions and Job execution
+- **Bundle Verification**: Ensures deployment artifacts are correct
+
+For detailed usage, see [../../CONTRIBUTING.md#end-to-end-testing](../../CONTRIBUTING.md#end-to-end-testing).
 
 ## References and Further Reading
 

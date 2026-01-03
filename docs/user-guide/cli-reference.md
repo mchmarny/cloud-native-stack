@@ -292,7 +292,9 @@ chmod +x scripts/install.sh
 
 ---
 
-## Complete Workflow Example
+## Complete Workflow Examples
+
+### File-Based Workflow
 
 ```shell
 # Step 1: Capture system configuration
@@ -317,6 +319,56 @@ cd deployment/gpu-operator
 # Step 5: Verify deployment
 kubectl get pods -n gpu-operator
 kubectl logs -n gpu-operator -l app=nvidia-operator-validator
+```
+
+### ConfigMap-Based Workflow (Kubernetes-Native)
+
+```shell
+# Step 1: Agent captures snapshot to ConfigMap
+kubectl apply -f deployments/eidos-agent/1-deps.yaml
+kubectl apply -f deployments/eidos-agent/2-job.yaml
+kubectl wait --for=condition=complete job/eidos -n gpu-operator --timeout=5m
+
+# Step 2: Generate recipe from ConfigMap
+eidos recipe \
+  --snapshot cm://gpu-operator/eidos-snapshot \
+  --intent training \
+  --output recipe.yaml
+
+# Alternative: Write recipe to ConfigMap as well
+eidos recipe \
+  --snapshot cm://gpu-operator/eidos-snapshot \
+  --intent training \
+  --output cm://gpu-operator/eidos-recipe
+
+# Step 3: Create bundle from recipe
+eidos bundle \
+  --recipe recipe.yaml \
+  --bundlers gpu-operator \
+  --output ./deployment
+
+# Step 4: Deploy to cluster
+cd deployment/gpu-operator
+./scripts/install.sh
+
+# Step 5: Verify deployment
+kubectl get pods -n gpu-operator
+kubectl logs -n gpu-operator -l app=nvidia-operator-validator
+```
+
+### E2E Testing
+
+Validate the complete workflow:
+
+```shell
+# Test full workflow: agent → snapshot → recipe → bundle
+./tools/e2e -s snapshot.yaml -r recipe.yaml -b ./bundles
+
+# Test just snapshot capture to ConfigMap
+./tools/e2e -s snapshot.yaml
+
+# Test recipe and bundle generation from ConfigMap
+./tools/e2e -r recipe.yaml -b ./bundles
 ```
 
 ## Shell Completion

@@ -6,13 +6,39 @@ Deploy Eidos as a Kubernetes Job to automatically capture cluster configuration 
 
 The Eidos agent runs as a Kubernetes Job that:
 - Captures system configuration from GPU nodes
-- Stores snapshot in Kubernetes ConfigMap (`eidos-snapshot` in `gpu-operator` namespace)
+- Stores snapshot directly in Kubernetes ConfigMap (`eidos-snapshot` in `gpu-operator` namespace)
+- No volumes required - writes via Kubernetes API
 - Useful for auditing, troubleshooting, and multi-cluster management
 
 **Agent capabilities:**
-- ✅ Step 1: Snapshot capture
+- ✅ Step 1: Snapshot capture with ConfigMap output
 - ❌ Step 2: Recipe generation (use CLI or API)
 - ❌ Step 3: Bundle generation (use CLI)
+
+**ConfigMap Output:**
+The agent uses `cm://namespace/name` URI scheme to write snapshots directly to Kubernetes ConfigMaps:
+```bash
+eidos snapshot --output cm://gpu-operator/eidos-snapshot
+```
+
+This creates:
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eidos-snapshot
+  namespace: gpu-operator
+  labels:
+    app.kubernetes.io/name: eidos
+    app.kubernetes.io/component: snapshot
+data:
+  snapshot.yaml: |  # Complete snapshot YAML
+    apiVersion: snapshot.dgxc.io/v1
+    kind: Snapshot
+    measurements: [...]
+  format: yaml
+  timestamp: "2026-01-03T10:30:00Z"
+```
 
 ## Prerequisites
 
@@ -25,26 +51,30 @@ The Eidos agent runs as a Kubernetes Job that:
 
 ### 1. Deploy RBAC and ServiceAccount
 
-The agent requires permissions to read Kubernetes resources:
+The agent requires permissions to read Kubernetes resources and write to ConfigMaps:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/deployments/eidos-agent/1-deps.yaml
+kubectl apply -f https://raw.githubusercontent.com/nvidia/cloud-native-stack/main/deployments/eidos-agent/1-deps.yaml
 ```
 
 **What this creates:**
 - **Namespace**: `gpu-operator` (if not exists)
 - **ServiceAccount**: `eidos` in `gpu-operator` namespace
+- **Role**: Permissions to create/update ConfigMaps in `gpu-operator` namespace
+- **RoleBinding**: Binds Role to ServiceAccount in `gpu-operator` namespace
 - **ClusterRole**: Permissions to read nodes, pods, ClusterPolicy
-- **ClusterRoleBinding**: Binds role to service account
+- **ClusterRoleBinding**: Binds ClusterRole to ServiceAccount
 
 ### 2. Deploy the Agent Job
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/deployments/eidos-agent/2-job.yaml
+kubectl apply -f https://raw.githubusercontent.com/nvidia/cloud-native-stack/main/deployments/eidos-agent/2-job.yaml
 ```
 
 **What this creates:**
 - **Job**: `eidos` in the `gpu-operator` namespace
+- Job runs `eidos snapshot --output cm://gpu-operator/eidos-snapshot`
+- Snapshot is written directly to ConfigMap via Kubernetes API
 
 ### 3. View Snapshot Output
 
@@ -76,7 +106,7 @@ Before deploying, you may need to customize the Job manifest for your environmen
 
 ```shell
 # Download job manifest
-curl -O https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/deployments/eidos-agent/2-job.yaml
+curl -O https://raw.githubusercontent.com/nvidia/cloud-native-stack/main/deployments/eidos-agent/2-job.yaml
 
 # Edit with your preferred editor
 vim 2-job.yaml
@@ -142,12 +172,12 @@ spec:
     spec:
       containers:
         - name: eidos
-          image: ghcr.io/mchmarny/eidos-api-server:v0.7.6  # Pin to version
+          image: ghcr.io/nvidia/eidos:v0.8.0  # Pin to version
 ```
 
 **Finding versions:**
-- [GitHub Releases](https://github.com/mchmarny/cloud-native-stack/releases)
-- Container registry: [ghcr.io/mchmarny/eidos-api-server](https://github.com/mchmarny/cloud-native-stack/pkgs/container/eidos-api-server)
+- [GitHub Releases](https://github.com/nvidia/cloud-native-stack/releases)
+- Container registry: [ghcr.io/nvidia/eidos](https://github.com/nvidia/cloud-native-stack/pkgs/container/eidos)
 
 ### Resource Limits
 
@@ -207,8 +237,9 @@ spec:
           effect: NoSchedule
       containers:
         - name: eidos
-          image: ghcr.io/mchmarny/eidos-api-server:latest
-          args: ["snapshot", "--format", "yaml"]
+          image: ghcr.io/nvidia/eidos:latest
+          command: ["eidos"]
+          args: ["snapshot", "--output", "cm://gpu-operator/eidos-snapshot"]
 ```
 
 ### Example 2: GKE with H100 GPUs
@@ -228,13 +259,14 @@ spec:
         cloud.google.com/gke-accelerator: nvidia-tesla-h100
       containers:
         - name: eidos
-          image: ghcr.io/mchmarny/eidos-api-server:latest
-          args: ["snapshot"]
+          image: ghcr.io/nvidia/eidos:latest
+          command: ["eidos"]
+          args: ["snapshot", "--output", "cm://gpu-operator/eidos-snapshot"]
 ```
 
-### Example 3: Multi-Node Snapshot (CronJob)
+### Example 3: Periodic Snapshots (CronJob)
 
-Periodic snapshots for drift detection:
+Automatic snapshots for drift detection:
 
 ```yaml
 apiVersion: batch/v1
@@ -254,8 +286,9 @@ spec:
             nvidia.com/gpu.present: "true"
           containers:
             - name: eidos
-              image: ghcr.io/mchmarny/eidos-api-server:latest
-              args: ["snapshot", "--format", "json"]
+              image: ghcr.io/nvidia/eidos:latest
+              command: ["eidos"]
+              args: ["snapshot", "--output", "cm://gpu-operator/eidos-snapshot"]
 ```
 
 Retrieve historical snapshots:
@@ -336,18 +369,26 @@ kubectl delete -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/
 
 ```yaml
 # GitHub Actions example
-- name: Capture cluster snapshot
+- name: Deploy agent to capture snapshot
   run: |
+    kubectl apply -f deployments/eidos-agent/1-deps.yaml
     kubectl apply -f deployments/eidos-agent/2-job.yaml
     kubectl wait --for=condition=complete --timeout=300s job/eidos -n gpu-operator
     
 - name: Generate recipe from ConfigMap
   run: |
-    # Option 1: Use ConfigMap directly
+    # Option 1: Use ConfigMap directly (no file needed)
     eidos recipe -f cm://gpu-operator/eidos-snapshot -i training -o recipe.yaml
     
-    # Option 2: Export snapshot to file for archival
+    # Option 2: Write recipe to ConfigMap as well
+    eidos recipe -f cm://gpu-operator/eidos-snapshot -i training -o cm://gpu-operator/eidos-recipe
+    
+    # Option 3: Export snapshot to file for archival
     kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
+    
+- name: Generate bundle
+  run: |
+    eidos bundle -f recipe.yaml -b gpu-operator -o ./bundles
     
 - name: Upload artifacts
   uses: actions/upload-artifact@v3
@@ -356,6 +397,7 @@ kubectl delete -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/
     path: |
       snapshot.yaml
       recipe.yaml
+      bundles/
 ```
 
 ### 2. Multi-Cluster Auditing

@@ -130,15 +130,45 @@ Eidos is also available as container images for integration into automated pipel
 
 ### CLI Image
 ```shell
-docker pull ghcr.io/mchmarny/eidos:latest
-docker run ghcr.io/mchmarny/eidos:latest --version
+docker pull ghcr.io/nvidia/eidos:latest
+docker run ghcr.io/nvidia/eidos:latest --version
 ```
 
 ### API Server Image
 ```shell
-docker pull ghcr.io/mchmarny/eidos-api-server:latest
-docker run -p 8080:8080 ghcr.io/mchmarny/eidos-api-server:latest
+docker pull ghcr.io/nvidia/eidos-api-server:latest
+docker run -p 8080:8080 ghcr.io/nvidia/eidos-api-server:latest
 ```
+
+**Production API Server**: The API server is deployed at https://cns.dgxc.io with auto-scaling and SLSA Build Level 3 attestations.
+
+## E2E Testing
+
+Validate the complete workflow with the e2e testing script:
+
+```shell
+# Clone repository
+git clone https://github.com/NVIDIA/cloud-native-stack.git
+cd cloud-native-stack
+
+# Test complete workflow: agent → snapshot → recipe → bundle
+./tools/e2e -s examples/snapshots/h100.yaml \
+           -r examples/recipes/h100-eks-ubuntu-training.yaml \
+           -b examples/bundles/h100-eks-ubuntu-training
+
+# Test just snapshot capture
+./tools/e2e -s snapshot.yaml
+
+# Test recipe and bundle generation
+./tools/e2e -r recipe.yaml -b ./bundles
+```
+
+The e2e script:
+- Deploys agent Job with RBAC
+- Waits for snapshot to be written to ConfigMap
+- Generates recipe and bundle from ConfigMap
+- Validates each step completes successfully
+- Preserves resources on failure for debugging
 
 ## Next Steps
 

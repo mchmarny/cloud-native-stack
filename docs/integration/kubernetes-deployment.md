@@ -4,11 +4,24 @@ Deploy the Eidos API Server in your Kubernetes cluster for self-hosted recipe ge
 
 ## Overview
 
-Self-hosted API server provides:
+**API Server Deployment** provides:
 - **Private deployment** - Keep recipe data within your infrastructure
 - **Custom configuration** - Modify recipe data for your environment
 - **High availability** - Multiple replicas with load balancing
 - **Monitoring integration** - Prometheus metrics and health checks
+- **Production URL**: https://cns.dgxc.io (public instance)
+
+**Agent Deployment** (separate from API server):
+- **Automated snapshots** - Kubernetes Job captures cluster configuration
+- **ConfigMap storage** - Snapshots written directly to ConfigMap (no volumes)
+- **RBAC-secured** - ServiceAccount with ConfigMap read/write permissions
+- **Pipeline-friendly** - Integrates with CI/CD for automated auditing
+- See [agent-deployment.md](../user-guide/agent-deployment.md) for details
+
+**Complete Workflow**:
+1. Deploy Agent Job → Captures snapshot → Writes to ConfigMap
+2. CLI reads from ConfigMap → Generates recipe → Creates bundle
+3. Deploy bundle → Optimized GPU infrastructure
 
 ## Quick Start
 
@@ -194,6 +207,175 @@ spec:
 ```shell
 kubectl apply -f ingress.yaml
 ```
+
+## Agent Deployment
+
+Deploy the Eidos Agent as a Kubernetes Job to automatically capture cluster configuration.
+
+### 1. Create RBAC Resources
+
+```yaml
+# agent-rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eidos
+  namespace: gpu-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: eidos
+  namespace: gpu-operator
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eidos
+  namespace: gpu-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: eidos
+subjects:
+- kind: ServiceAccount
+  name: eidos
+  namespace: gpu-operator  # Must match ServiceAccount namespace
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: eidos
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "pods"]
+  verbs: ["get", "list"]
+- apiGroups: ["nvidia.com"]
+  resources: ["clusterpolicies"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: eidos
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: eidos
+subjects:
+- kind: ServiceAccount
+  name: eidos
+  namespace: gpu-operator
+```
+
+```shell
+kubectl apply -f agent-rbac.yaml
+```
+
+### 2. Create Agent Job
+
+```yaml
+# agent-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: eidos
+  namespace: gpu-operator
+  labels:
+    app: eidos-agent
+spec:
+  template:
+    metadata:
+      labels:
+        app: eidos-agent
+    spec:
+      serviceAccountName: eidos
+      restartPolicy: Never
+      
+      containers:
+      - name: eidos
+        image: ghcr.io/nvidia/eidos:latest
+        imagePullPolicy: IfNotPresent
+        
+        command:
+        - eidos
+        - snapshot
+        - --output
+        - cm://gpu-operator/eidos-snapshot
+        
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65532
+          capabilities:
+            drop: ["ALL"]
+```
+
+```shell
+kubectl apply -f agent-job.yaml
+
+# Wait for completion
+kubectl wait --for=condition=complete job/eidos -n gpu-operator --timeout=5m
+
+# Verify ConfigMap was created
+kubectl get configmap eidos-snapshot -n gpu-operator
+
+# View snapshot data
+kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}'
+```
+
+### 3. Generate Recipe from ConfigMap
+
+```bash
+# Using CLI (local or in another Job)
+eidos recipe --snapshot cm://gpu-operator/eidos-snapshot \
+             --intent training \
+             --output recipe.yaml
+
+# Or write recipe back to ConfigMap
+eidos recipe --snapshot cm://gpu-operator/eidos-snapshot \
+             --intent training \
+             --output cm://gpu-operator/eidos-recipe
+```
+
+### 4. Generate Bundle
+
+```bash
+# From file
+eidos bundle --recipe recipe.yaml --output ./bundles
+
+# From ConfigMap
+eidos bundle --recipe cm://gpu-operator/eidos-recipe --output ./bundles
+```
+
+### E2E Testing
+
+Validate the complete workflow with the e2e script:
+
+```bash
+# Test full workflow: agent → snapshot → recipe → bundle
+./tools/e2e -s examples/snapshots/h100.yaml \
+           -r examples/recipes/h100-eks-ubuntu-training.yaml \
+           -b examples/bundles/h100-eks-ubuntu-training
+
+# Just test agent deployment and snapshot capture
+./tools/e2e -s snapshot.yaml
+
+# Test recipe and bundle generation from ConfigMap
+./tools/e2e -r recipe.yaml -b ./bundles
+```
+
+The e2e script:
+- Deploys agent Job with RBAC
+- Waits for snapshot to be written to ConfigMap
+- Optionally generates recipe and bundle
+- Validates each step completes successfully
+- Preserves resources on failure for debugging
 
 ## Configuration Options
 

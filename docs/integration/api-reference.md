@@ -13,11 +13,21 @@ The Eidos API provides HTTP REST access to **recipe generation** (Step 2 of the 
 - ✅ Version negotiation via Accept header
 - ✅ Rate limiting and request tracking
 - ✅ Health and metrics endpoints
+- ✅ SLSA Build Level 3 attestations
+- ✅ Production deployment at https://cns.dgxc.io
 
 **API Limitations:**
 - ❌ No snapshot capture (use CLI or Agent)
 - ❌ No bundle generation (use CLI)
 - ❌ No snapshot analysis (query mode only)
+- ❌ No ConfigMap integration (use CLI for Kubernetes-native storage)
+
+**For complete workflow**, use the CLI:
+- Snapshot: `eidos snapshot -o cm://namespace/name`
+- Recipe: `eidos recipe -f cm://namespace/name -o recipe.yaml`
+- Bundle: `eidos bundle -f recipe.yaml -o ./bundles`
+- Agent: Kubernetes Job for automated snapshot capture
+- E2E Testing: Validated with `tools/e2e` script
 
 ## Authentication
 

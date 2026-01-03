@@ -19,13 +19,20 @@ The API server provides HTTP REST access to **Step 2 of the Cloud Native Stack w
 - ✅ **Recipe generation** (Step 2) via `GET /v1/recipe` endpoint
 - ✅ **Query mode only** – generates recipes from environment parameters
 - ✅ Health and metrics endpoints for Kubernetes deployment
+- ✅ Production-ready HTTP server with middleware stack
+- ✅ Supply chain security with SLSA Build Level 3 attestations
 
 **API Server Limitations:**
 - ❌ **No snapshot capture** – Use CLI `eidos snapshot` or Kubernetes Agent
 - ❌ **No bundle generation** – Use CLI `eidos bundle` command
 - ❌ **No snapshot mode** – Cannot analyze captured snapshots (query mode only)
+- ❌ **No ConfigMap integration** – API server doesn't read/write ConfigMaps
 
-**For complete workflow**, use the CLI which supports all three steps: snapshot → recipe → bundle.
+**For complete workflow**, use the CLI which supports:
+- All three steps: snapshot → recipe → bundle
+- ConfigMap I/O: `cm://namespace/name` URIs
+- Agent deployment: Kubernetes Job with RBAC
+- E2E testing: `tools/e2e` validation script
 
 ## Architecture Diagram
 
@@ -409,6 +416,59 @@ curl http://localhost:8080/ready
 # Metrics
 curl http://localhost:8080/metrics
 ```
+
+## Production Deployment
+
+### Google Cloud Run Deployment
+
+The API server is deployed to Google Cloud Run with the following configuration:
+
+**Live Service:**
+- **URL**: https://cns.dgxc.io
+- **Platform**: Google Cloud Run (fully managed serverless)
+- **Authentication**: Public access
+- **Auto-scaling**: 0-100 instances based on load
+- **Region**: Multi-region for high availability
+
+**CI/CD Pipeline** (`on-tag.yaml`):
+```mermaid
+flowchart LR
+    A["Git Tag<br/>v0.8.12"] --> B["GitHub Actions"]
+    B --> C["Go CI<br/>(Test + Lint)"]
+    C --> D["Build Image<br/>(ko + goreleaser)"]
+    D --> E["Generate SBOM<br/>(Syft)"]  
+    E --> F["Sign Attestations<br/>(Cosign keyless)"]
+    F --> G["Push to GHCR<br/>ghcr.io/nvidia/eidos-api-server"]
+    G --> H["Deploy to Cloud Run<br/>(WIF auth)"]
+    H --> I["Health Check<br/>Verification"]
+```
+
+**Supply Chain Security:**
+- **SLSA Build Level 3** compliance
+- **Signed SBOMs** in SPDX format
+- **Attestations** logged in Rekor transparency log  
+- **Verification**: `gh attestation verify oci://ghcr.io/nvidia/eidos-api-server:TAG --owner nvidia`
+
+**Monitoring:**
+- Health endpoint: `/health`
+- Readiness endpoint: `/ready`
+- Prometheus metrics: `/metrics`
+- Request tracing with `X-Request-Id` headers
+- Cloud Monitoring integration
+
+**Scaling Behavior:**
+- **Min instances**: 0 (scales to zero when idle)
+- **Max instances**: 100 (automatic scaling)
+- **Cold start**: 2-3 seconds
+- **Request timeout**: 30 seconds
+- **Concurrency**: 80 requests per instance
+
+**Benefits:**
+- Zero operational overhead
+- Automatic HTTPS with managed certificates
+- Built-in DDoS protection
+- Pay-per-use pricing (scales to zero)
+- Global load balancing
 
 ### Client Libraries
 

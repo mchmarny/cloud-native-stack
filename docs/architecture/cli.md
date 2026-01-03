@@ -21,10 +21,28 @@ Captures comprehensive system configuration including:
 - Kubernetes (server version, images, ClusterPolicy)
 - GPU hardware (driver, CUDA, MIG, device info)
 
+**Output Options:**
+- **File**: `--output system.yaml` (write to file)
+- **Stdout**: Default behavior (pipe to other commands)
+- **ConfigMap**: `--output cm://namespace/name` (Kubernetes-native storage)
+
+**Agent Deployment:**  
+Kubernetes Job running on GPU nodes that writes snapshots directly to ConfigMap without volume dependencies. Uses RBAC-secured access for ConfigMap read/write operations.
+
 ### Step 2: Recipe Command  
 Generates optimized configuration recipes with two modes:
 - **Query Mode**: Direct recipe generation from system parameters (OS, GPU, K8s, etc.)
 - **Snapshot Mode**: Analyzes captured snapshots and generates tailored recipes based on workload intent (training/inference)
+
+**Input Options:**
+- **Query parameters**: `--os ubuntu --gpu h100 --service eks` (direct recipe generation)
+- **Snapshot file**: `--snapshot system.yaml` (analyze captured snapshot)
+- **ConfigMap**: `--snapshot cm://namespace/name` (read from Kubernetes)
+
+**Output Options:**
+- **File**: `--output recipe.yaml` (write to file)
+- **Stdout**: Default behavior (pipe to bundle command)
+- **ConfigMap**: `--output cm://namespace/name` (store in Kubernetes)
 
 ### Step 3: Bundle Command
 Generates deployment-ready bundles from recipes including:
@@ -34,8 +52,15 @@ Generates deployment-ready bundles from recipes including:
 - README with deployment instructions
 - SHA256 checksums for verification
 
-**Available bundlers**: GPU Operator, Network Operator (coming soon)
+**Input Options:**
+- **Recipe file**: `--recipe recipe.yaml` (read from file)
+- **ConfigMap**: `--recipe cm://namespace/name` (read from Kubernetes)
+
+**Output**: Always writes to local directory (no ConfigMap output for bundles)
+
+**Available bundlers**: GPU Operator, Network Operator
 **Execution**: Parallel by default for multiple bundlers
+**Testing**: Validated with E2E testing framework (`tools/e2e`)
 
 ## Architecture Diagram
 
@@ -59,6 +84,37 @@ flowchart TD
     F --> F4["Serializer<br/>(JSON/YAML/Table)"]
     F --> F5["Bundler Registry<br/>(Parallel execution)"]
 ```
+
+### ConfigMap Integration
+
+The CLI supports Kubernetes-native ConfigMap storage using the `cm://namespace/name` URI scheme:
+
+```mermaid
+flowchart LR
+    A["eidos snapshot<br/>-o cm://ns/snap"] -->|"Write"| CM1["ConfigMap<br/>eidos-snapshot"]
+    
+    CM1 -->|"Read"| B["eidos recipe<br/>-f cm://ns/snap<br/>-o cm://ns/recipe"]
+    
+    B -->|"Write"| CM2["ConfigMap<br/>eidos-recipe"]
+    
+    CM2 -->|"Read"| C["eidos bundle<br/>-f cm://ns/recipe<br/>-o ./bundles"]
+    
+    C --> D["Local Bundle<br/>Directory"]
+    
+    style CM1 fill:#e1f5ff
+    style CM2 fill:#e1f5ff
+```
+
+**Benefits:**
+- **No file dependencies** - Direct Kubernetes API integration
+- **Agent-friendly** - Jobs can write snapshots without volumes
+- **Pipeline integration** - CI/CD can read/write ConfigMaps
+- **Multi-cluster** - Share snapshots/recipes across clusters
+
+**RBAC Requirements:**
+- ConfigMap read/write permissions in target namespace
+- ServiceAccount with appropriate Role/RoleBinding
+- See [agent-deployment.md](../../user-guide/agent-deployment.md) for details
 
 ## Component Details
 
@@ -149,6 +205,92 @@ eidos snapshot --output system.yaml --format yaml
 
 # Human-readable table format
 eidos snapshot --format table
+
+# ConfigMap output (Kubernetes-native)
+eidos snapshot --output cm://gpu-operator/eidos-snapshot
+```
+
+### Agent Deployment Pattern
+
+The snapshot command can be deployed as a Kubernetes Job for automated cluster auditing:
+
+```mermaid
+flowchart TD
+    A["Kubernetes Job<br/>eidos snapshot"] --> B{"Has RBAC?"}
+    B -->|Yes| C["Write to ConfigMap<br/>eidos-snapshot"]
+    B -->|No| D["Error: Forbidden"]
+    
+    C --> E["External CLI<br/>eidos recipe<br/>-f cm://ns/snap"]
+    
+    E --> F["Generate Recipe<br/>from ConfigMap"]
+    
+    F --> G["Bundle Generation"]
+    
+    style C fill:#90EE90
+    style D fill:#FFB6C1
+```
+
+**Deployment:**
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: eidos
+  namespace: gpu-operator
+spec:
+  template:
+    spec:
+      serviceAccountName: eidos
+      containers:
+      - name: eidos
+        image: ghcr.io/nvidia/eidos:latest
+        command:
+        - eidos
+        - snapshot
+        - --output
+        - cm://gpu-operator/eidos-snapshot
+      restartPolicy: Never
+```
+
+**RBAC Requirements:**
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eidos
+  namespace: gpu-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: eidos
+  namespace: gpu-operator
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eidos
+  namespace: gpu-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: eidos
+subjects:
+- kind: ServiceAccount
+  name: eidos
+  namespace: gpu-operator  # Must match ServiceAccount namespace
+```
+
+**Key Points:**
+- No volumes needed - writes directly via Kubernetes API
+- RBAC RoleBinding must reference correct namespace
+- ConfigMap automatically created if doesn't exist
+- Supports update pattern (overwrite existing snapshots)
+- For complete examples, see [deployments/eidos-agent/](../../../deployments/eidos-agent/)
 ```
 
 ### Recipe Command: `pkg/cli/recipe.go`

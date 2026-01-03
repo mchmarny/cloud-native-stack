@@ -26,6 +26,33 @@ The entire recipe data is defined in a single YAML file: [`pkg/recipe/data/data-
 
 > Note: This file is embedded into both the CLI binary and API server at compile time, making the system fully self-contained with no external dependencies.
 
+**Recipe Usage Patterns:**
+
+1. **CLI Query Mode** - Direct recipe generation from parameters:
+   ```bash
+   eidos recipe --os ubuntu --gpu h100 --intent training
+   ```
+
+2. **CLI Snapshot Mode** - Analyze captured system state:
+   ```bash
+   eidos snapshot --output system.yaml
+   eidos recipe --snapshot system.yaml --intent training
+   ```
+
+3. **ConfigMap Integration** - Kubernetes-native storage:
+   ```bash
+   # Agent writes snapshot to ConfigMap
+   eidos snapshot --output cm://gpu-operator/eidos-snapshot
+   
+   # CLI reads from ConfigMap to generate recipe
+   eidos recipe --snapshot cm://gpu-operator/eidos-snapshot --intent training
+   ```
+
+4. **API Server** - HTTP endpoint (query mode only):
+   ```bash
+   curl "https://cns.dgxc.io/v1/recipe?os=ubuntu&gpu=h100&intent=training"
+   ```
+
 ## Data Structure
 
 The recipe data follows this top-level structure:

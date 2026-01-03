@@ -68,6 +68,32 @@ Each stage transforms data into increasingly deployment-ready formats.
 └─────────────────────────────────────────────────────────┘
 ```
 
+**Output Destinations:**
+- **File**: `eidos snapshot --output system.yaml`
+- **Stdout**: `eidos snapshot` (default, pipe to other commands)
+- **ConfigMap**: `eidos snapshot --output cm://namespace/name` (Kubernetes-native)
+
+**ConfigMap Storage Pattern:**
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eidos-snapshot
+  namespace: gpu-operator
+data:
+  snapshot.yaml: |
+    # Complete snapshot YAML stored as ConfigMap data
+    apiVersion: snapshot.dgxc.io/v1
+    kind: Snapshot
+    measurements: [...]
+```
+
+**Agent Deployment:**  
+Kubernetes Job writes snapshots directly to ConfigMap without volumes:
+```bash
+eidos snapshot --output cm://gpu-operator/eidos-snapshot
+```
+
 **Reading Interface:**
 ```go
 type Reading interface {
@@ -106,6 +132,33 @@ type Reading interface {
 - Timeout: 30 seconds per collector
 
 ## Stage 2: Recipe (Data Optimization)
+
+### Recipe Input Options
+
+**Query Mode** - Direct generation from parameters:
+```bash
+eidos recipe --os ubuntu --gpu h100 --service eks --intent training
+```
+
+**Snapshot Mode (File)** - Analyze captured snapshot:
+```bash
+eidos snapshot --output system.yaml
+eidos recipe --snapshot system.yaml --intent training
+```
+
+**Snapshot Mode (ConfigMap)** - Read from Kubernetes:
+```bash
+# Agent or CLI writes snapshot to ConfigMap
+eidos snapshot --output cm://gpu-operator/eidos-snapshot
+
+# CLI reads from ConfigMap to generate recipe
+eidos recipe --snapshot cm://gpu-operator/eidos-snapshot --intent training
+
+# Recipe can also be written to ConfigMap
+eidos recipe --snapshot cm://gpu-operator/eidos-snapshot \
+            --intent training \
+            --output cm://gpu-operator/eidos-recipe
+```
 
 ### Query Extraction (Snapshot Mode)
 
