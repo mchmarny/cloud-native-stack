@@ -23,21 +23,22 @@ Cloud Native Stack (CNS) delivers **opinionated, battle-tested blueprints** for 
 - **API Server** – REST API (https://cns.dgxc.io) for integration with CI/CD pipelines and automation workflows  
 - **Agent** – Kubernetes Job for automated, in-cluster snapshot collection and validation
 
-**Note**: Documentation for the previous version (manual installation guides, playbooks, and platform-specific optimizations) is located in [docs/v1](docs/v1).
-
 ## Documentation
 
-The documentation is organized by persona to help you find what you need quickly. Whether you're deploying GPU infrastructure, contributing code, or integrating CNS into automation pipelines, start with the section that matches your role.
+The documentation is organized by persona to help you find what you need quickly. Whether you're deploying GPU infrastructure, contributing code to the CNS project, or integrating CNS into your product or service, start with the section that matches your role.
+
+**Note**: Documentation for the previous version (manual installation guides, playbooks, and platform-specific optimizations) is located in [docs/v1](docs/v1).
 
 ### For Users
 
-You're a platform engineer, MLOps practitioner, or cluster administrator responsible for deploying and operating GPU-accelerated Kubernetes clusters. You need practical guides to get CNS running and validated configurations for your specific hardware and workload requirements.
+You are responsible for deploying and operating GPU-accelerated Kubernetes clusters. You need practical guides to get CNS running and validated configurations for your specific hardware and workload requirements.
 
 Get started with installing and using Cloud Native Stack:
 
 - **[Installation Guide](docs/user-guide/installation.md)** – Install the eidos CLI (automated script, manual, or build from source)
 - **[CLI Reference](docs/user-guide/cli-reference.md)** – Complete command reference with examples
-- **[Agent Deployment](docs/user-guide/agent-deployment.md)** – Deploy the Kubernetes agent for automated snapshots
+- **[Agent Deployment](docs/user-guide/agent-deployment.md)** – Deploy the Kubernetes agent to get automated configuration snapshots
+- **[Project Roadmap](ROADMAP.md)** – Feature priorities and development timeline
 
 ### For Developers
 
@@ -45,6 +46,7 @@ You're a software engineer looking to contribute code, extend functionality, or 
 
 Learn how to contribute and understand the architecture:
 
+- **[Project Roadmap](ROADMAP.md)** – Feature priorities and development timeline
 - **[Contributing Guide](CONTRIBUTING.md)** – Development setup, testing, and PR process
 - **[Architecture Overview](docs/architecture/README.md)** – System design and components
 - **[Bundler Development](docs/architecture/bundler-development.md)** – How to create new bundlers
@@ -52,7 +54,7 @@ Learn how to contribute and understand the architecture:
 
 ### For Integrators
 
-You're an automation engineer, DevOps specialist, or platform architect integrating CNS into CI/CD pipelines, GitOps workflows, or infrastructure-as-code systems. You need API documentation, data schemas, and patterns for programmatic interaction with CNS components.
+You are integrating CNS into CI/CD pipelines, GitOps workflows, or existing product or service. You need API documentation, data schemas, and patterns for programmatic interaction with CNS components.
 
 Integrate Cloud Native Stack into your infrastructure automation:
 
@@ -63,11 +65,7 @@ Integrate Cloud Native Stack into your infrastructure automation:
 
 ### Additional Resources
 
-Planning and reference documentation:
-
-- **[Project Roadmap](ROADMAP.md)** – Feature priorities and development timeline
-
-Platform-specific installation guides and optimizations:
+Platform-specific installation guides for manual installation and optimizations (aka CNS v1):
 
 - **[Installation Guides](docs/v1/install-guides)** – Step-by-step setup for various platforms
 - **[Playbooks](docs/v1/playbooks)** – Ansible automation for CNS deployment
