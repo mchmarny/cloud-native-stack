@@ -4,7 +4,7 @@
 
 Cloud Native Stack (CNS) delivers **opinionated, battle-tested blueprints** for deploying AI workloads on GPU infrastructure. Rather than generic recommendations, CNS provides **validated configurations** proven in production environments, ensuring **reproducible outcomes** across diverse platforms (EKS, GKE, AKS, OKE, and self-managed).
 
-### Why Cloud Native Stack?
+## Why Cloud Native Stack?
 
 **🎯 Opinionated Best Practices** – Eliminates guesswork with prescriptive configurations based on NVIDIA's extensive field experience and customer deployments.
 
@@ -17,7 +17,7 @@ Cloud Native Stack (CNS) delivers **opinionated, battle-tested blueprints** for 
 2. **Recipe** – Generate optimized configuration recommendations based on your environment
 3. **Bundle** – Create ready-to-deploy artifacts (Helm values, manifests, scripts)
 
-### Components
+## Components
 
 - **CLI (`eidos`)** – Command-line tool for snapshot capture, recipe generation, and bundle creation
 - **API Server** – REST API (https://cns.dgxc.io) for integration with CI/CD pipelines and automation workflows  
@@ -38,7 +38,8 @@ Get started with installing and using Cloud Native Stack:
 - **[Installation Guide](docs/user-guide/installation.md)** – Install the eidos CLI (automated script, manual, or build from source)
 - **[CLI Reference](docs/user-guide/cli-reference.md)** – Complete command reference with examples
 - **[Agent Deployment](docs/user-guide/agent-deployment.md)** – Deploy the Kubernetes agent to get automated configuration snapshots
-- **[Project Roadmap](ROADMAP.md)** – Feature priorities and development timeline
+
+> **Supply Chain Security** – CNS includes SLSA Build Level 3 compliance with signed SBOMs and verifiable attestations (see [SECURITY](SECURITY.md#supply-chain-security))
 
 ### For Developers
 
@@ -46,7 +47,6 @@ You're a software engineer looking to contribute code, extend functionality, or 
 
 Learn how to contribute and understand the architecture:
 
-- **[Project Roadmap](ROADMAP.md)** – Feature priorities and development timeline
 - **[Contributing Guide](CONTRIBUTING.md)** – Development setup, testing, and PR process
 - **[Architecture Overview](docs/architecture/README.md)** – System design and components
 - **[Bundler Development](docs/architecture/bundler-development.md)** – How to create new bundlers
@@ -63,19 +63,10 @@ Integrate Cloud Native Stack into your infrastructure automation:
 - **[Automation Guide](docs/integration/automation.md)** – CI/CD integration patterns
 - **[Kubernetes Deployment](docs/integration/kubernetes-deployment.md)** – Self-hosted API server setup
 
-### Additional Resources
+## Project Resources
 
-Platform-specific installation guides for manual installation and optimizations (aka CNS v1):
-
-- **[Installation Guides](docs/v1/install-guides)** – Step-by-step setup for various platforms
-- **[Playbooks](docs/v1/playbooks)** – Ansible automation for CNS deployment
-- **[Optimizations](docs/v1/optimizations)** – Hardware-specific performance tuning
-- **[Troubleshooting](docs/v1/troubleshooting)** – Common issues and solutions
-- **[Full Documentation](docs/v1/README.md)** – Complete legacy documentation
-
-## Support
-
-- **Security**: [Project and Artifact Security](SECURITY.md)
-- **Releases**: [GitHub Releases](https://github.com/NVIDIA/cloud-native-stack/releases)
-- **Issues**: [GitHub Issues](https://github.com/NVIDIA/cloud-native-stack/issues)
-- **Questions**: Open a discussion or issue on GitHub
+- **[Roadmap](ROADMAP.md)** – Feature priorities and development timeline
+- **[Transition](docs/MIGRATION.md)** - Migration to CLI/API-based bundle generation
+- **[Security](SECURITY.md)** - Security-related resources 
+- **[Releases](https://github.com/NVIDIA/cloud-native-stack/releases)** - Binaries, SBOMs, and other artifacts
+- **[Issues](https://github.com/NVIDIA/cloud-native-stack/issues)** - Bugs, feature requests, and questions

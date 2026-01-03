@@ -4,7 +4,13 @@
 
 This document provides a comprehensive comparison between the traditional documentation-driven installation approach and the new CLI-based bundle generation approach for deploying NVIDIA Cloud Native Stack components.
 
-**Current Status**: The CLI-based approach is fully implemented with GPU Operator and Network Operator bundlers. Legacy documentation is preserved in [docs/v1](v1/) for reference, while new user/developer/integrator documentation is organized in dedicated directories.
+**Current Status**: The CLI-based approach is fully implemented with GPU Operator and Network Operator bundlers, ConfigMap-native Kubernetes integration, and comprehensive E2E testing. Legacy documentation is preserved in [docs/v1](v1/) for reference, while new user/developer/integrator documentation is organized in dedicated directories.
+
+**Latest Features:**
+- ✅ ConfigMap URI support (`cm://namespace/name`) for Kubernetes-native storage
+- ✅ End-to-end testing validated with `tools/e2e` script
+- ✅ Supply chain security (SLSA Build Level 3, SBOM attestations)
+- ✅ Agent deployment with ConfigMap output (no volumes needed)
 
 ---
 
@@ -127,8 +133,13 @@ eidos snapshot → eidos recipe → eidos bundle
 ```
 
 - **Snapshot**: Captures actual system state (OS, GPU, K8s, SystemD services)
+  - Outputs to file, stdout, or **ConfigMap** (`cm://namespace/name`)
+  - Kubernetes agent writes directly to ConfigMap (no volumes needed)
 - **Recipe**: Generates optimized recipes based on workload intent (training/inference)
+  - Can read from ConfigMap URIs for seamless Kubernetes integration
+  - Outputs to file, stdout, or ConfigMap
 - **Bundle**: Creates deployment-ready bundles tailored to environment
+  - Can read recipes from ConfigMap URIs
 
 #### 2. Bundle Output Structure
 
@@ -207,7 +218,7 @@ System → Snapshot → Recipe (with intent) → Bundle → Deploy
 3. **Bundle**: Generates deployment artifacts in seconds
 4. **Deploy**: Execute `./scripts/install.sh` or use Helm directly
 
-**Example Commands:**
+**Example Commands (File-based):**
 ```bash
 # Step 1: Capture system snapshot
 eidos snapshot --output snapshot.yaml
@@ -222,6 +233,38 @@ eidos bundle --recipe recipe.yaml --output ./bundles
 cd bundles/gpu-operator
 chmod +x scripts/install.sh
 ./scripts/install.sh
+```
+
+**Example Commands (Kubernetes ConfigMap-based):**
+```bash
+# Step 1: Capture snapshot to ConfigMap (no file needed)
+eidos snapshot -o cm://gpu-operator/eidos-snapshot
+
+# Step 2: Generate recipe from ConfigMap to ConfigMap
+eidos recipe -f cm://gpu-operator/eidos-snapshot --intent training -o cm://gpu-operator/eidos-recipe
+
+# Step 3: Create bundle from ConfigMap recipe
+eidos bundle -f cm://gpu-operator/eidos-recipe -o ./bundles
+
+# Step 4: Deploy GPU Operator
+cd bundles/gpu-operator
+./scripts/install.sh
+```
+
+**Kubernetes Agent Deployment:**
+```bash
+# Deploy agent Job (writes snapshot directly to ConfigMap)
+kubectl apply -f https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/deployments/eidos-agent/1-deps.yaml
+kubectl apply -f https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/deployments/eidos-agent/2-job.yaml
+
+# Wait for completion
+kubectl wait --for=condition=complete --timeout=300s job/eidos -n gpu-operator
+
+# Get snapshot from ConfigMap
+kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
+
+# Or use ConfigMap URI directly
+eidos recipe -f cm://gpu-operator/eidos-snapshot --intent training -o recipe.yaml
 ```
 
 #### 6. Advantages
@@ -240,6 +283,9 @@ chmod +x scripts/install.sh
 - ✅ **Intent-Based**: Optimizations based on workload intent (training/inference)
 - ✅ **API Integration**: REST API for automation pipelines
 - ✅ **Comprehensive Docs**: 9+ guides across user/integration/architecture domains
+- ✅ **ConfigMap Integration**: Native Kubernetes storage with `cm://namespace/name` URIs
+- ✅ **E2E Tested**: Validated complete workflow with `tools/e2e` script
+- ✅ **Supply Chain Security**: SLSA Build Level 3 compliance with SBOM attestations
 
 ---
 
@@ -261,6 +307,9 @@ chmod +x scripts/install.sh
 | **Documentation Updates** | Must update 14+ files per release | Update recipe data once |
 | **Reproducibility** | Depends on user following steps | Checksums verify bundle integrity |
 | **Extensibility** | Add new playbooks and docs | Implement bundler interface |
+| **Kubernetes Integration** | Manual file management | Native ConfigMap storage |
+| **E2E Testing** | Manual testing only | Automated with `tools/e2e` |
+| **Supply Chain Security** | No attestations | SLSA Level 3 + SBOM |
 
 ---
 
@@ -281,6 +330,11 @@ chmod +x scripts/install.sh
 - ✅ Recipe data extraction from snapshots
 - ✅ REST API for automation integration
 - ✅ Comprehensive user and developer documentation
+- ✅ **ConfigMap URI support** (`cm://namespace/name`) for input/output
+- ✅ **Kubernetes-native storage** - direct ConfigMap read/write
+- ✅ **E2E testing framework** - `tools/e2e` script validates complete workflow
+- ✅ **Supply chain security** - SLSA attestations, SBOM generation
+- ✅ **Agent deployment** - writes snapshots to ConfigMap (no volumes)
 
 ### What Remains for Future Phases
 
@@ -485,6 +539,12 @@ iommu.passthrough=1
 - ✅ Comprehensive documentation (9+ guides across 3 audience types)
 - ✅ TestHarness for consistent bundler testing
 - ✅ CI/CD integration examples and patterns
+- ✅ **ConfigMap integration** - `cm://namespace/name` URI support
+- ✅ **Kubernetes-native storage** - direct ConfigMap read/write without files
+- ✅ **E2E testing** - validated complete workflow with `tools/e2e`
+- ✅ **Supply chain security** - SLSA Build Level 3 attestations
+- ✅ **SBOM generation** - Cosign-signed attestations in SPDX format
+- ✅ **Agent deployment** - ConfigMap output (no volume dependencies)
 
 **Legacy Preserved:**
 - ✅ All v1 documentation in docs/v1/
@@ -504,6 +564,9 @@ The project has successfully transitioned from a **documentation-driven** approa
 - **Comprehensive testing** with automated bundle generation tests
 - **Fast iteration** - update recipe data once, regenerate all bundles
 - **Clear documentation** organized by audience (users, integrators, developers)
+- **Kubernetes-native** - ConfigMap integration eliminates file/volume management
+- **E2E validated** - complete workflow tested from agent deployment to bundle generation
+- **Supply chain secured** - SLSA Level 3 attestations and verifiable SBOMs
 
 ### Recommended Workflow
 
