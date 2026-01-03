@@ -80,7 +80,7 @@ kos:
   - id: eidos
     build: eidos
     repositories:
-      - ghcr.io/mchmarny/eidos
+      - ghcr.io/mchmarny/eidos  # NVIDIA
     base_image: nvcr.io/nvidia/cuda:13.1.0-runtime-ubuntu24.04
     platforms:
       - linux/amd64

@@ -19,6 +19,7 @@ variable "project_id" {
   default     = "eidosx"
 }
 
+# NVidia GitHub Repo
 variable "git_repo" {
   description = "GitHub Repo"
   type        = string

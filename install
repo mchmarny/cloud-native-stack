@@ -6,7 +6,7 @@ set -euo pipefail
 INSTALL_DIR="${1:-/usr/local/bin}"
 
 # global variables
-OWNER="mchmarny"
+OWNER="mchmarny"  # NVIDIA
 PROJECT="cloud-native-stack"
 REPO="$OWNER/$PROJECT"
 BIN_NAME="eidos"
