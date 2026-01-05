@@ -455,4 +455,5 @@ Recipe format is currently `v1` with embedded data. Future versions might need s
 
 ## Revision History
 
-- **2025-01-01**: Initial comprehensive roadmap based on project objectives and gap analysis 
+- **2026-01-01**: Initial comprehensive roadmap based on project objectives and gap analysis 
+- **2026-01-05**: Added [Opens section](#opens) based on architectural decisions, implementation questions
