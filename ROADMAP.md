@@ -369,6 +369,88 @@
 
 ---
 
+## Opens
+
+This section outlines key architectural decisions, implementation questions, and discussion topics for Cloud Native Stack. These items represent areas where community input, design trade-offs, or further exploration would be valuable.
+
+### Architecture & Design
+
+**Should snapshot collection support best-effort mode for partial data scenarios?**  
+Current implementation uses fail-fast: if any collector (K8s, GPU, OS, SystemD) fails, the entire snapshot fails. Alternative is best-effort mode where partial data is returned with incomplete markers. Trade-offs: fail-fast ensures data consistency but may be too strict for degraded environments; best-effort improves availability but complicates downstream validation and could mask real issues requiring attention.
+
+**How should we handle collector execution order and dependencies?**  
+Currently all collectors run in parallel via `errgroup` for speed. Some collectors might benefit from sequential execution or conditional execution based on previous results. Trade-offs: parallel execution maximizes speed but prevents dependency resolution; sequential execution enables smarter collection but increases latency. Should we add collector metadata for optional dependency declarations?
+
+**What is the right caching strategy for recipe data and collected snapshots?**  
+Recipe store is currently loaded once at initialization. Snapshots are collected fresh each time. Adding caching (in-memory with TTL) could speed up repeated calls in CI/CD pipelines (5-10x improvement). Trade-offs: cached data may be stale; cache invalidation complexity; memory overhead for large snapshots. Need clear cache key strategy (hash of collection parameters) and explicit `--no-cache` flag for critical operations.
+
+**Should we support incremental snapshots that only capture changed data?**  
+Current snapshots are always complete, capturing all measurements. Incremental snapshots could significantly reduce size and collection time by only including changed data since last snapshot. This requires baseline storage and diff calculation. Trade-offs: smaller payloads and faster collection vs added complexity in diff calculation, baseline management, and potential for missed changes if baseline is corrupted or unavailable.
+
+### Storage & Distribution
+
+**How should bundles be packaged and distributed in disconnected environments?**  
+Current bundles are directory-based with files and checksums. Disconnected/air-gapped environments need portable bundle formats. Options: (1) tar.gz archives with signature verification, (2) OCI image format for registry storage with cosign signatures, (3) custom package format with metadata. Trade-offs: OCI provides existing infrastructure but adds complexity; tar.gz is simple but requires separate signature mechanism; custom format offers control but requires tooling ecosystem.
+
+**What storage backends should agent snapshots support beyond ConfigMaps?**  
+Agent currently writes to ConfigMap (`cm://namespace/name`). PVC-based storage enables historical retention and drift detection. Other options: S3/GCS for centralized multi-cluster storage, custom CRDs for structured data with validation. Trade-offs: ConfigMaps are simple and native but size-limited (1MB); PVCs enable large snapshots but require storage provisioning; cloud storage centralizes data but adds external dependencies; CRDs provide validation but require custom controllers. Any time we push captured data out of the cluster there is also the perception issue. 
+
+**Should recipe data remain embedded or support external data sources?**  
+Recipe data is currently embedded in binary (via `go:embed`) from `pkg/recipe/data/data-v1.yaml`, making the system self-contained with zero external dependencies. External sources (HTTP URL, git repository, ConfigMap) would enable runtime updates without recompilation. Trade-offs: embedded data ensures consistency and zero runtime dependencies but requires recompilation for updates; external sources enable dynamic updates but introduce network dependencies, version skew risks, and cache invalidation challenges.
+
+### Bundle Generation & Orchestration
+
+**How should bundlers declare and resolve dependencies on each other?**  
+Current bundlers execute independently in parallel. Some bundlers have implicit dependencies (e.g., KServe needs storage provisioner, load balancer, monitoring). Options: (1) declarative dependency metadata in bundler registration, (2) topological sort for installation order, (3) unified installation orchestrator. Trade-offs: independent bundlers are simple but require manual coordination; dependency resolution automates ordering but adds complexity; orchestrator provides full control but becomes single point of failure.
+
+**Should bundle generation support template customization or extension points?**  
+Current bundlers use embedded templates (`go:embed`) that cannot be modified without code changes. Users might want to customize templates for organizational standards (labels, annotations, registry URLs). Options: (1) external template overlays, (2) template variables in config files, (3) post-generation hooks. Trade-offs: embedded templates ensure consistency but limit customization; external overlays enable flexibility but introduce version compatibility issues; hooks provide power but can break bundles if misused.
+
+**What is the right level of abstraction for cross-bundle configurations?**  
+Bundles currently operate independently with separate configuration. Shared settings (registry URLs, namespace names, image pull secrets) are duplicated across bundles. Options: (1) shared configuration file with common values, (2) bundle composition layer that applies common transforms, (3) base bundle that others extend. Trade-offs: shared config reduces duplication but creates implicit dependencies; composition layer is flexible but complex; base bundle inheritance provides structure but limits independent evolution.
+
+### Validation & Policy
+
+**How should configuration validation be integrated into the workflow?**  
+Currently no built-in validation for snapshots or recipes beyond basic schema checks. Users need policy enforcement (e.g., minimum K8s version, required GPU driver versions, security settings). Options: (1) JSON Schema validation embedded in CLI, (2) OPA integration with embedded policy engine, (3) admission webhooks for Kubernetes resources. Trade-offs: JSON Schema is simple but limited to structure; OPA provides full policy language but adds binary size; admission webhooks enforce at deploy time but require cluster infrastructure.
+
+**Should bundles include validation and smoke tests for deployment verification?**  
+Generated bundles contain installation scripts but no verification. Post-deployment validation would confirm operator readiness and basic functionality. Options: (1) include validation scripts that check pod status and CRD creation, (2) generate smoke test workloads (simple GPU job), (3) integration with test frameworks (Ginkgo). Trade-offs: validation scripts are simple but limited; smoke tests provide confidence but increase bundle size; test framework integration is powerful but requires dependencies.
+
+### Data Collection & Observability
+
+**What level of context and provenance should measurements include?**  
+Measurements currently capture values but minimal context about collection method or source. Richer context (collection timestamp, source file/API, validation status, confidence level) would improve debugging and trustworthiness. Trade-offs: detailed context increases snapshot size significantly (potentially 2-3x); collection overhead for metadata gathering; but provides crucial debugging information and audit trail for compliance scenarios.
+
+**How should the system handle collection failures and partial data?**  
+Some environments have intermittent failures (Kubernetes API timeouts, GPU SMI hangs, missing systemd services). Current fail-fast approach might be too strict. Options: (1) continue-on-error mode with failure annotations, (2) retry with exponential backoff, (3) degraded mode indicators. Trade-offs: continue-on-error improves success rate but downstream tools must handle partial data; retries increase latency; degraded mode is complex to implement and reason about.
+
+**Should collectors support filtering to reduce snapshot size and collection time?**  
+Current snapshot captures all measurement types (OS, SystemD, K8s, GPU). Large clusters generate large snapshots. Filtering (`--include gpu,os` or `--exclude k8s`) would reduce size and collection time for targeted use cases. Trade-offs: filtering reduces overhead but requires collectors to support conditional execution; downstream tools must handle incomplete snapshots; risk of excluding needed data if filter is too aggressive.
+
+### Performance & Scalability
+
+**How should the system handle very large Kubernetes clusters (1000+ nodes)?**  
+K8s collector lists all pods, nodes, and images which can be expensive in large clusters. Options: (1) pagination for API requests, (2) field selectors to filter data at API level, (3) sampling strategies for large datasets, (4) distributed collection with multiple agents. Trade-offs: pagination reduces memory but increases latency; field selectors are efficient but might miss needed data; sampling loses completeness; distributed collection is complex but scales.
+
+### Developer Experience & Extensibility
+
+**Should the project support plugin-based extensibility for custom collectors?**  
+Current collectors are compiled into binary. Organizations with proprietary metrics or configurations cannot extend without forking. Options: (1) Go plugins (unstable due to version requirements), (2) WASM-based sandboxed plugins, (3) external process execution with structured output, (4) gRPC-based plugin protocol. Trade-offs: Go plugins have version compatibility issues; WASM is secure but limited syscall access; external processes are flexible but slow; gRPC protocol is robust but adds complexity.
+
+**What is the right level of abstraction for the bundler framework?**  
+Current BaseBundler helper reduces boilerplate significantly (75% reduction). Could go further with even more opinionated conventions or pull back for more flexibility. Options: (1) full framework with convention-over-configuration, (2) current helper approach, (3) minimal interface with examples. Trade-offs: full framework is fastest for common cases but constraining; helper approach balances speed and flexibility; minimal interface provides freedom but requires more code.
+
+### Migration & Compatibility
+
+**How should the project handle backward compatibility with v1 documentation-based approach?**  
+Legacy documentation in `docs/v1/` represents previous manual installation approach. Some users still use Ansible playbooks and install guides. Support strategy needed: (1) maintain both approaches indefinitely, (2) deprecation timeline with migration tools, (3) immediate removal after transition period. Trade-offs: dual maintenance is costly; deprecation provides transition time but delays simplification; immediate removal forces migration but may lose users.
+
+**What is the strategy for recipe data versioning and API evolution?**  
+Recipe format is currently `v1` with embedded data. Future versions might need schema changes, new measurement types, or different overlay rules. Options: (1) API version negotiation with multiple format support, (2) in-place evolution with backward compatibility, (3) explicit version bumps with migration tools. Trade-offs: multiple version support is complex but safe; in-place evolution is simpler but risks breaking changes; version bumps are clear but require migration tooling. 
+
+---
+
 ## Revision History
 
 - **2025-01-01**: Initial comprehensive roadmap based on project objectives and gap analysis 
