@@ -6,6 +6,11 @@ Deploy Eidos as a Kubernetes Job to automatically capture cluster configuration 
 
 The agent is a Kubernetes Job that captures system configuration and writes output to a ConfigMap.
 
+**Deployment options:**
+
+1. **CLI-based deployment** (recommended): Use `eidos snapshot --deploy-agent` to deploy and manage Job programmatically
+2. **kubectl deployment**: Manually apply YAML manifests with `kubectl apply`
+
 **What it does:**
 
 - Runs `eidos snapshot --output cm://gpu-operator/eidos-snapshot` on a GPU node
@@ -54,11 +59,99 @@ data:
 ## Prerequisites
 
 - Kubernetes cluster with GPU nodes
-- `kubectl` configured with cluster access
+- `kubectl` configured with cluster access (for manual deployment) OR Eidos CLI installed (for CLI-based deployment)
 - GPU Operator installed (agent runs in `gpu-operator` namespace)
 - Cluster admin permissions (for RBAC setup)
 
-## Quick Start
+## Quick Start (CLI-Based Deployment)
+
+**Recommended approach**: Deploy agent programmatically using the CLI.
+
+### 1. Deploy Agent with Single Command
+
+```shell
+eidos snapshot --deploy-agent
+```
+
+This single command:
+1. Creates RBAC resources (ServiceAccount, Role, RoleBinding, ClusterRole, ClusterRoleBinding)
+2. Deploys Job to capture snapshot
+3. Waits for Job completion (5m timeout by default)
+4. Retrieves snapshot from ConfigMap
+5. Writes snapshot to stdout (or specified output)
+6. Cleans up Job (keeps RBAC for reuse)
+
+### 2. View Snapshot Output
+
+Snapshot is written to specified output:
+
+```shell
+# Output to stdout (default)
+eidos snapshot --deploy-agent
+
+# Save to file
+eidos snapshot --deploy-agent --output snapshot.yaml
+
+# Keep in ConfigMap for later use
+eidos snapshot --deploy-agent --output cm://gpu-operator/eidos-snapshot
+
+# Retrieve from ConfigMap later
+kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}'
+```
+
+### 3. Customize Deployment
+
+Target specific nodes and configure scheduling:
+
+```shell
+# Target GPU nodes with specific label
+eidos snapshot --deploy-agent \
+  --node-selector accelerator=nvidia-h100
+
+# Handle tainted nodes
+eidos snapshot --deploy-agent \
+  --toleration nvidia.com/gpu=present:NoSchedule
+
+# Full customization
+eidos snapshot --deploy-agent \
+  --namespace gpu-operator \
+  --image ghcr.io/nvidia/eidos:v0.8.0 \
+  --node-selector accelerator=nvidia-h100 \
+  --toleration nvidia.com/gpu:NoSchedule \
+  --timeout 10m \
+  --output cm://gpu-operator/eidos-snapshot
+```
+
+**Available flags:**
+- `--deploy-agent`: Enable agent deployment mode
+- `--kubeconfig`: Custom kubeconfig path (default: `~/.kube/config` or `$KUBECONFIG`)
+- `--namespace`: Deployment namespace (default: `gpu-operator`)
+- `--image`: Container image (default: `ghcr.io/nvidia/eidos:latest`)
+- `--job-name`: Job name (default: `eidos`)
+- `--service-account-name`: ServiceAccount name (default: `eidos`)
+- `--node-selector`: Node selector (format: `key=value`, repeatable)
+- `--toleration`: Toleration (format: `key=value:effect`, repeatable)
+- `--timeout`: Wait timeout (default: `5m`)
+- `--cleanup-rbac`: Delete RBAC on cleanup (default: `false`, keeps for reuse)
+
+### 4. Check Agent Logs (Debugging)
+
+If something goes wrong, check Job logs:
+
+```shell
+# Get Job status
+kubectl get jobs -n gpu-operator
+
+# View logs
+kubectl logs -n gpu-operator job/eidos
+
+# Describe Job for events
+kubectl describe job eidos -n gpu-operator
+```
+
+## Manual Deployment (kubectl)
+
+Alternative approach using kubectl with YAML manifests.
 
 ### 1. Deploy RBAC and ServiceAccount
 
@@ -374,12 +467,105 @@ kubectl delete job eidos -n gpu-operator
 kubectl delete -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/deployments/eidos-agent/1-deps.yaml
 ```
 
+## Complete Workflow Examples
+
+### CLI-Based Workflow (Recommended)
+
+```shell
+# Step 1: Deploy agent and capture snapshot to ConfigMap
+eidos snapshot --deploy-agent --output cm://gpu-operator/eidos-snapshot
+
+# Step 2: Generate recipe from ConfigMap (with kubeconfig if needed)
+eidos recipe \
+  --snapshot cm://gpu-operator/eidos-snapshot \
+  --kubeconfig ~/.kube/config \
+  --intent training \
+  --output recipe.yaml
+
+# Step 3: Create deployment bundle
+eidos bundle \
+  --recipe recipe.yaml \
+  --bundlers gpu-operator \
+  --output ./bundles
+
+# Step 4: Deploy to cluster
+cd bundles/gpu-operator
+./scripts/install.sh
+
+# Step 5: Verify deployment
+kubectl get pods -n gpu-operator
+kubectl logs -n gpu-operator -l app=nvidia-operator-validator
+```
+
+### Manual kubectl Workflow
+
+### Manual kubectl Workflow
+
+```shell
+# Step 1: Deploy RBAC and Job using kubectl
+kubectl apply -f deployments/eidos-agent/1-deps.yaml
+kubectl apply -f deployments/eidos-agent/2-job.yaml
+
+# Step 2: Wait for completion
+kubectl wait --for=condition=complete job/eidos -n gpu-operator --timeout=5m
+
+# Step 3: Generate recipe from ConfigMap
+eidos recipe \
+  --snapshot cm://gpu-operator/eidos-snapshot \
+  --intent training \
+  --output recipe.yaml
+
+# Step 4: Create bundle
+eidos bundle \
+  --recipe recipe.yaml \
+  --bundlers gpu-operator \
+  --output ./bundles
+
+# Step 5: Deploy and verify
+cd bundles/gpu-operator
+./scripts/install.sh
+kubectl get pods -n gpu-operator
+```
+
 ## Integration Patterns
 
-### 1. CI/CD Pipeline
+### 1. CI/CD Pipeline (CLI-Based)
 
 ```yaml
-# GitHub Actions example
+# GitHub Actions example with CLI
+- name: Capture snapshot using agent
+  run: |
+    eidos snapshot --deploy-agent \
+      --kubeconfig ${{ secrets.KUBECONFIG }} \
+      --namespace gpu-operator \
+      --output cm://gpu-operator/eidos-snapshot \
+      --timeout 10m
+    
+- name: Generate recipe from ConfigMap
+  run: |
+    eidos recipe \
+      --snapshot cm://gpu-operator/eidos-snapshot \
+      --kubeconfig ${{ secrets.KUBECONFIG }} \
+      --intent training \
+      --output recipe.yaml
+    
+- name: Generate bundle
+  run: |
+    eidos bundle -f recipe.yaml -b gpu-operator -o ./bundles
+    
+- name: Upload artifacts
+  uses: actions/upload-artifact@v3
+  with:
+    name: cluster-config
+    path: |
+      recipe.yaml
+      bundles/
+```
+
+### 2. CI/CD Pipeline (kubectl-Based)
+
+```yaml
+# GitHub Actions example with kubectl
 - name: Deploy agent to capture snapshot
   run: |
     kubectl apply -f deployments/eidos-agent/1-deps.yaml
@@ -411,11 +597,33 @@ kubectl delete -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/
       bundles/
 ```
 
-### 2. Multi-Cluster Auditing
+### 3. Multi-Cluster Auditing (CLI-Based)
 
 ```shell
 #!/bin/bash
-# Capture snapshots from multiple clusters
+# Capture snapshots from multiple clusters using CLI
+
+clusters=("prod-us-east" "prod-eu-west" "staging")
+
+for cluster in "${clusters[@]}"; do
+  echo "Capturing snapshot from $cluster..."
+  
+  # Switch context
+  kubectl config use-context $cluster
+  
+  # Deploy agent and capture snapshot
+  eidos snapshot --deploy-agent \
+    --namespace gpu-operator \
+    --output snapshot-${cluster}.yaml \
+    --timeout 10m
+done
+```
+
+### 4. Multi-Cluster Auditing (kubectl-Based)
+
+```shell
+#!/bin/bash
+# Capture snapshots from multiple clusters using kubectl
 
 clusters=("prod-us-east" "prod-eu-west" "staging")
 
@@ -439,23 +647,21 @@ for cluster in "${clusters[@]}"; do
 done
 ```
 
-### 3. Drift Detection
+### 5. Drift Detection
 
 ```shell
 #!/bin/bash
 # Compare current snapshot with baseline
 
-# Baseline (first snapshot)
-kubectl apply -f deployments/eidos-agent/2-job.yaml
-kubectl wait --for=condition=complete job/eidos -n gpu-operator
-kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > baseline.yaml
+# Baseline (first snapshot) - using CLI
+eidos snapshot --deploy-agent --output baseline.yaml
 
 # Current (later snapshot)
-kubectl apply -f deployments/eidos-agent/2-job.yaml
-kubectl wait --for=condition=complete job/eidos -n gpu-operator
-kubectl get configmap eidos-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > current.yaml
+eidos snapshot --deploy-agent --output current.yaml
 
 # Compare
+diff baseline.yaml current.yaml || echo "Configuration drift detected!"
+```# Compare
 diff baseline.yaml current.yaml || echo "Configuration drift detected!"
 ```
 

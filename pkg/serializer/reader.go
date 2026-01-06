@@ -307,13 +307,29 @@ func (r *Reader) Close() error {
 //
 //	snap, err := FromFile[Snapshot]("cm://gpu-operator/eidos-snapshot")
 func FromFile[T any](path string) (*T, error) {
+	return FromFileWithKubeconfig[T](path, "")
+}
+
+// FromFileWithKubeconfig reads and deserializes data from a file path, HTTP URL, or ConfigMap URI with custom kubeconfig.
+//
+// This is identical to FromFile but allows specifying a custom kubeconfig path for ConfigMap URIs.
+// The kubeconfig parameter is only used when path is a ConfigMap URI (cm://namespace/name).
+//
+// Parameters:
+//   - path: File path, HTTP/HTTPS URL, or ConfigMap URI (cm://namespace/name)
+//   - kubeconfig: Path to kubeconfig file (only used for ConfigMap URIs, empty string uses default discovery)
+//
+// Example:
+//
+//	snap, err := FromFileWithKubeconfig[Snapshot]("cm://gpu-operator/eidos-snapshot", "/custom/kubeconfig")
+func FromFileWithKubeconfig[T any](path, kubeconfig string) (*T, error) {
 	// Check for ConfigMap URI
 	if strings.HasPrefix(path, ConfigMapURIScheme) {
 		namespace, name, err := parseConfigMapURI(path)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ConfigMap URI: %w", err)
 		}
-		return fromConfigMap[T](namespace, name)
+		return fromConfigMapWithKubeconfig[T](namespace, name, kubeconfig)
 	}
 
 	fileFormat := FormatFromPath(path)
@@ -353,15 +369,22 @@ func FromFile[T any](path string) (*T, error) {
 	return &r, nil
 }
 
-// fromConfigMap reads and deserializes data from a Kubernetes ConfigMap.
-func fromConfigMap[T any](namespace, name string) (*T, error) {
-	client, _, err := client.GetKubeClient()
+// fromConfigMapWithKubeconfig reads and deserializes data from a Kubernetes ConfigMap with custom kubeconfig.
+func fromConfigMapWithKubeconfig[T any](namespace, name, kubeconfig string) (*T, error) {
+	var k8sClient client.Interface
+	var err error
+
+	if kubeconfig != "" {
+		k8sClient, _, err = client.GetKubeClientWithConfig(kubeconfig)
+	} else {
+		k8sClient, _, err = client.GetKubeClient()
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get kubernetes client: %w", err)
 	}
 
 	ctx := context.Background()
-	cm, err := client.CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
+	cm, err := k8sClient.CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ConfigMap %s/%s: %w", namespace, name, err)
 	}

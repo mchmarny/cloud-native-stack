@@ -42,6 +42,16 @@ eidos snapshot [flags]
 |------|-------|------|---------|-------------|
 | `--output` | `-o` | string | stdout | Output destination: file path, ConfigMap URI (cm://namespace/name), or stdout |
 | `--format` | `-f` | string | yaml | Output format: json, yaml, table |
+| `--kubeconfig` | `-k` | string | ~/.kube/config | Path to kubeconfig file (overrides KUBECONFIG env) |
+| `--deploy-agent` | | bool | false | Deploy Kubernetes Job to capture snapshot on cluster nodes |
+| `--namespace` | `-n` | string | gpu-operator | Kubernetes namespace for agent deployment |
+| `--image` | | string | ghcr.io/nvidia/eidos:latest | Container image for agent Job |
+| `--job-name` | | string | eidos | Name for the agent Job |
+| `--service-account-name` | | string | eidos | ServiceAccount name for agent Job |
+| `--node-selector` | | string[] | | Node selector for agent scheduling (key=value, repeatable) |
+| `--toleration` | | string[] | | Tolerations for agent scheduling (key=value:effect, repeatable) |
+| `--timeout` | | duration | 5m | Timeout for agent Job completion |
+| `--cleanup-rbac` | | bool | false | Delete RBAC resources on cleanup (default: keep for reuse) |
 
 **Output Destinations:**
 - **stdout**: Default when no `-o` flag specified
@@ -71,6 +81,59 @@ eidos --debug snapshot
 
 # Table format (human-readable)
 eidos snapshot --format table
+
+# Agent deployment mode: Deploy Job to capture snapshot on cluster node
+eidos snapshot --deploy-agent
+
+# Agent deployment with custom kubeconfig
+eidos snapshot --deploy-agent --kubeconfig ~/.kube/prod-cluster
+
+# Agent deployment targeting specific nodes
+eidos snapshot --deploy-agent \
+  --namespace gpu-operator \
+  --node-selector accelerator=nvidia-h100 \
+  --node-selector zone=us-west1-a
+
+# Agent deployment with tolerations for tainted nodes
+eidos snapshot --deploy-agent \
+  --toleration nvidia.com/gpu=present:NoSchedule
+
+# Agent deployment: Full example with all options
+eidos snapshot --deploy-agent \
+  --kubeconfig ~/.kube/config \
+  --namespace gpu-operator \
+  --image ghcr.io/nvidia/eidos:v0.8.0 \
+  --job-name snapshot-gpu-nodes \
+  --service-account-name eidos \
+  --node-selector accelerator=nvidia-h100 \
+  --toleration nvidia.com/gpu:NoSchedule \
+  --timeout 10m \
+  --output cm://gpu-operator/eidos-snapshot \
+  --cleanup-rbac
+```
+
+**Agent Deployment Mode:**
+
+When `--deploy-agent` is specified, Eidos deploys a Kubernetes Job to capture the snapshot instead of running locally:
+
+1. **Deploys RBAC**: ServiceAccount, Role, RoleBinding, ClusterRole, ClusterRoleBinding
+2. **Creates Job**: Runs `eidos snapshot` as a container on the target node
+3. **Waits for completion**: Monitors Job status with configurable timeout
+4. **Retrieves snapshot**: Reads snapshot from ConfigMap after Job completes
+5. **Writes output**: Saves snapshot to specified output destination
+6. **Cleanup**: Deletes Job (optionally keeps RBAC for reuse)
+
+**Benefits of agent deployment:**
+- Capture configuration from actual cluster nodes (not local machine)
+- No need to run kubectl manually
+- Programmatic deployment for automation/CI/CD
+- Reusable RBAC resources across multiple runs
+
+**Agent deployment requirements:**
+- Kubernetes cluster access (via kubeconfig)
+- Cluster admin permissions (for RBAC creation)
+- GPU nodes with nvidia-smi (for GPU metrics)
+
 ```
 
 **ConfigMap Output:**
@@ -173,6 +236,7 @@ Generate recipes from captured snapshots:
 | `--output` | `-o` | string | Output destination (file, ConfigMap URI, or stdout) |
 | `--format` | | string | Format: json, yaml, table (default: json) |
 | `--context` | | bool | Include context metadata |
+| `--kubeconfig` | `-k` | string | Path to kubeconfig file (for ConfigMap URIs, overrides KUBECONFIG env) |
 
 **Snapshot Sources:**
 - **File**: Local file path (`./snapshot.yaml`)
@@ -186,6 +250,12 @@ eidos recipe --snapshot system.yaml --intent training
 
 # From ConfigMap (requires cluster access)
 eidos recipe --snapshot cm://gpu-operator/eidos-snapshot --intent training
+
+# From ConfigMap with custom kubeconfig
+eidos recipe \
+  --snapshot cm://gpu-operator/eidos-snapshot \
+  --kubeconfig ~/.kube/prod-cluster \
+  --intent training
 
 # Output to ConfigMap
 eidos recipe -f system.yaml -o cm://gpu-operator/eidos-recipe
@@ -324,7 +394,10 @@ kubectl logs -n gpu-operator -l app=nvidia-operator-validator
 ### ConfigMap-Based Workflow (Kubernetes-Native)
 
 ```shell
-# Step 1: Agent captures snapshot to ConfigMap
+# Step 1: Agent captures snapshot to ConfigMap (using CLI deployment)
+eidos snapshot --deploy-agent --output cm://gpu-operator/eidos-snapshot
+
+# Alternative: Manual kubectl deployment
 kubectl apply -f deployments/eidos-agent/1-deps.yaml
 kubectl apply -f deployments/eidos-agent/2-job.yaml
 kubectl wait --for=condition=complete job/eidos -n gpu-operator --timeout=5m
@@ -340,6 +413,13 @@ eidos recipe \
   --snapshot cm://gpu-operator/eidos-snapshot \
   --intent training \
   --output cm://gpu-operator/eidos-recipe
+
+# With custom kubeconfig (if not using default)
+eidos recipe \
+  --snapshot cm://gpu-operator/eidos-snapshot \
+  --kubeconfig ~/.kube/prod-cluster \
+  --intent training \
+  --output recipe.yaml
 
 # Step 3: Create bundle from recipe
 eidos bundle \

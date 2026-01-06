@@ -520,6 +520,25 @@ make build
 ./dist/eidos_*/eidos snapshot
 ./dist/eidos_*/eidos recipe --os ubuntu --service eks
 
+# Test snapshot with ConfigMap output (requires cluster access)
+./dist/eidos_*/eidos snapshot --output cm://gpu-operator/test-snapshot
+
+# Test agent deployment mode
+./dist/eidos_*/eidos snapshot --deploy-agent \
+  --namespace gpu-operator \
+  --node-selector nvidia.com/gpu.present=true
+
+# Test recipe with ConfigMap input
+./dist/eidos_*/eidos recipe \
+  --snapshot cm://gpu-operator/test-snapshot \
+  --intent training
+
+# Test recipe with custom kubeconfig
+./dist/eidos_*/eidos recipe \
+  --snapshot cm://gpu-operator/test-snapshot \
+  --kubeconfig ~/.kube/dev-cluster \
+  --intent training
+
 # Start API server
 make server
 
@@ -584,6 +603,18 @@ eidos snapshot --format yaml
 eidos snapshot --output system.yaml --format json
 eidos snapshot --output cm://gpu-operator/eidos-snapshot --format yaml  # ConfigMap output
 
+# Agent deployment mode (Kubernetes Job on cluster nodes)
+eidos snapshot --deploy-agent
+eidos snapshot --deploy-agent --output cm://gpu-operator/eidos-snapshot
+eidos snapshot --deploy-agent --kubeconfig ~/.kube/prod-cluster
+
+# Agent deployment with node targeting
+eidos snapshot --deploy-agent \
+  --namespace gpu-operator \
+  --node-selector accelerator=nvidia-h100 \
+  --toleration nvidia.com/gpu:NoSchedule \
+  --timeout 10m
+
 # STEP 2: Recipe - Generate optimized configuration
 # Query mode: Direct generation from parameters
 eidos recipe --os ubuntu --service eks --gpu h100
@@ -602,6 +633,13 @@ eidos recipe \
 eidos recipe --snapshot system.yaml --intent training
 eidos recipe -f system.yaml -i inference -o recipe.yaml
 eidos recipe -f cm://gpu-operator/eidos-snapshot -i training -o cm://gpu-operator/eidos-recipe  # ConfigMap I/O
+
+# With custom kubeconfig for ConfigMap access
+eidos recipe \
+  -f cm://gpu-operator/eidos-snapshot \
+  --kubeconfig ~/.kube/prod-cluster \
+  -i training \
+  -o recipe.yaml
 
 # STEP 3: Bundle - Create deployment artifacts
 eidos bundle --recipe recipe.yaml --output ./bundles
@@ -656,11 +694,21 @@ kubectl logs -n gpu-operator -l app=nvidia-operator-validator
 When running in Kubernetes, you can use ConfigMap URIs to avoid file dependencies:
 
 ```bash
-# 1. Capture snapshot directly to ConfigMap
+# 1. Capture snapshot directly to ConfigMap (agent deployment mode)
+eidos snapshot --deploy-agent -o cm://gpu-operator/eidos-snapshot
+
+# Alternative: Manual kubectl deployment
 eidos snapshot -o cm://gpu-operator/eidos-snapshot
 
 # 2. Generate recipe from ConfigMap snapshot to ConfigMap output
 eidos recipe -f cm://gpu-operator/eidos-snapshot --intent training -o cm://gpu-operator/eidos-recipe
+
+# With custom kubeconfig
+eidos recipe \
+  -f cm://gpu-operator/eidos-snapshot \
+  --kubeconfig ~/.kube/config \
+  --intent training \
+  -o cm://gpu-operator/eidos-recipe
 
 # 3. Create bundle from ConfigMap recipe
 eidos bundle -f cm://gpu-operator/eidos-recipe -b gpu-operator -o ./bundles

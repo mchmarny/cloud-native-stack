@@ -65,9 +65,6 @@ Combined node selector and tolerations:
     --toleration dedicated=user-workload:NoExecute \
     --output cm://gpu-operator/eidos-snapshot`,
 		Flags: []cli.Flag{
-			outputFlag,
-			formatFlag,
-			kubeconfigFlag,
 			// Agent deployment flags
 			&cli.BoolFlag{
 				Name:  "deploy-agent",
@@ -112,6 +109,9 @@ Combined node selector and tolerations:
 				Name:  "cleanup-rbac",
 				Usage: "Remove RBAC resources on cleanup (default: keep for reuse)",
 			},
+			outputFlag,
+			formatFlag,
+			kubeconfigFlag,
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			// Parse output format

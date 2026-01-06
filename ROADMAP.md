@@ -16,28 +16,37 @@ See [Opens](#opens) section for list of still to be decided architectural decisi
 
 ## Next Release
 
-### Remote Snapshot from CLI
+### Validate Current Bundlers
 
-**Current behavior**: Capturing snapshots from a remote cluster requires deploying the agent Job manually:
-1. Apply RBAC manifests (`1-deps.yaml`)
-2. Apply Job manifest (`2-job.yaml`)  
-3. Wait for Job completion
-4. Retrieve ConfigMap or Job logs
-5. Delete Job resources
-
-**Proposed change**: Add `--remote` flag to `eidos snapshot` command. This flag automates the Job lifecycle: checks RBAC, deploys Job from embedded manifest, waits for completion, retrieves output, and optionally cleans up resources.
-
-**Scope**: CLI change only. No changes to agent Job implementation or RBAC requirements.
+**Scope**: Review the GPU Operator, Network Operator bundlers against known good deployments
 
 **Acceptance Criteria**:
-- [ ] `eidos snapshot --remote` deploys Job from embedded manifest
-- [ ] Auto-checks RBAC exists, applies if missing (with confirmation)
-- [ ] Waits for Job completion with progress indicator
-- [ ] Streams logs to stdout or saves to file
-- [ ] Auto-cleanup Job on success (configurable with `--keep`)
-- [ ] Supports `--intent` to generate recipe automatically
-- [ ] Works with existing KUBECONFIG
-- [ ] Error handling for missing permissions, network issues
+- [ ] GPU Operator and Network Operator bundlers generate valid deployments from recipe measurements
+- [ ] README documents deployment steps and configuration options
+
+### Additional Bundlers
+
+#### Skyhook
+
+**Scope**: Generate Helm values and manifests for Skyhook Operator deployment.
+
+**Acceptance Criteria**:
+- [ ] Bundler generates Skyhook Operator Helm values from recipe measurements
+- [ ] README documents deployment steps and configuration options
+
+### Schema Validation
+
+**User Story**: As a CI/CD pipeline developer, I want to validate snapshots against API version schemas, so I can catch malformed data before downstream processing.
+
+**Acceptance Criteria**:
+- [ ] `eidos validate --schema v1 snapshot.yaml` command
+- [ ] Embed JSON Schema with go:embed
+- [ ] Library: `github.com/santhosh-tekuri/jsonschema/v5`
+- [ ] Validation errors with line numbers and paths
+- [ ] Exit code: 0=valid, 1=invalid
+- [ ] CI/CD integration examples
+
+## Backlog
 
 ---
 
@@ -112,22 +121,6 @@ See [Opens](#opens) section for list of still to be decided architectural decisi
 - [ ] Grafana dashboards for GPU utilization
 - [ ] Elastic stack for log aggregation
 - [ ] Default passwords and access instructions
-
-### Schema Validation
-
-**User Story**: As a CI/CD pipeline developer, I want to validate snapshots against API version schemas, so I can catch malformed data before downstream processing.
-
-**Acceptance Criteria**:
-- [ ] `eidos validate --schema v1 snapshot.yaml` command
-- [ ] Embed JSON Schema with go:embed
-- [ ] Library: `github.com/santhosh-tekuri/jsonschema/v5`
-- [ ] Validation errors with line numbers and paths
-- [ ] Exit code: 0=valid, 1=invalid
-- [ ] CI/CD integration examples
-
-## Backlog
-
----
 
 ### PVC-Based Agent Output
 

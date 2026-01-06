@@ -79,6 +79,7 @@ The recipe can be output in JSON, YAML, or table format.`,
 			},
 			outputFlag,
 			formatFlag,
+			kubeconfigFlag,
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			// Parse output format
@@ -104,7 +105,7 @@ The recipe can be output in JSON, YAML, or table format.`,
 			// Load snapshot
 			snapFilePath := cmd.String("snapshot")
 			if snapFilePath != "" {
-				snap, err := serializer.FromFile[snapshotter.Snapshot](snapFilePath)
+				snap, err := serializer.FromFileWithKubeconfig[snapshotter.Snapshot](snapFilePath, cmd.String("kubeconfig"))
 				if err != nil {
 					return fmt.Errorf("failed to load snapshot from %q: %w", snapFilePath, err)
 				}
