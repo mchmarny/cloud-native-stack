@@ -1,6 +1,6 @@
 # NVIDIA Cloud Native Stack
 
-> **Note** :warning:
+**Note** :warning:
 > This directory contains materials from the **prior version of Cloud Native Stack**.
 > These documents and artifacts are preserved for reference during the transition to the current Cloud Native Stack project. They reflect an earlier approach centered on manual installation guides, playbooks, and platform-specific documentation.
 
