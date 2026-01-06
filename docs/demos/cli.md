@@ -1,8 +1,16 @@
 # eidos demo
 
+> Demo from fork `mchmarny/cloud-native-stack` vs NV CNS repo
+
+## Install
+
+```shell
+curl -sfL https://raw.githubusercontent.com/mchmarny/cloud-native-stack/refs/heads/main/install | bash -s --
+```
+
 ## Snapshot 
 
-Using CLI:
+Supports `kubectl` [deployment](../../deployments/eidos-agent) as well as CLI:
 
 ``` shell
 eidos snapshot \
@@ -18,14 +26,12 @@ eidos snapshot \
 Outputs: 
 
 ```json
-{"time":"2026-01-06T06:39:08.064636-08:00","level":"INFO","msg":"deploying agent","module":"eidos","version":"v0.8.12-next","namespace":"gpu-operator"}
-{"time":"2026-01-06T06:39:09.4316-08:00","level":"INFO","msg":"agent deployed successfully","module":"eidos","version":"v0.8.12-next"}
-{"time":"2026-01-06T06:39:09.431686-08:00","level":"INFO","msg":"waiting for Job completion","module":"eidos","version":"v0.8.12-next","job":"eidos","timeout":300000000000}
-{"time":"2026-01-06T06:39:15.679265-08:00","level":"INFO","msg":"job completed successfully","module":"eidos","version":"v0.8.12-next"}
-{"time":"2026-01-06T06:39:15.968405-08:00","level":"INFO","msg":"snapshot saved to ConfigMap","module":"eidos","version":"v0.8.12-next","uri":"cm://gpu-operator/eidos-snapshot"}
+deploying agent: namespace=gpu-operator
+agent deployed successfully
+waiting for Job completion: job=eidos timeout=5m0s
+job completed successfully
+snapshot saved to ConfigMap: uri=cm://gpu-operator/eidos-snapshot
 ```
-
-Also available as a proper k8s deployment: [deployments/eidos-agent](../../deployments/eidos-agent).
 
 What it creates: 
 
@@ -45,14 +51,14 @@ eidos recipe \
 Outputs: 
 
 ```json
-{"time":"2026-01-06T06:48:47.287757-08:00","level":"INFO","msg":"loading snapshot from","module":"eidos","version":"v0.8.12-next","uri":"cm://gpu-operator/eidos-snapshot"}
-{"time":"2026-01-06T06:48:49.079605-08:00","level":"INFO","msg":"recipe generation completed","module":"eidos","version":"v0.8.12-next","output":"recipe.yaml"}
+loading snapshot from: uri=cm://gpu-operator/eidos-snapshot
+recipe generation completed: output=recipe.yaml
 ```
 
 Review the recipe:
 
 ```shell
-open recipe.yaml
+cat recipe.yaml
 ```
 
 ## Bundle
@@ -67,8 +73,8 @@ eidos bundle \
 Outputs: 
 
 ```json
-{"time":"2026-01-06T06:55:48.783386-08:00","level":"INFO","msg":"generating bundle","module":"eidos","version":"v0.8.12-next","recipeFilePath":"recipe.yaml","outputDir":"./bundles","bundlerTypes":["gpu-operator"]}
-{"time":"2026-01-06T06:55:48.82458-08:00","level":"INFO","msg":"bundle generation completed","module":"eidos","version":"v0.8.12-next","success":1,"errors":0,"duration_sec":0.03861875,"summary":"Generated 6 files (8.5 KB) in 39ms. Success: 1/1 bundlers."}
+generating bundle: recipeFilePath=recipe.yaml outputDir=./bundles bundlerTypes=[gpu-operator]
+bundle generation completed: success=1 errors=0 duration_sec=0.025941625 summary=Generated 6 files (8.4 KB) in 26ms. Success: 1/1 bundlers.
 ```
 
 Review the created bundles:
