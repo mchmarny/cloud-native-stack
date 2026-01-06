@@ -10,7 +10,7 @@ This document compares two approaches for deploying NVIDIA Cloud Native Stack co
 **Current implementation status**:
 
 - CLI workflow: Snapshot → Recipe → Bundle (implemented)
-- Available bundlers: GPU Operator, Network Operator  
+- Available bundlers: GPU Operator, Network Operator, Skyhook
 - ConfigMap URI support: Read and write operations using `cm://namespace/name` syntax
 - Testing: End-to-end validation via `tools/e2e` script
 - Supply chain: SLSA Build Level 3 attestations, SBOM generation
@@ -168,6 +168,25 @@ network-operator/
 ├── values.yaml              # Helm configuration for Network Operator
 ├── manifests/
 │   └── nicclusterpolicy.yaml  # NICClusterPolicy manifest
+├── scripts/
+│   ├── install.sh           # Installation script
+│   └── uninstall.sh         # Cleanup script
+├── README.md                # Deployment guide
+└── checksums.txt            # File integrity verification
+```
+
+**Skyhook Bundle:**
+```
+skyhook/
+├── values.yaml              # Helm configuration for Skyhook
+├── manifests/
+│   └── skyhook.yaml         # Skyhook CR manifest
+├── scripts/
+│   ├── install.sh           # Installation script
+│   └── uninstall.sh         # Cleanup script
+├── README.md                # Deployment guide
+└── checksums.txt            # File integrity verification
+```
 ├── scripts/
 │   ├── install.sh           # RDMA/SR-IOV setup automation
 │   └── uninstall.sh         # Cleanup script

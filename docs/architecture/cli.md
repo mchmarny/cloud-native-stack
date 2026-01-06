@@ -70,6 +70,7 @@ Generates deployment artifacts from recipes:
 
 - GPU Operator: Generates GPU Operator Helm values and ClusterPolicy manifest
 - Network Operator: Generates Network Operator Helm values and NICClusterPolicy manifest
+- Skyhook: Generates Skyhook Operator Helm values and Skyhook CR manifest for node optimization
 
 **Execution model**:
 

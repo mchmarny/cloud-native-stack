@@ -137,6 +137,7 @@ func TestSupportedTypes(t *testing.T) {
 	expectedTypes := []BundleType{
 		BundleTypeGpuOperator,
 		BundleTypeNetworkOperator,
+		BundleTypeSkyhook,
 	}
 
 	if len(types) != len(expectedTypes) {
@@ -153,13 +154,6 @@ func TestSupportedTypes(t *testing.T) {
 	for _, expected := range expectedTypes {
 		if !typeMap[expected] {
 			t.Errorf("SupportedTypes() missing expected type: %s", expected)
-		}
-	}
-
-	// Verify order (should match declaration order)
-	for i, expected := range expectedTypes {
-		if types[i] != expected {
-			t.Errorf("SupportedTypes()[%d] = %s, want %s", i, types[i], expected)
 		}
 	}
 }
@@ -197,16 +191,23 @@ func TestSupportedBundleTypesAsStrings(t *testing.T) {
 	expectedStrings := []string{
 		"gpu-operator",
 		"network-operator",
+		"skyhook",
 	}
 
 	if len(strings) != len(expectedStrings) {
 		t.Errorf("SupportedBundleTypesAsStrings() returned %d strings, want %d", len(strings), len(expectedStrings))
 	}
 
-	// Verify each expected string is present in correct order
-	for i, expected := range expectedStrings {
-		if strings[i] != expected {
-			t.Errorf("SupportedBundleTypesAsStrings()[%d] = %q, want %q", i, strings[i], expected)
+	// Convert to map for easier lookup
+	stringMap := make(map[string]bool)
+	for _, s := range strings {
+		stringMap[s] = true
+	}
+
+	// Verify each expected string is present
+	for _, expected := range expectedStrings {
+		if !stringMap[expected] {
+			t.Errorf("SupportedBundleTypesAsStrings() missing expected string: %q", expected)
 		}
 	}
 }

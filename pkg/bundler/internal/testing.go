@@ -280,6 +280,42 @@ func SMISubtype(data map[string]string) measurement.Subtype {
 	}
 }
 
+// GrubSubtype creates a grub subtype for OS measurements.
+func GrubSubtype(data map[string]string) measurement.Subtype {
+	readings := make(map[string]measurement.Reading)
+	for k, v := range data {
+		readings[k] = measurement.Str(v)
+	}
+	return measurement.Subtype{
+		Name: "grub",
+		Data: readings,
+	}
+}
+
+// SysctlSubtype creates a sysctl subtype for OS measurements.
+func SysctlSubtype(data map[string]string) measurement.Subtype {
+	readings := make(map[string]measurement.Reading)
+	for k, v := range data {
+		readings[k] = measurement.Str(v)
+	}
+	return measurement.Subtype{
+		Name: "sysctl",
+		Data: readings,
+	}
+}
+
+// ServiceSubtype creates a service subtype for SystemD measurements.
+func ServiceSubtype(serviceName string, data map[string]string) measurement.Subtype {
+	readings := make(map[string]measurement.Reading)
+	for k, v := range data {
+		readings[k] = measurement.Str(v)
+	}
+	return measurement.Subtype{
+		Name: serviceName,
+		Data: readings,
+	}
+}
+
 // TestValidateRecipe is a reusable test for recipe validation.
 func TestValidateRecipe(t *testing.T, validateFunc func(*recipe.Recipe) error) {
 	tests := []struct {

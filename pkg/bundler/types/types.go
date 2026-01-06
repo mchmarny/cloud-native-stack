@@ -1,6 +1,8 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // BundleType represents the type of a bundler.
 type BundleType string
@@ -9,6 +11,7 @@ type BundleType string
 const (
 	BundleTypeGpuOperator     BundleType = "gpu-operator"
 	BundleTypeNetworkOperator BundleType = "network-operator"
+	BundleTypeSkyhook         BundleType = "skyhook"
 )
 
 // String returns the string representation of the bundle type.
@@ -24,6 +27,8 @@ func ParseType(s string) (BundleType, error) {
 		return BundleTypeGpuOperator, nil
 	case string(BundleTypeNetworkOperator):
 		return BundleTypeNetworkOperator, nil
+	case string(BundleTypeSkyhook):
+		return BundleTypeSkyhook, nil
 	default:
 		return "", fmt.Errorf("unsupported bundle type: %s", s)
 	}
@@ -32,6 +37,7 @@ func ParseType(s string) (BundleType, error) {
 // SupportedTypes returns all supported bundle types.
 func SupportedTypes() []BundleType {
 	return []BundleType{
+		BundleTypeSkyhook,
 		BundleTypeGpuOperator,
 		BundleTypeNetworkOperator,
 	}

@@ -20,6 +20,7 @@ Bundlers convert recipes into deployment artifacts. Artifacts include Helm value
 
 - GPU Operator: Generates Helm values, ClusterPolicy manifest, installation scripts
 - Network Operator: Generates Helm values, NICClusterPolicy manifest, network configuration
+- Skyhook: Generates Helm values, Skyhook CR manifest, node optimization scripts
 
 ## Quick Start
 

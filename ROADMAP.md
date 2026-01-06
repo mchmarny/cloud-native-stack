@@ -52,17 +52,9 @@ See [Opens](#opens) section for list of still to be decided architectural decisi
 
 ### Additional Bundlers
 
-**Current bundlers**: GPU Operator, Network Operator
+**Current bundlers**: GPU Operator, Network Operator, Skyhook
 
 **Proposed bundlers** (not yet implemented):
-
-#### Skyhook
-
-**Scope**: Generate Helm values and manifests for Skyhook Operator deployment.
-
-**Acceptance Criteria**:
-- [ ] Bundler generates Skyhook Operator Helm values from recipe measurements
-- [ ] README documents deployment steps and configuration options
 
 #### NIM Operator Bundler
 

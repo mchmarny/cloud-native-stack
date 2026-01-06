@@ -65,7 +65,7 @@ func TestBaseBundler_CreateBundleDir(t *testing.T) {
 	}
 
 	// Verify directory structure
-	expectedDirs := []string{dirs.Root, dirs.Scripts, dirs.Manifests, dirs.Configs}
+	expectedDirs := []string{dirs.Root, dirs.Scripts, dirs.Manifests}
 	for _, dir := range expectedDirs {
 		if _, err := os.Stat(dir); os.IsNotExist(err) {
 			t.Errorf("Directory %s was not created", dir)
@@ -83,10 +83,6 @@ func TestBaseBundler_CreateBundleDir(t *testing.T) {
 
 	if dirs.Manifests != filepath.Join(dirs.Root, "manifests") {
 		t.Errorf("Manifests dir = %s, want %s", dirs.Manifests, filepath.Join(dirs.Root, "manifests"))
-	}
-
-	if dirs.Configs != filepath.Join(dirs.Root, "configs") {
-		t.Errorf("Configs dir = %s, want %s", dirs.Configs, filepath.Join(dirs.Root, "configs"))
 	}
 }
 

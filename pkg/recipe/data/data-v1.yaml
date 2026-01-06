@@ -182,6 +182,10 @@ base:
           multus-cni: v4.1.0
           whereabouts-ipam: v0.7.0
           container-networking-plugins: v1.6.2
+          skyhook-operator: v0.1.0
+          skyhook-agent: v0.1.0
+          kube-rbac-proxy: v0.18.1
+          nodeos-updater-tuning: v1.0.0
         context:
           container-toolkit: NVIDIA container runtime for GPU access in containers
           dcgm: Data Center GPU Manager for GPU health monitoring and diagnostics
@@ -204,6 +208,10 @@ base:
           multus-cni: Meta CNI plugin enabling multiple network interfaces per pod
           whereabouts-ipam: IP Address Management for secondary network interfaces
           container-networking-plugins: Standard CNI plugins for container networking
+          skyhook-operator: NVIDIA Skyhook operator for automated node system tuning and optimization
+          skyhook-agent: Skyhook agent that applies system configurations on GPU nodes
+          kube-rbac-proxy: RBAC proxy for securing Kubernetes API access in operator deployments
+          nodeos-updater-tuning: Node OS updater for applying system tuning packages (GRUB, sysctl, containerd)
 
       - subtype: config
         data:
@@ -238,6 +246,32 @@ base:
           deploy_ofed: When true, Network Operator deploys Mellanox OFED drivers for InfiniBand/RoCE
           enable_sriov: Enables SR-IOV device plugin for high-performance network slicing
           use_host_mofed: Use existing host MOFED installation instead of containerized driver
+
+      - subtype: skyhook-config
+        data:
+          runtime_required: true
+          interruption_budget_percent: "100"
+          tuning_interrupt_type: reboot
+          manager_cpu_limit: 500m
+          manager_memory_limit: 128Mi
+          manager_cpu_request: 10m
+          manager_memory_request: 64Mi
+          node_selector: nvidia.com/gpu.product
+          node_selector_values: "H100,GB200"
+          toleration_key: nvidia.com/gpu
+          toleration_value: "true"
+        context:
+          runtime_required: When true, requires tuning changes applied before workload execution
+          interruption_budget_percent: Maximum percentage of nodes that can be interrupted simultaneously during updates
+          tuning_interrupt_type: Type of interruption for applying configuration changes (reboot or service restart)
+          manager_cpu_limit: Maximum CPU allocation for Skyhook operator manager
+          manager_memory_limit: Maximum memory allocation for Skyhook operator manager
+          manager_cpu_request: Requested CPU for Skyhook operator manager (guaranteed minimum)
+          manager_memory_request: Requested memory for Skyhook operator manager (guaranteed minimum)
+          node_selector: Kubernetes label key for selecting nodes to apply Skyhook tuning
+          node_selector_values: Comma-separated values matching node_selector label (e.g., GPU models)
+          toleration_key: Toleration key for scheduling on tainted GPU nodes
+          toleration_value: Toleration value for matching tainted GPU nodes
 
   - type: GPU
     subtypes:

@@ -16,7 +16,7 @@ This directory contains architecture documentation for the Cloud Native Stack (C
 - **Bundler Framework**: Extensible system for generating deployment artifacts
   - Execution model: Multiple bundlers run concurrently by default
   - Registration: Bundlers self-register via `init()` function
-  - Current bundlers: GPU Operator, Network Operator
+  - Current bundlers: GPU Operator, Network Operator, Skyhook
 
 ## Overview
 
@@ -52,7 +52,7 @@ Generates deployment-ready bundles (Helm values, Kubernetes manifests, installat
 - **CLI**: `eidos bundle` command
 - **ConfigMap Input**: Can read recipes from ConfigMap URIs
 - **Parallel execution** of multiple bundlers by default
-- **Available bundlers**: GPU Operator, Network Operator
+- **Available bundlers**: GPU Operator, Network Operator, Skyhook
 - **Output**: Complete deployment bundle with values, manifests, scripts, and checksums
 
 **Note:** The API Server only supports recipe generation (Step 2). For complete workflow including snapshot capture and bundle generation, use the CLI.

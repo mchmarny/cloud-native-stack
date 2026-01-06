@@ -41,9 +41,9 @@ func bundleCmd() *cli.Command {
 			&cli.StringSliceFlag{
 				Name:    "bundlers",
 				Aliases: []string{"b"},
-				Usage: fmt.Sprintf(`Types of bundlers to execute (supported types: %s). 
+				Usage: fmt.Sprintf(`Types of bundlers to execute (supported: %s). 
 	If not specified, all supported bundlers are executed.`,
-					strings.Join(types.SupportedBundleTypesAsStrings(), "")),
+					strings.Join(types.SupportedBundleTypesAsStrings(), ", ")),
 			},
 			&cli.StringFlag{
 				Name:    "output",

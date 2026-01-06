@@ -1,0 +1,43 @@
+apiVersion: skyhook.nvidia.com/v1alpha1
+kind: Skyhook
+metadata:
+  labels:
+    app.kubernetes.io/part-of: skyhook-operator
+    app.kubernetes.io/created-by: skyhook-operator
+  name: {{ .Name }}
+spec:
+  runtimeRequired: {{ .RuntimeRequired.Value }}
+  additionalTolerations:
+    - key: {{ .TolerationKey.Value }}
+      operator: Exists
+  interruptionBudget:
+    percent: {{ .InterruptionBudgetPercent.Value }}
+  nodeSelectors:
+    matchExpressions:
+      - key: {{ .NodeSelectorKey.Value }}
+        operator: In
+        values:
+{{- range .NodeSelectorValues }}
+          - {{ . }}
+{{- end }}
+  packages:
+    tuning:
+      version: {{ .TuningVersion.Value }}
+      image: {{ .TuningImage.Value }}
+      configInterrupts:
+        grub.conf:
+          type: reboot
+        service_containerd.conf:
+          type: service
+          services: ["containerd"]
+        sysctl.conf:
+          type: reboot
+      interrupt: 
+        type: {{ .TuningInterruptType.Value }}
+      configMap:
+        grub.conf: |-
+{{ .GrubConfig }}
+        service_containerd.conf: |-
+{{ .ContainerdServiceConfig }}
+        sysctl.conf: |-
+{{ .SysctlConfig }}

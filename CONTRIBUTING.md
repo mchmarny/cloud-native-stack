@@ -721,14 +721,14 @@ kubectl get configmap eidos-recipe -n gpu-operator -o yaml
 **Expected Bundle Structure:**
 ```
 bundles/gpu-operator/
-├── values.yaml                    # Helm chart configuration
+├── values.yaml              # Helm chart configuration
 ├── manifests/
-│   └── clusterpolicy.yaml        # ClusterPolicy custom resource
+│   └── clusterpolicy.yaml  # ClusterPolicy custom resource
 ├── scripts/
-│   ├── install.sh                # Automated installation
-│   └── uninstall.sh              # Cleanup script
-├── README.md                      # Deployment guide
-└── checksums.txt                  # SHA256 checksums
+│   ├── install.sh          # Automated installation
+│   └── uninstall.sh        # Cleanup script
+├── README.md                # Deployment guide
+└── checksums.txt            # SHA256 checksums
 ```
 
 ### Running the API Server

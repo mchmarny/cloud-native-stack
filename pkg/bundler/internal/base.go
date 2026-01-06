@@ -43,7 +43,6 @@ type BundleDirectories struct {
 	Root      string
 	Scripts   string
 	Manifests string
-	Configs   string
 }
 
 // CreateBundleDir creates the standard bundle directory structure.
@@ -55,10 +54,9 @@ func (b *BaseBundler) CreateBundleDir(outputDir, bundleName string) (BundleDirec
 		Root:      bundleDir,
 		Scripts:   filepath.Join(bundleDir, "scripts"),
 		Manifests: filepath.Join(bundleDir, "manifests"),
-		Configs:   filepath.Join(bundleDir, "configs"),
 	}
 
-	for _, dir := range []string{dirs.Root, dirs.Scripts, dirs.Manifests, dirs.Configs} {
+	for _, dir := range []string{dirs.Root, dirs.Scripts, dirs.Manifests} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return dirs, fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}

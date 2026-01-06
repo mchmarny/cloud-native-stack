@@ -342,6 +342,7 @@ eidos bundle [flags]
 **Available bundlers:**
 - `gpu-operator` - NVIDIA GPU Operator deployment bundle
 - `network-operator` - NVIDIA Network Operator deployment bundle
+- `skyhook` - Skyhook node optimization deployment bundle
 
 **Behavior:**
 - If `--bundlers` is omitted, **all registered bundlers** execute
