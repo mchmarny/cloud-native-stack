@@ -120,9 +120,14 @@ func TestGetKubeClient_Singleton(t *testing.T) {
 	// Note: This test may fail in test environments without valid kubeconfig.
 	// The important behavior is that it only attempts initialization once.
 
-	// Reset the singleton for this test (normally you wouldn't do this,
+	// Reset the singleton BEFORE this test (normally you wouldn't do this,
 	// but it's necessary for isolated testing)
 	// WARNING: This is not thread-safe and should only be done in isolated tests
+	clientOnce = sync.Once{}
+	cachedClient = nil
+	cachedConfig = nil
+	clientErr = nil
+	
 	defer func() {
 		// Reset singleton state after test
 		clientOnce = sync.Once{}
