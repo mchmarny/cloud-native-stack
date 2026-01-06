@@ -26,7 +26,7 @@ It **is not**:
 
 ---
 ### Note on previous versions**  
-> Earlier versions of Cloud Native Stack focused primarily on manual installation guides and playbooks. Those materials remain available under [`/_archive/cns-v1`](/_archive/cns-v1/). The current repository reflects a transition toward structured configuration data and generated artifacts.
+> Earlier versions of Cloud Native Stack focused primarily on manual installation guides and playbooks. Those materials remain available under [`/~archive/cns-v1`](/~archive/cns-v1/). The current repository reflects a transition toward structured configuration data and generated artifacts.
 ---
 
 ## How It Works
