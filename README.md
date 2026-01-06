@@ -59,14 +59,17 @@ Get started quickly with CNS:
 
 These use cases reflect common ways teams interact with Cloud Native Stack.
 
-#### Platform and Infrastructure Operators
+<details>
+<summary><strong>Platform and Infrastructure Operators</strong></summary>
 
 You are responsible for deploying and operating GPU-accelerated Kubernetes clusters. 
 - **[Installation Guide](docs/user-guide/installation.md)** – Install the eidos CLI (automated script, manual, or build from source)
 - **[CLI Reference](docs/user-guide/cli-reference.md)** – Complete command reference with examples
 - **[Agent Deployment](docs/user-guide/agent-deployment.md)** – Deploy the Kubernetes agent to get automated configuration snapshots
+</details>
 
-#### Developers and Contributors
+<details>
+<summary><strong>Developers and Contributors</strong></summary>
 
 You are contributing code, extending functionality, or working on CNS internals. 
 
@@ -74,8 +77,10 @@ You are contributing code, extending functionality, or working on CNS internals.
 - **[Architecture Overview](docs/architecture/README.md)** – System design and components
 - **[Bundler Development](docs/architecture/bundler-development.md)** – How to create new bundlers
 - **[Data Architecture](docs/architecture/data.md)** – Recipe data model and query matching
+</details>
 
-#### Integrators and Automation Engineers
+<details>
+<summary><strong>Integrators and Automation Engineers</strong></summary>
 
 You are integrating CNS into CI/CD pipelines, GitOps workflows, or a larger product or service. 
 
@@ -83,7 +88,7 @@ You are integrating CNS into CI/CD pipelines, GitOps workflows, or a larger prod
 - **[Data Flow](docs/integration/data-flow.md)** – Understanding snapshots, recipes, and bundles
 - **[Automation Guide](docs/integration/automation.md)** – CI/CD integration patterns
 - **[Kubernetes Deployment](docs/integration/kubernetes-deployment.md)** – Self-hosted API server setup
-
+</details>
 
 ## Project Structure
 
