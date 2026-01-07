@@ -8,8 +8,6 @@ Running NVIDIA-accelerated Kubernetes clusters reliably is hard. Small differenc
 
 Historically, this knowledge has lived in internal validation pipelines, playbooks, and tribal knowledge. Cloud Native Stack exists to externalize that experience. Its goal is to make validated configurations visible, repeatable, and reusable across environments.
 
-![eidos overview](docs/images/eidos-overivew.png)
-
 ## What Cloud Native Stack Is (and Is Not)
 
 Cloud Native Stack is a **source of validated configuration knowledge** for NVIDIA-accelerated Kubernetes environments.
