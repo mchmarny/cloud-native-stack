@@ -155,7 +155,7 @@ List all the artifacts created in the bundles:
 open ./bundles
 ```
 
-Review the Readme created for this bundle: 
+Review the Readme created for this bundle (using [grip](https://github.com/joeyespo/grip) to render markdown): 
 
 ```shell
 grip --browser --quiet ./bundles/gpu-operator/README.md
