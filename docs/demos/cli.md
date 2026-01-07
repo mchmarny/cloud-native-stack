@@ -132,6 +132,8 @@ Ypu can also query the CNS APIs directly (sans CLI):
 curl -fsSL "https://cns.dgxc.io/v1/recipe?gpu=gb200&service=eks&intent=training" | jq .
 ```
 
+![data flow](./data.png)
+
 ## Bundle
 
 Whichever way you got your recipe (these are versioned), you can generate a deployment bundle from that recipe:
@@ -161,4 +163,4 @@ Review the Readme created for this bundle (using [grip](https://github.com/joeye
 grip --browser --quiet ./bundles/gpu-operator/README.md
 ```
 
-Follow the instructions in the doc to deploy that bundle.
+Follow the instructions in the Readme doc to deploy that bundle.
