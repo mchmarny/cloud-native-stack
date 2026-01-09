@@ -138,6 +138,7 @@ func TestSupportedTypes(t *testing.T) {
 		BundleTypeGpuOperator,
 		BundleTypeNetworkOperator,
 		BundleTypeSkyhook,
+		BundleTypeNVSentinel,
 	}
 
 	if len(types) != len(expectedTypes) {
@@ -192,6 +193,7 @@ func TestSupportedBundleTypesAsStrings(t *testing.T) {
 		"gpu-operator",
 		"network-operator",
 		"skyhook",
+		"nvsentinel",
 	}
 
 	if len(strings) != len(expectedStrings) {
