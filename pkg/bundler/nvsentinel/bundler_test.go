@@ -8,6 +8,8 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
+const testVersion = "v0.6.0"
+
 func TestBundler_Make(t *testing.T) {
 	harness := internal.NewTestHarness(t, "nvsentinel").
 		WithExpectedFiles([]string{
@@ -33,7 +35,7 @@ func TestBundler_Validate(t *testing.T) {
 			name: "valid recipe",
 			recipe: internal.NewRecipeBuilder().
 				WithK8sMeasurement(internal.ImageSubtype(map[string]string{
-					"nvsentinel": "v0.6.0",
+					"nvsentinel": testVersion,
 				})),
 			wantErr: false,
 		},
@@ -80,8 +82,8 @@ func TestBundler_buildConfigMap(t *testing.T) {
 	}
 
 	// Verify K8s image versions are extracted
-	if got := configMap["nvsentinel_version"]; got != "v0.6.0" {
-		t.Errorf("configMap[nvsentinel_version] = %s, want v0.6.0", got)
+	if got := configMap["nvsentinel_version"]; got != testVersion {
+		t.Errorf("configMap[nvsentinel_version] = %s, want %s", got, testVersion)
 	}
 }
 
@@ -89,7 +91,7 @@ func TestGenerateHelmValues(t *testing.T) {
 	rec := createTestRecipe().Build()
 	config := map[string]string{
 		"namespace":          Name,
-		"nvsentinel_version": "v0.6.0",
+		"nvsentinel_version": testVersion,
 	}
 
 	values := GenerateHelmValues(rec, config)
@@ -99,8 +101,8 @@ func TestGenerateHelmValues(t *testing.T) {
 		t.Errorf("Namespace = %s, want %s", values.Namespace, Name)
 	}
 
-	if values.NVSentinelVersion.Value != "v0.6.0" {
-		t.Errorf("NVSentinelVersion = %s, want v0.6.0", values.NVSentinelVersion.Value)
+	if values.NVSentinelVersion.Value != testVersion {
+		t.Errorf("NVSentinelVersion = %s, want %s", values.NVSentinelVersion.Value, testVersion)
 	}
 }
 
@@ -108,7 +110,7 @@ func TestGenerateScriptData(t *testing.T) {
 	rec := createTestRecipe().Build()
 	config := map[string]string{
 		"namespace":          Name,
-		"nvsentinel_version": "v0.6.0",
+		"nvsentinel_version": testVersion,
 	}
 
 	data := GenerateScriptData(rec, config)
@@ -118,8 +120,8 @@ func TestGenerateScriptData(t *testing.T) {
 		t.Errorf("Namespace = %s, want %s", data.Namespace, Name)
 	}
 
-	if data.NVSentinelVersion.Value != "v0.6.0" {
-		t.Errorf("NVSentinelVersion = %s, want v0.6.0", data.NVSentinelVersion.Value)
+	if data.NVSentinelVersion.Value != testVersion {
+		t.Errorf("NVSentinelVersion = %s, want %s", data.NVSentinelVersion.Value, testVersion)
 	}
 
 	expectedRepo := "oci://ghcr.io/nvidia/nvsentinel"
@@ -138,7 +140,7 @@ func createTestRecipe() *internal.RecipeBuilder {
 	return internal.NewRecipeBuilder().
 		WithK8sMeasurement(
 			internal.ImageSubtype(map[string]string{
-				"nvsentinel": "v0.6.0",
+				"nvsentinel": testVersion,
 			}),
 			internal.RegistrySubtype(map[string]string{
 				"uri": "ghcr.io/nvidia",

@@ -10,20 +10,20 @@ import (
 
 // HelmValues represents the data structure for NVSentinel Helm values.
 type HelmValues struct {
-	Timestamp        string
-	Version          string
-	RecipeVersion    string
-	Namespace        string
+	Timestamp         string
+	Version           string
+	RecipeVersion     string
+	Namespace         string
 	NVSentinelVersion common.ValueWithContext
 }
 
 // GenerateHelmValues generates Helm values from a recipe.
 func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmValues {
 	values := &HelmValues{
-		Timestamp:        time.Now().UTC().Format(time.RFC3339),
-		Namespace:        common.GetConfigValue(config, "namespace", Name),
-		Version:          common.GetBundlerVersion(config),
-		RecipeVersion:    common.GetRecipeBundlerVersion(recipe.Metadata),
+		Timestamp:         time.Now().UTC().Format(time.RFC3339),
+		Namespace:         common.GetConfigValue(config, "namespace", Name),
+		Version:           common.GetBundlerVersion(config),
+		RecipeVersion:     common.GetRecipeBundlerVersion(recipe.Metadata),
 		NVSentinelVersion: common.ValueWithContext{Value: common.GetConfigValue(config, "nvsentinel_version", "v0.6.0")},
 	}
 
