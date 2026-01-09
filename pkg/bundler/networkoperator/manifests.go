@@ -47,7 +47,9 @@ func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *Mani
 	}
 
 	// Extract values from recipe (similar to HelmValues)
-	helmValues := GenerateHelmValues(recipe, config)
+	// Note: Using nil for overrides here since manifest generation doesn't need custom overrides
+	// (manifests use direct recipe values, not user-customizable helm values)
+	helmValues := GenerateHelmValues(recipe, config, nil)
 
 	// Convert helm values to manifest data - extract Value from ConfigValue
 	if rdma, ok := helmValues.EnableRDMA.Value.(bool); ok {

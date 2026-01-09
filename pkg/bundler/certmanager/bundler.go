@@ -159,8 +159,10 @@ func (b *Bundler) buildConfigMap(r *recipe.Recipe) map[string]string {
 // generateHelmValues generates the Helm values.yaml file.
 func (b *Bundler) generateHelmValues(ctx context.Context, r *recipe.Recipe,
 	configMap map[string]string, outputDir string) error {
+	// Get value overrides
+	overrides := b.getValueOverrides()
 
-	helmValues := GenerateHelmValues(r, configMap)
+	helmValues := GenerateHelmValues(r, configMap, overrides)
 
 	filePath := filepath.Join(outputDir, "values.yaml")
 	return b.GenerateFileFromTemplate(ctx, GetTemplate, "values.yaml",
@@ -189,13 +191,31 @@ func (b *Bundler) generateScripts(ctx context.Context, r *recipe.Recipe,
 // generateReadme generates the README documentation.
 func (b *Bundler) generateReadme(ctx context.Context, r *recipe.Recipe,
 	configMap map[string]string, outputDir string) error {
+	// Get value overrides
+	overrides := b.getValueOverrides()
+
 	// Combine helm values and script data for README
 	readmeData := map[string]interface{}{
-		"Helm":   GenerateHelmValues(r, configMap),
+		"Helm":   GenerateHelmValues(r, configMap, overrides),
 		"Script": GenerateScriptData(r, configMap),
 	}
 
 	filePath := filepath.Join(outputDir, "README.md")
 	return b.GenerateFileFromTemplate(ctx, GetTemplate, "README.md",
 		filePath, readmeData, 0644)
+}
+
+// getValueOverrides extracts value overrides for this bundler from config.
+func (b *Bundler) getValueOverrides() map[string]string {
+	allOverrides := b.Config.ValueOverrides()
+
+	// Check both "certmanager" and "cert-manager" keys
+	if overrides, ok := allOverrides["certmanager"]; ok {
+		return overrides
+	}
+	if overrides, ok := allOverrides["cert-manager"]; ok {
+		return overrides
+	}
+
+	return nil
 }

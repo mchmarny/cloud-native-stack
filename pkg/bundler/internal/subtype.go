@@ -61,3 +61,22 @@ func ExtractCustomAnnotations(config map[string]string) map[string]string {
 	}
 	return annotations
 }
+
+// ApplyValueOverrides applies user-specified value overrides to a ValueWithContext field.
+// The path uses dot notation (e.g., "gds.enabled") which is converted to field paths.
+// This allows users to override recipe values via CLI flags.
+func ApplyValueOverrides(fieldPath string, current ValueWithContext, overrides map[string]string) ValueWithContext {
+	if overrides == nil {
+		return current
+	}
+
+	// Check if there's an override for this exact path
+	if overrideValue, ok := overrides[fieldPath]; ok {
+		return ValueWithContext{
+			Value:   overrideValue,
+			Context: "User override via --set flag",
+		}
+	}
+
+	return current
+}

@@ -36,7 +36,7 @@ type HelmValues struct {
 }
 
 // GenerateHelmValues generates Helm values from a recipe.
-func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmValues {
+func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string, overrides map[string]string) *HelmValues {
 	values := &HelmValues{
 		Timestamp:        time.Now().UTC().Format(time.RFC3339),
 		DriverRegistry:   common.ValueWithContext{Value: common.GetConfigValue(config, "driver_registry", "nvcr.io/nvidia")},
@@ -64,6 +64,9 @@ func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmVa
 
 	// Apply config overrides
 	values.applyConfigOverrides(config)
+
+	// Apply user value overrides from --set flags
+	values.applyValueOverrides(overrides)
 
 	return values
 }
@@ -186,6 +189,51 @@ func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 	for k, val := range config {
 		if len(k) > 6 && k[:6] == "label_" {
 			v.CustomLabels[k[6:]] = val
+		}
+	}
+}
+
+// applyValueOverrides applies user-specified value overrides from --set flags.
+// Supports dot notation paths like "gds.enabled", "mig.strategy", "driver.version".
+func (v *HelmValues) applyValueOverrides(overrides map[string]string) {
+	if overrides == nil {
+		return
+	}
+
+	// Map of field paths to struct fields
+	fieldMap := map[string]*common.ValueWithContext{
+		"gds.enabled":                  &v.EnableGDS,
+		"driver.enabled":               &v.EnableDriver,
+		"driver.version":               &v.DriverVersion,
+		"driver.useOpenKernelModules":  &v.UseOpenKernelModule,
+		"driver.repository":            &v.DriverRegistry,
+		"operator.version":             &v.GPUOperatorVersion,
+		"operator.repository":          &v.DriverRegistry,
+		"toolkit.version":              &v.NvidiaContainerToolkitVersion,
+		"devicePlugin.version":         &v.DevicePluginVersion,
+		"dcgm.version":                 &v.DCGMVersion,
+		"dcgmExporter.version":         &v.DCGMExporterVersion,
+		"mig.strategy":                 &v.MIGStrategy,
+		"vgpuManager.licenseServerURL": &v.VGPULicenseServer,
+		"sandboxWorkloads.enabled":     &v.EnableSecureBoot,
+	}
+
+	// Apply overrides based on path
+	for path, value := range overrides {
+		if field, ok := fieldMap[path]; ok {
+			*field = common.ApplyValueOverrides(path, *field, overrides)
+		}
+		// Handle namespace separately (not a ValueWithContext)
+		if path == "namespace" {
+			v.Namespace = value
+		}
+		// Handle custom labels
+		if len(path) > 13 && path[:13] == "nodeSelector." {
+			labelKey := path[13:]
+			if v.CustomLabels == nil {
+				v.CustomLabels = make(map[string]string)
+			}
+			v.CustomLabels[labelKey] = value
 		}
 	}
 }

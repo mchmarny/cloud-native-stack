@@ -13,14 +13,17 @@ Bundlers convert recipes into deployment artifacts. Artifacts include Helm value
 - **Parallel execution**: Multiple bundlers run concurrently via goroutines with errgroup context cancellation
 - **Recipe parsing**: `pkg/bundler/internal` package provides helper functions for extracting recipe measurements
 - **Template system**: Bundlers embed templates using `go:embed` directive
+- **Value overrides**: CLI `--set` flag allows runtime customization of bundle values
 - **Test infrastructure**: `TestHarness` struct standardizes bundler testing
 - **E2E validation**: `tools/e2e` script tests complete workflow including bundle generation
 
 **Implemented bundlers:**
 
-- GPU Operator: Generates Helm values, ClusterPolicy manifest, installation scripts
-- Network Operator: Generates Helm values, NICClusterPolicy manifest, network configuration
-- Skyhook: Generates Helm values, Skyhook CR manifest, node optimization scripts
+- **GPU Operator**: Generates Helm values, ClusterPolicy manifest, installation scripts
+- **Network Operator**: Generates Helm values, NICClusterPolicy manifest, network configuration
+- **Cert-Manager**: Generates Helm values for certificate management
+- **NVSentinel**: Generates Helm values for NVSentinel deployment
+- **Skyhook**: Generates Helm values, Skyhook CR manifest, node optimization scripts
 
 ## Quick Start
 
@@ -775,6 +778,9 @@ if helmValues.EnableFeatureX.Value == "true" {
 
 - [CONTRIBUTING.md](../../CONTRIBUTING.md) - General contribution guidelines
 - [Architecture: Data](data.md) - Recipe data architecture
+- [CLI Reference: Bundle](../user-guide/cli-reference.md#eidos-bundle) - Bundle command and --set flag reference
 - [pkg/bundler/gpuoperator](../../pkg/bundler/gpuoperator/) - GPU Operator bundler example
 - [pkg/bundler/networkoperator](../../pkg/bundler/networkoperator/) - Network Operator bundler example
+- [pkg/bundler/certmanager](../../pkg/bundler/certmanager/) - Cert-Manager bundler example
+- [pkg/bundler/skyhook](../../pkg/bundler/skyhook/) - Skyhook bundler example
 - [Testing Guide](../../CONTRIBUTING.md#testing-requirements) - Testing standards

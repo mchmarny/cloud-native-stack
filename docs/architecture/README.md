@@ -16,7 +16,8 @@ This directory contains architecture documentation for the Cloud Native Stack (C
 - **Bundler Framework**: Extensible system for generating deployment artifacts
   - Execution model: Multiple bundlers run concurrently by default
   - Registration: Bundlers self-register via `init()` function
-  - Current bundlers: GPU Operator, Network Operator, Skyhook
+  - Current bundlers: GPU Operator, Network Operator, Skyhook, Cert-Manager, NVSentinel
+  - Value overrides: CLI `--set` flag allows runtime customization of bundle values
 
 ## Overview
 
@@ -52,7 +53,8 @@ Generates deployment-ready bundles (Helm values, Kubernetes manifests, installat
 - **CLI**: `eidos bundle` command
 - **ConfigMap Input**: Can read recipes from ConfigMap URIs
 - **Parallel execution** of multiple bundlers by default
-- **Available bundlers**: GPU Operator, Network Operator, Skyhook
+- **Available bundlers**: GPU Operator, Network Operator, Skyhook, Cert-Manager, NVSentinel
+- **Value Overrides**: Use `--set bundler:path.to.field=value` to customize generated bundles
 - **Output**: Complete deployment bundle with values, manifests, scripts, and checksums
 
 **Note:** The API Server only supports recipe generation (Step 2). For complete workflow including snapshot capture and bundle generation, use the CLI.
@@ -990,7 +992,6 @@ func TestBundler_Make(t *testing.T) {
 ### Future Enhancements
 
 **1. Additional Bundlers**  
-- Network Operator (RDMA, SR-IOV configuration)
 - Storage Operator (CSI drivers, volume configuration)
 - NIM Operator (Inference microservices deployment)
 - Nsight Operator (Profiling and debugging tools)
@@ -1009,6 +1010,11 @@ func TestBundler_Make(t *testing.T) {
 - Bundle packaging (tar.gz, OCI images)
 - Signature verification (cosign, GPG)
 - Registry push/pull for bundle artifacts
+
+**5. Value Override Enhancements**
+- Support for complex value types (arrays, nested objects)
+- Validation of override values against bundler schema
+- Load overrides from file (--values-file flag)
 
 ## CI/CD Architecture
 

@@ -53,7 +53,7 @@ type HelmValues struct {
 }
 
 // GenerateHelmValues generates Helm values from a recipe.
-func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmValues {
+func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string, overrides map[string]string) *HelmValues {
 	values := &HelmValues{
 		Timestamp:        time.Now().UTC().Format(time.RFC3339),
 		Version:          common.GetBundlerVersion(config),
@@ -106,6 +106,9 @@ func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmVa
 
 	// Apply config overrides
 	values.applyConfigOverrides(config)
+
+	// Apply value overrides from --set flags
+	values.applyValueOverrides(overrides)
 
 	return values
 }
@@ -340,5 +343,53 @@ func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 	// Override cert-manager version if specified
 	if version := common.GetConfigValue(config, "cert_manager_version", ""); version != "" {
 		v.CertManagerVersion = common.ValueWithContext{Value: version}
+	}
+}
+
+// applyValueOverrides applies value overrides from --set flags.
+func (v *HelmValues) applyValueOverrides(overrides map[string]string) {
+	if overrides == nil {
+		return
+	}
+
+	fieldMap := map[string]*common.ValueWithContext{
+		"version":                             &v.CertManagerVersion,
+		"installCRDs":                         &v.InstallCRDs,
+		"prometheus.enabled":                  &v.EnablePrometheus,
+		"controller.image":                    &v.ControllerImage,
+		"webhook.image":                       &v.WebhookImage,
+		"cainjector.image":                    &v.CAInjectorImage,
+		"controller.resources.cpu.request":    &v.ControllerCPURequest,
+		"controller.resources.cpu.limit":      &v.ControllerCPULimit,
+		"controller.resources.memory.request": &v.ControllerMemoryRequest,
+		"controller.resources.memory.limit":   &v.ControllerMemoryLimit,
+		"webhook.resources.cpu.request":       &v.WebhookCPURequest,
+		"webhook.resources.cpu.limit":         &v.WebhookCPULimit,
+		"webhook.resources.memory.request":    &v.WebhookMemoryRequest,
+		"webhook.resources.memory.limit":      &v.WebhookMemoryLimit,
+		"cainjector.resources.cpu.request":    &v.CAInjectorCPURequest,
+		"cainjector.resources.cpu.limit":      &v.CAInjectorCPULimit,
+		"cainjector.resources.memory.request": &v.CAInjectorMemoryRequest,
+		"cainjector.resources.memory.limit":   &v.CAInjectorMemoryLimit,
+		"tolerations.key":                     &v.TolerationKey,
+		"tolerations.value":                   &v.TolerationValue,
+		"nodeSelector.key":                    &v.NodeSelectorKey,
+		"nodeSelector.value":                  &v.NodeSelectorValue,
+		"imagePullSecret":                     &v.ImagePullSecret,
+	}
+
+	// Apply overrides
+	for path, value := range overrides {
+		if field, exists := fieldMap[path]; exists {
+			*field = common.ValueWithContext{
+				Value:   value,
+				Context: "User override via --set flag",
+			}
+		}
+	}
+
+	// Handle namespace separately (it's a string, not ValueWithContext)
+	if ns, exists := overrides["namespace"]; exists {
+		v.Namespace = ns
 	}
 }

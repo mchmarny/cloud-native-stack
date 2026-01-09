@@ -35,7 +35,7 @@ type HelmValues struct {
 }
 
 // GenerateHelmValues generates Helm values from a recipe.
-func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmValues {
+func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string, overrides map[string]string) *HelmValues {
 	values := &HelmValues{
 		Timestamp:              time.Now().UTC().Format(time.RFC3339),
 		DriverRegistry:         common.ValueWithContext{Value: common.GetConfigValue(config, "driver_registry", "nvcr.io/nvidia")},
@@ -66,6 +66,9 @@ func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmVa
 
 	// Apply config overrides
 	values.applyConfigOverrides(config)
+
+	// Apply value overrides from --set flags
+	values.applyValueOverrides(overrides)
 
 	return values
 }
@@ -216,6 +219,43 @@ func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 
 	// Custom labels
 	v.CustomLabels = common.ExtractCustomLabels(config)
+}
+
+// applyValueOverrides applies value overrides from --set flags.
+func (v *HelmValues) applyValueOverrides(overrides map[string]string) {
+	if overrides == nil {
+		return
+	}
+
+	fieldMap := map[string]*common.ValueWithContext{
+		"driver.registry":         &v.DriverRegistry,
+		"operator.version":        &v.NetworkOperatorVersion,
+		"ofed.version":            &v.OFEDVersion,
+		"rdma.enabled":            &v.EnableRDMA,
+		"sriov.enabled":           &v.EnableSRIOV,
+		"hostDevice.enabled":      &v.EnableHostDevice,
+		"ipam.enabled":            &v.EnableIPAM,
+		"multus.enabled":          &v.EnableMultus,
+		"whereabouts.enabled":     &v.EnableWhereabouts,
+		"ofed.deploy":             &v.DeployOFED,
+		"nic.type":                &v.NicType,
+		"containerRuntime.socket": &v.ContainerRuntimeSocket,
+	}
+
+	// Apply overrides
+	for path, value := range overrides {
+		if field, exists := fieldMap[path]; exists {
+			*field = common.ValueWithContext{
+				Value:   value,
+				Context: "User override via --set flag",
+			}
+		}
+	}
+
+	// Handle namespace separately (it's a string, not ValueWithContext)
+	if ns, exists := overrides["namespace"]; exists {
+		v.Namespace = ns
+	}
 }
 
 // ToMap converts HelmValues to a map for template rendering.

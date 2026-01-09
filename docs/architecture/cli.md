@@ -70,7 +70,18 @@ Generates deployment artifacts from recipes:
 
 - GPU Operator: Generates GPU Operator Helm values and ClusterPolicy manifest
 - Network Operator: Generates Network Operator Helm values and NICClusterPolicy manifest
+- Cert-Manager: Generates cert-manager Helm values for certificate management
+- NVSentinel: Generates NVSentinel Helm values
 - Skyhook: Generates Skyhook Operator Helm values and Skyhook CR manifest for node optimization
+
+**Value overrides**:
+
+The `--set` flag allows runtime customization of generated bundle values:
+```shell
+eidos bundle -f recipe.yaml -b gpu-operator \
+  --set gpuoperator:gds.enabled=true \
+  --set gpuoperator:driver.version=570.86.16
+```
 
 **Execution model**:
 
@@ -722,6 +733,20 @@ eidos bundle \
 
 # Use short flags
 eidos bundle -f recipe.yaml -b gpu-operator -o ./bundles
+
+# Override values at generation time
+eidos bundle -f recipe.yaml -b gpu-operator \
+  --set gpuoperator:gds.enabled=true \
+  --set gpuoperator:driver.version=570.86.16 \
+  -o ./bundles
+
+# Multiple bundlers with overrides
+eidos bundle -f recipe.yaml \
+  -b gpu-operator \
+  -b network-operator \
+  --set gpuoperator:mig.strategy=mixed \
+  --set networkoperator:rdma.enabled=true \
+  -o ./bundles
 ```
 
 #### Bundle Output Structure
@@ -737,10 +762,25 @@ eidos bundle -f recipe.yaml -b gpu-operator -o ./bundles
 │   │   └── uninstall.sh        # Cleanup script
 │   ├── README.md                # Deployment instructions
 │   └── checksums.txt            # SHA256 verification
-└── network-operator/
+├── network-operator/
+│   ├── values.yaml
+│   ├── manifests/
+│   │   └── nicclusterpolicy.yaml
+│   ├── scripts/
+│   ├── README.md
+│   └── checksums.txt
+├── cert-manager/
+│   ├── values.yaml
+│   ├── README.md
+│   └── checksums.txt
+├── nvsentinel/
+│   ├── values.yaml
+│   ├── README.md
+│   └── checksums.txt
+└── skyhook/
     ├── values.yaml
     ├── manifests/
-    ├── scripts/
+    │   └── skyhook.yaml
     ├── README.md
     └── checksums.txt
 ```

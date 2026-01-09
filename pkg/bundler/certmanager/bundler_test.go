@@ -63,7 +63,7 @@ func TestGenerateHelmValues(t *testing.T) {
 		"replica_count":        "1",
 	}
 
-	helmValues := GenerateHelmValues(rec, configMap)
+	helmValues := GenerateHelmValues(rec, configMap, nil)
 
 	// Verify basic fields
 	if helmValues.Namespace != Name {

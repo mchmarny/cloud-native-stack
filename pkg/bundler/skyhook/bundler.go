@@ -275,8 +275,10 @@ func (b *Bundler) extractSystemDConfig(m *measurement.Measurement, configMap map
 // generateHelmValues generates Helm values file.
 func (b *Bundler) generateHelmValues(ctx context.Context, r *recipe.Recipe,
 	bundleDir string, config map[string]string) error {
+	// Get value overrides
+	overrides := b.getValueOverrides()
 
-	helmValues := GenerateHelmValues(r, config)
+	helmValues := GenerateHelmValues(r, config, overrides)
 
 	filePath := filepath.Join(bundleDir, "values.yaml")
 	return b.GenerateFileFromTemplate(ctx, GetTemplate, "values.yaml",
@@ -316,8 +318,10 @@ func (b *Bundler) generateScripts(ctx context.Context, r *recipe.Recipe,
 // generateReadme generates README documentation.
 func (b *Bundler) generateReadme(ctx context.Context, recipe *recipe.Recipe,
 	dir string, config map[string]string) error {
+	// Get value overrides
+	overrides := b.getValueOverrides()
 
-	helmValues := GenerateHelmValues(recipe, config)
+	helmValues := GenerateHelmValues(recipe, config, overrides)
 	crData := GenerateSkyhookCRData(recipe, config)
 	scriptData := GenerateScriptData(recipe, config)
 
@@ -333,4 +337,16 @@ func (b *Bundler) generateReadme(ctx context.Context, recipe *recipe.Recipe,
 
 	return b.GenerateFileFromTemplate(ctx, GetTemplate, "README.md",
 		filePath, data, 0644)
+}
+
+// getValueOverrides extracts value overrides for this bundler from config.
+func (b *Bundler) getValueOverrides() map[string]string {
+	allOverrides := b.Config.ValueOverrides()
+
+	// Check "skyhook" key
+	if overrides, ok := allOverrides["skyhook"]; ok {
+		return overrides
+	}
+
+	return nil
 }

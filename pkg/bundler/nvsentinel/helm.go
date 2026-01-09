@@ -18,7 +18,7 @@ type HelmValues struct {
 }
 
 // GenerateHelmValues generates Helm values from a recipe.
-func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmValues {
+func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string, overrides map[string]string) *HelmValues {
 	values := &HelmValues{
 		Timestamp:         time.Now().UTC().Format(time.RFC3339),
 		Namespace:         common.GetConfigValue(config, "namespace", Name),
@@ -39,6 +39,9 @@ func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmVa
 
 	// Apply config overrides
 	values.applyConfigOverrides(config)
+
+	// Apply value overrides from --set flags
+	values.applyValueOverrides(overrides)
 
 	return values
 }
@@ -67,5 +70,31 @@ func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 	if val := common.GetConfigValue(config, "nvsentinel_version", ""); val != "" {
 		v.NVSentinelVersion = common.ValueWithContext{Value: val}
+	}
+}
+
+// applyValueOverrides applies value overrides from --set flags.
+func (v *HelmValues) applyValueOverrides(overrides map[string]string) {
+	if overrides == nil {
+		return
+	}
+
+	fieldMap := map[string]*common.ValueWithContext{
+		"version": &v.NVSentinelVersion,
+	}
+
+	// Apply overrides
+	for path, value := range overrides {
+		if field, exists := fieldMap[path]; exists {
+			*field = common.ValueWithContext{
+				Value:   value,
+				Context: "User override via --set flag",
+			}
+		}
+	}
+
+	// Handle namespace separately (it's a string, not ValueWithContext)
+	if ns, exists := overrides["namespace"]; exists {
+		v.Namespace = ns
 	}
 }

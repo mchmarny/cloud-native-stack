@@ -51,22 +51,32 @@ func bundleCmd() *cli.Command {
 				Value:   ".",
 				Usage:   "output directory path",
 			},
+			&cli.StringSliceFlag{
+				Name:  "set",
+				Usage: "Override values in generated bundle files (format: bundler:path.to.field=value, e.g., --set gpuoperator:gds.enabled=true)",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			recipeFilePath := cmd.String("recipe")
 			outputDir := cmd.String("output")
 			bundlerTypesStr := cmd.StringSlice("bundlers")
+			setFlags := cmd.StringSlice("set")
+
+			// Parse value overrides from --set flags
+			valueOverrides, err := parseSetFlags(setFlags)
+			if err != nil {
+				return fmt.Errorf("invalid --set flag: %w", err)
+			}
 
 			// Parse bundler types
 			var bundlerTypes []types.BundleType
 			for _, t := range bundlerTypesStr {
-				bt, err := types.ParseType(t)
-				if err != nil {
-					return fmt.Errorf("invalid bundler type '%s': %w", t, err)
+				bt, parseErr := types.ParseType(t)
+				if parseErr != nil {
+					return fmt.Errorf("invalid bundler type '%s': %w", t, parseErr)
 				}
 				bundlerTypes = append(bundlerTypes, bt)
 			}
-
 			slog.Info("generating bundle",
 				slog.String("recipeFilePath", recipeFilePath),
 				slog.String("outputDir", outputDir),
@@ -83,6 +93,7 @@ func bundleCmd() *cli.Command {
 			reg := registry.NewFromGlobal(
 				config.NewConfig(
 					config.WithVersion(version),
+					config.WithValueOverrides(valueOverrides),
 				),
 			)
 
@@ -123,4 +134,43 @@ func bundleCmd() *cli.Command {
 			return nil
 		},
 	}
+}
+
+// parseSetFlags parses --set flags in format "bundler:path.to.field=value"
+// Returns a map of bundler -> (path -> value)
+func parseSetFlags(setFlags []string) (map[string]map[string]string, error) {
+	overrides := make(map[string]map[string]string)
+
+	for _, setFlag := range setFlags {
+		// Split on first ':' to get bundler and path=value
+		parts := strings.SplitN(setFlag, ":", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid format '%s': expected 'bundler:path=value'", setFlag)
+		}
+
+		bundlerName := parts[0]
+		pathValue := parts[1]
+
+		// Split on first '=' to get path and value
+		kvParts := strings.SplitN(pathValue, "=", 2)
+		if len(kvParts) != 2 {
+			return nil, fmt.Errorf("invalid format '%s': expected 'bundler:path=value'", setFlag)
+		}
+
+		path := kvParts[0]
+		value := kvParts[1]
+
+		if path == "" || value == "" {
+			return nil, fmt.Errorf("invalid format '%s': path and value cannot be empty", setFlag)
+		}
+
+		// Initialize bundler map if needed
+		if overrides[bundlerName] == nil {
+			overrides[bundlerName] = make(map[string]string)
+		}
+
+		overrides[bundlerName][path] = value
+	}
+
+	return overrides, nil
 }

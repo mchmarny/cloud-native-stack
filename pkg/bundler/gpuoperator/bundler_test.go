@@ -207,7 +207,7 @@ func TestGenerateHelmValues(t *testing.T) {
 	config := make(map[string]string)
 	config["namespace"] = testNamespace
 
-	values := GenerateHelmValues(rec, config)
+	values := GenerateHelmValues(rec, config, nil)
 
 	if values == nil {
 		t.Fatal("GenerateHelmValues() returned nil")
@@ -239,7 +239,7 @@ func TestGenerateManifestData(t *testing.T) {
 	config := make(map[string]string)
 	config["namespace"] = testNamespace
 
-	data := GenerateManifestData(rec, config)
+	data := GenerateManifestData(rec, config, nil)
 
 	if data == nil {
 		t.Fatal("GenerateManifestData() returned nil")

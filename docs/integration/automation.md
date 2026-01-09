@@ -114,6 +114,8 @@ create_bundle:
   image: ghcr.io/mchmarny/eidos:latest
   script:
     - eidos bundle --recipe recipe.yaml --bundlers gpu-operator --output ./bundles
+    # Override values at bundle generation time
+    # - eidos bundle -f recipe.yaml -b gpu-operator --set gpuoperator:gds.enabled=true -o ./bundles
   artifacts:
     paths:
       - bundles/
@@ -241,6 +243,14 @@ for cluster_config in "${CLUSTERS[@]}"; do
     --recipe "recipe-${CLUSTER}.yaml" \
     --bundlers gpu-operator \
     --output "./bundles/${CLUSTER}"
+  
+  # Or with value overrides for environment-specific customization
+  # eidos bundle \
+  #   --recipe "recipe-${CLUSTER}.yaml" \
+  #   --bundlers gpu-operator \
+  #   --set gpuoperator:gds.enabled=true \
+  #   --set gpuoperator:mig.strategy=mixed \
+  #   --output "./bundles/${CLUSTER}"
   
   # Deploy (with approval)
   echo "Deploy to $CLUSTER? [y/N]"

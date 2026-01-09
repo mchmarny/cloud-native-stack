@@ -27,7 +27,7 @@ type ManifestData struct {
 }
 
 // GenerateManifestData creates manifest data from a recipe and config.
-func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *ManifestData {
+func GenerateManifestData(recipe *recipe.Recipe, config map[string]string, overrides map[string]string) *ManifestData {
 	data := &ManifestData{
 		Timestamp:         time.Now().UTC().Format(time.RFC3339),
 		Namespace:         common.GetConfigValue(config, "namespace", "gpu-operator"),
@@ -43,7 +43,7 @@ func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *Mani
 	}
 
 	// Extract values from recipe (similar to HelmValues)
-	helmValues := GenerateHelmValues(recipe, config)
+	helmValues := GenerateHelmValues(recipe, config, overrides)
 
 	// Convert helm values to manifest data - extract Value from ConfigValue
 	if dv, ok := helmValues.DriverVersion.Value.(string); ok {

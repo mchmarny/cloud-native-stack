@@ -254,7 +254,10 @@ func (b *Bundler) buildConfigMap(r *recipe.Recipe) map[string]string {
 func (b *Bundler) generateHelmValues(ctx context.Context, r *recipe.Recipe,
 	bundleDir string, config map[string]string) error {
 
-	helmValues := GenerateHelmValues(r, config)
+	// Get value overrides for this bundler from config
+	overrides := b.getValueOverrides()
+
+	helmValues := GenerateHelmValues(r, config, overrides)
 
 	if errValidate := helmValues.Validate(); errValidate != nil {
 		return errors.Wrap(errors.ErrCodeInvalidRequest, "invalid helm values", errValidate)
@@ -269,7 +272,8 @@ func (b *Bundler) generateHelmValues(ctx context.Context, r *recipe.Recipe,
 func (b *Bundler) generateClusterPolicy(ctx context.Context, r *recipe.Recipe,
 	dir string, config map[string]string) error {
 
-	manifestData := GenerateManifestData(r, config)
+	overrides := b.getValueOverrides()
+	manifestData := GenerateManifestData(r, config, overrides)
 	filePath := filepath.Join(dir, "clusterpolicy.yaml")
 
 	return b.GenerateFileFromTemplate(ctx, GetTemplate, "clusterpolicy",
@@ -299,7 +303,8 @@ func (b *Bundler) generateScripts(ctx context.Context, r *recipe.Recipe,
 func (b *Bundler) generateReadme(ctx context.Context, recipe *recipe.Recipe,
 	dir string, config map[string]string) error {
 
-	helmValues := GenerateHelmValues(recipe, config)
+	overrides := b.getValueOverrides()
+	helmValues := GenerateHelmValues(recipe, config, overrides)
 	scriptData := GenerateScriptData(recipe, config)
 
 	// Combine both data structures for README
@@ -312,4 +317,20 @@ func (b *Bundler) generateReadme(ctx context.Context, recipe *recipe.Recipe,
 
 	return b.GenerateFileFromTemplate(ctx, GetTemplate, "README.md",
 		filePath, data, 0644)
+}
+
+// getValueOverrides retrieves value overrides for this bundler from config.
+func (b *Bundler) getValueOverrides() map[string]string {
+	allOverrides := b.Config.ValueOverrides()
+	if allOverrides == nil {
+		return nil
+	}
+	// Return overrides for "gpuoperator" or "gpu-operator"
+	if overrides, ok := allOverrides["gpuoperator"]; ok {
+		return overrides
+	}
+	if overrides, ok := allOverrides["gpu-operator"]; ok {
+		return overrides
+	}
+	return nil
 }

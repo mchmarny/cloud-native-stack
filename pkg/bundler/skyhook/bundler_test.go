@@ -125,7 +125,7 @@ func TestGenerateHelmValues(t *testing.T) {
 		"operator_registry":        "nvcr.io/nvidia",
 	}
 
-	values := GenerateHelmValues(rec, configMap)
+	values := GenerateHelmValues(rec, configMap, nil)
 
 	if values == nil {
 		t.Fatal("GenerateHelmValues() returned nil")

@@ -94,7 +94,7 @@ func TestGenerateHelmValues(t *testing.T) {
 		"nvsentinel_version": testVersion,
 	}
 
-	values := GenerateHelmValues(rec, config)
+	values := GenerateHelmValues(rec, config, nil)
 
 	// Verify basic fields
 	if values.Namespace != Name {

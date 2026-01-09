@@ -337,17 +337,32 @@ eidos bundle [flags]
 | `--recipe` | `-f` | string | Path to recipe file (required) |
 | `--bundlers` | `-b` | string[] | Bundler types to execute (repeatable) |
 | `--output` | `-o` | string | Output directory (default: current dir) |
-| `--format` | | string | Summary format: json, yaml, table (default: json) |
+| `--set` | | string[] | Override values in bundle files (repeatable) |
 
 **Available bundlers:**
 - `gpu-operator` - NVIDIA GPU Operator deployment bundle
 - `network-operator` - NVIDIA Network Operator deployment bundle
+- `cert-manager` - cert-manager deployment bundle
+- `nvsentinel` - NVSentinel deployment bundle
 - `skyhook` - Skyhook node optimization deployment bundle
 
 **Behavior:**
 - If `--bundlers` is omitted, **all registered bundlers** execute
 - Bundlers run in **parallel** by default
 - Each bundler creates a subdirectory in the output directory
+
+**Value Overrides (`--set`):**
+
+Override any value in the generated bundle files using dot notation:
+
+```shell
+--set bundler:path.to.field=value
+```
+
+**Format:** `bundler:path=value` where:
+- `bundler` - Bundler name (e.g., `gpuoperator`, `networkoperator`, `certmanager`, `skyhook`, `nvsentinel`)
+- `path` - Dot-separated path to the field
+- `value` - New value to set
 
 **Examples:**
 ```shell
@@ -361,6 +376,33 @@ eidos bundle -f recipe.yaml -b gpu-operator -o ./deployment
 eidos bundle -f recipe.yaml \
   -b gpu-operator \
   -b network-operator \
+  -o ./bundles
+
+# Override values in GPU Operator bundle
+eidos bundle -f recipe.yaml -b gpu-operator \
+  --set gpuoperator:gds.enabled=true \
+  --set gpuoperator:driver.version=570.86.16 \
+  -o ./bundles
+
+# Override multiple bundlers
+eidos bundle -f recipe.yaml \
+  -b gpu-operator \
+  -b network-operator \
+  --set gpuoperator:mig.strategy=mixed \
+  --set networkoperator:rdma.enabled=true \
+  --set networkoperator:sriov.enabled=true \
+  -o ./bundles
+
+# Override cert-manager resources
+eidos bundle -f recipe.yaml -b certmanager \
+  --set certmanager:controller.resources.memory.limit=512Mi \
+  --set certmanager:webhook.resources.cpu.limit=200m \
+  -o ./bundles
+
+# Override Skyhook manager resources
+eidos bundle -f recipe.yaml -b skyhook \
+  --set skyhook:manager.resources.cpu.limit=500m \
+  --set skyhook:manager.resources.memory.limit=256Mi \
   -o ./bundles
 ```
 

@@ -193,13 +193,23 @@ cloud-native-stack/
 - **Pattern**: Registry-based with pluggable bundler implementations
 - **API**: Object-oriented with functional options (DefaultBundler.New())
 - **Purpose**: Generate deployment bundles from recipes (Helm values, K8s manifests, scripts)
-- **Bundlers**:
+- **Available Bundlers**:
   - **GPU Operator**: Generates complete GPU Operator deployment bundle
     - Helm values.yaml with version management
     - Kubernetes ClusterPolicy manifest
     - Installation/uninstallation scripts
     - README with deployment instructions
     - SHA256 checksums for verification
+  - **Network Operator**: Generates Network Operator deployment bundle
+    - Helm values.yaml for RDMA and SR-IOV configuration
+    - NICClusterPolicy manifest
+  - **Cert-Manager**: Generates cert-manager deployment bundle
+    - Helm values.yaml with resource configuration
+  - **NVSentinel**: Generates NVSentinel deployment bundle
+    - Helm values.yaml
+  - **Skyhook**: Generates Skyhook node optimization bundle
+    - Helm values.yaml
+    - Skyhook CR manifest
 - **Features**:
   - Template-based generation with go:embed
   - Functional options pattern for configuration (WithBundlerTypes, WithFailFast, WithConfig, WithRegistry)
@@ -208,6 +218,7 @@ cloud-native-stack/
   - Fail-fast or error collection modes
   - Prometheus metrics for observability
   - Context-aware execution with cancellation support
+  - **Value overrides**: CLI `--set bundler:path.to.field=value` allows runtime customization
 - **Extensibility**: Implement `Bundler` interface and self-register in init() to add new bundle types
 
 ### Common Make Targets
@@ -645,6 +656,20 @@ eidos recipe \
 eidos bundle --recipe recipe.yaml --output ./bundles
 eidos bundle -f recipe.yaml -b gpu-operator -o ./deployment
 eidos bundle -f cm://gpu-operator/eidos-recipe -o ./bundles  # ConfigMap input
+
+# Override bundle values at generation time
+eidos bundle -f recipe.yaml -b gpu-operator \
+  --set gpuoperator:gds.enabled=true \
+  --set gpuoperator:driver.version=570.86.16 \
+  -o ./bundles
+
+# Multiple bundlers with overrides
+eidos bundle -f recipe.yaml \
+  -b gpu-operator \
+  -b network-operator \
+  --set gpuoperator:mig.strategy=mixed \
+  --set networkoperator:rdma.enabled=true \
+  -o ./bundles
 ```
 
 ### Complete End-to-End Workflow

@@ -195,8 +195,10 @@ func (b *Bundler) buildConfigMap(r *recipe.Recipe) map[string]string {
 // generateHelmValues creates the Helm values.yaml file.
 func (b *Bundler) generateHelmValues(ctx context.Context, r *recipe.Recipe, configMap map[string]string,
 	outputDir string) error {
+	// Get value overrides
+	overrides := b.getValueOverrides()
 
-	values := GenerateHelmValues(r, configMap)
+	values := GenerateHelmValues(r, configMap, overrides)
 	if err := values.Validate(); err != nil {
 		return errors.Wrap(errors.ErrCodeInvalidRequest, "invalid helm values", err)
 	}
@@ -234,9 +236,11 @@ func (b *Bundler) generateScripts(ctx context.Context, r *recipe.Recipe, configM
 // generateReadme creates the README.md file.
 func (b *Bundler) generateReadme(ctx context.Context, r *recipe.Recipe, configMap map[string]string,
 	outputDir string) error {
+	// Get value overrides
+	overrides := b.getValueOverrides()
 
 	scriptData := GenerateScriptData(r, configMap)
-	helmValues := GenerateHelmValues(r, configMap)
+	helmValues := GenerateHelmValues(r, configMap, overrides)
 
 	data := map[string]interface{}{
 		"Script": scriptData,
@@ -245,4 +249,19 @@ func (b *Bundler) generateReadme(ctx context.Context, r *recipe.Recipe, configMa
 
 	path := filepath.Join(outputDir, "README.md")
 	return b.GenerateFileFromTemplate(ctx, GetTemplate, "README.md", path, data, 0644)
+}
+
+// getValueOverrides extracts value overrides for this bundler from config.
+func (b *Bundler) getValueOverrides() map[string]string {
+	allOverrides := b.Config.ValueOverrides()
+
+	// Check both "networkoperator" and "network-operator" keys
+	if overrides, ok := allOverrides["networkoperator"]; ok {
+		return overrides
+	}
+	if overrides, ok := allOverrides["network-operator"]; ok {
+		return overrides
+	}
+
+	return nil
 }

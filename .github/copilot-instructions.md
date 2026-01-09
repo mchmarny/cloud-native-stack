@@ -40,7 +40,7 @@ NVIDIA Cloud Native Stack (CNS/Eidos) provides validated GPU-accelerated Kuberne
 - **CLI (`eidos`)**: All three stages (snapshot/recipe/bundle)
 - **API Server**: Recipe generation via REST API (https://cns.dgxc.io)
 - **Agent**: Kubernetes Job for automated cluster snapshots → ConfigMaps
-- **Bundlers**: Plugin-based artifact generators (GPU Operator, Network Operator, etc.)
+- **Bundlers**: Plugin-based artifact generators (GPU Operator, Network Operator, Cert-Manager, NVSentinel, Skyhook)
 
 **Tech Stack:** Go 1.25, Kubernetes 1.33+, golangci-lint v2.6, Container images via Ko
 
@@ -424,6 +424,12 @@ make qualify      # Full check (test + lint + scan)
 eidos snapshot --output snapshot.yaml
 eidos recipe --snapshot snapshot.yaml --intent training
 eidos bundle --recipe recipe.yaml --output ./bundles
+
+# Override bundle values at generation time
+eidos bundle -f recipe.yaml -b gpu-operator \
+  --set gpuoperator:gds.enabled=true \
+  --set gpuoperator:driver.version=570.86.16 \
+  -o ./bundles
 ```
 
 ### Integration Points

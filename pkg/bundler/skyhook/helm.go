@@ -28,7 +28,7 @@ type HelmValues struct {
 }
 
 // GenerateHelmValues generates Helm values from a recipe.
-func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmValues {
+func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string, overrides map[string]string) *HelmValues {
 	values := &HelmValues{
 		Timestamp:              time.Now().UTC().Format(time.RFC3339),
 		Namespace:              common.GetConfigValue(config, "namespace", Name),
@@ -59,6 +59,9 @@ func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string) *HelmVa
 
 	// Apply config overrides
 	values.applyConfigOverrides(config)
+
+	// Apply value overrides from --set flags
+	values.applyValueOverrides(overrides)
 
 	return values
 }
@@ -156,5 +159,41 @@ func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 	}
 	if val := common.GetConfigValue(config, "operator_registry", ""); val != "" {
 		v.OperatorRegistry = common.ValueWithContext{Value: val}
+	}
+}
+
+// applyValueOverrides applies value overrides from --set flags.
+func (v *HelmValues) applyValueOverrides(overrides map[string]string) {
+	if overrides == nil {
+		return
+	}
+
+	fieldMap := map[string]*common.ValueWithContext{
+		"operator.registry":                &v.OperatorRegistry,
+		"operator.version":                 &v.SkyhookOperatorVersion,
+		"kubeRbacProxy.version":            &v.KubeRbacProxyVersion,
+		"agent.image":                      &v.SkyhookAgentImage,
+		"manager.resources.cpu.limit":      &v.ManagerCPULimit,
+		"manager.resources.memory.limit":   &v.ManagerMemoryLimit,
+		"manager.resources.cpu.request":    &v.ManagerCPURequest,
+		"manager.resources.memory.request": &v.ManagerMemoryRequest,
+		"nodeSelector":                     &v.NodeSelector,
+		"tolerations.key":                  &v.TolerationKey,
+		"tolerations.value":                &v.TolerationValue,
+	}
+
+	// Apply overrides
+	for path, value := range overrides {
+		if field, exists := fieldMap[path]; exists {
+			*field = common.ValueWithContext{
+				Value:   value,
+				Context: "User override via --set flag",
+			}
+		}
+	}
+
+	// Handle namespace separately (it's a string, not ValueWithContext)
+	if ns, exists := overrides["namespace"]; exists {
+		v.Namespace = ns
 	}
 }
