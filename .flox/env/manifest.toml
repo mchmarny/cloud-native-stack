@@ -21,10 +21,5 @@ on-activate = '''
   mkdir -p "$GOPATH" "$GOCACHE"
 '''
 
-[profile]
-common = '''
-  export PATH="$FLOX_ENV_PROJECT/dist:$PATH"
-'''
-
 [options]
 systems = ["aarch64-darwin", "aarch64-linux", "x86_64-darwin", "x86_64-linux"]
