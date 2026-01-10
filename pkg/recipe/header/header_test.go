@@ -336,11 +336,11 @@ func TestHeader_Init(t *testing.T) {
 				if h.Metadata == nil {
 					t.Fatal("Metadata is nil")
 				}
-				if _, exists := h.Metadata["snapshot-timestamp"]; !exists {
-					t.Error("snapshot-timestamp not found in metadata")
+				if _, exists := h.Metadata["timestamp"]; !exists {
+					t.Error("timestamp not found in metadata")
 				}
-				if v := h.Metadata["snapshot-version"]; v != "v1.0.0" {
-					t.Errorf("snapshot-version = %v, want v1.0.0", v)
+				if v := h.Metadata["version"]; v != "v1.0.0" {
+					t.Errorf("version = %v, want v1.0.0", v)
 				}
 			},
 		},
@@ -378,9 +378,9 @@ func TestHeader_Init_TimestampFormat(t *testing.T) {
 	h := &Header{}
 	h.Init(KindSnapshot, testAPIVersion, "v1.0.0")
 
-	timestamp, exists := h.Metadata["snapshot-timestamp"]
+	timestamp, exists := h.Metadata["timestamp"]
 	if !exists {
-		t.Fatal("snapshot-timestamp not found in metadata")
+		t.Fatal("timestamp not found in metadata")
 	}
 
 	// Parse the timestamp to ensure it's valid RFC3339
@@ -422,7 +422,7 @@ func TestHeader_Init_OverwritesExistingData(t *testing.T) {
 		t.Error("Old metadata key should have been removed")
 	}
 
-	if _, exists := h.Metadata["snapshot-version"]; !exists {
+	if _, exists := h.Metadata["version"]; !exists {
 		t.Error("New metadata should be present")
 	}
 }

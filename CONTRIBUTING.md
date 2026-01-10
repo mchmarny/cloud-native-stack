@@ -620,6 +620,7 @@ eidos snapshot --deploy-agent --output cm://gpu-operator/eidos-snapshot
 eidos snapshot --deploy-agent --kubeconfig ~/.kube/prod-cluster
 
 # Agent deployment with node targeting
+# Note: All taints are tolerated by default, only specify --toleration to restrict
 eidos snapshot --deploy-agent \
   --namespace gpu-operator \
   --node-selector accelerator=nvidia-h100 \

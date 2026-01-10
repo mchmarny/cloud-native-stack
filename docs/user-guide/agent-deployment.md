@@ -108,7 +108,8 @@ Target specific nodes and configure scheduling:
 eidos snapshot --deploy-agent \
   --node-selector accelerator=nvidia-h100
 
-# Handle tainted nodes
+# Handle tainted nodes (by default all taints are tolerated)
+# Only needed if you want to restrict which taints are tolerated
 eidos snapshot --deploy-agent \
   --toleration nvidia.com/gpu=present:NoSchedule
 
@@ -130,9 +131,9 @@ eidos snapshot --deploy-agent \
 - `--job-name`: Job name (default: `eidos`)
 - `--service-account-name`: ServiceAccount name (default: `eidos`)
 - `--node-selector`: Node selector (format: `key=value`, repeatable)
-- `--toleration`: Toleration (format: `key=value:effect`, repeatable). By default, all taints are tolerated.
+- `--toleration`: Toleration (format: `key=value:effect`, repeatable). **Default: all taints are tolerated** (uses `operator: Exists` without key). Only specify this flag if you want to restrict which taints the Job can tolerate.
 - `--timeout`: Wait timeout (default: `5m`)
-- `--cleanup`: Delete Job and RBAC on completion (default: `false`, keeps for debugging)
+- `--cleanup`: Delete Job and RBAC on completion. **Default: `false`** (keeps resources for debugging). When enabled, cleanup runs regardless of success or failure.
 
 ### 4. Check Agent Logs (Debugging)
 
@@ -241,17 +242,21 @@ spec:
 
 ### Tolerations
 
-If your GPU nodes have taints, add tolerations:
+**CLI-deployed agents**: By default, the agent Job tolerates **all taints** using the universal toleration (`operator: Exists` without a key). This means the agent can schedule on any node regardless of taints. Only specify `--toleration` flags if you want to **restrict** which taints are tolerated.
+
+**kubectl-deployed agents**: If deploying manually with YAML manifests, you need to explicitly add tolerations for tainted nodes:
 
 ```yaml
 spec:
   template:
     spec:
       tolerations:
+        # Universal toleration (same as CLI default)
+        - operator: Exists
+        # Or specify individual taints:
         - key: nvidia.com/gpu
           operator: Exists
           effect: NoSchedule
-        # Add your custom taints:
         - key: dedicated
           operator: Equal
           value: gpu

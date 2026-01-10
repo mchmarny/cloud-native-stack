@@ -1,9 +1,9 @@
 kind: Snapshot
 apiVersion: cns.nvidia.com/v1alpha1
 metadata:
-    snapshot-timestamp: "2026-01-02T18:02:49Z"
-    snapshot-version: 0.8.12
-    source-node: ip-10-0-160-248.ec2.internal
+    timestamp: "2026-01-02T18:02:49Z"
+    version: 0.8.12
+    source: ip-10-0-160-248.ec2.internal
 measurements:
     - type: SystemD
       subtypes:

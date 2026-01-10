@@ -91,9 +91,9 @@
 //	apiVersion: cns.nvidia.com/v1alpha1
 //	kind: Snapshot
 //	metadata:
-//	  snapshot-version: v1.0.0
-//	  source-node: node-1
-//	  created: 2025-01-15T10:30:00Z
+//	  version: v1.0.0
+//	  source: node-1
+//	  timestamp: 2025-01-15T10:30:00Z
 //	measurements:
 //	  - type: K8s
 //	    subtypes:

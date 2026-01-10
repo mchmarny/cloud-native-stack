@@ -82,9 +82,9 @@ eidos snapshot [flags]
 | `--job-name` | | string | eidos | Name for the agent Job |
 | `--service-account-name` | | string | eidos | ServiceAccount name for agent Job |
 | `--node-selector` | | string[] | | Node selector for agent scheduling (key=value, repeatable) |
-| `--toleration` | | string[] | | Tolerations for agent scheduling (key=value:effect, repeatable). By default, all taints are tolerated. |
+| `--toleration` | | string[] | all taints | Tolerations for agent scheduling (key=value:effect, repeatable). **Default: all taints tolerated** (uses `operator: Exists`). Only specify to restrict which taints are tolerated. |
 | `--timeout` | | duration | 5m | Timeout for agent Job completion |
-| `--cleanup` | | bool | false | Delete Job and RBAC on completion (default: keep for debugging) |
+| `--cleanup` | | bool | false | Delete Job and RBAC on completion. **Default: keeps resources for debugging**. Cleanup runs regardless of success/failure when enabled. |
 
 **Output Destinations:**
 - **stdout**: Default when no `-o` flag specified
@@ -128,6 +128,7 @@ eidos snapshot --deploy-agent \
   --node-selector zone=us-west1-a
 
 # Agent deployment with tolerations for tainted nodes
+# (By default all taints are tolerated - only needed to restrict tolerations)
 eidos snapshot --deploy-agent \
   --toleration nvidia.com/gpu=present:NoSchedule
 

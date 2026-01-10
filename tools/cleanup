@@ -1,0 +1,26 @@
+#!/bin/bash
+set -eo pipefail
+
+# Dir setup
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "${DIR}/common"
+ROOT=$(dirname "${DIR}")
+
+# Prompt user to confirm cleanup
+read -p "Are you sure you want to clean up Eidos resources? (y/N): " confirm
+if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+    echo "Cleanup aborted."
+    exit 0
+fi
+
+msg "Cleaning up Eidos resources..."
+
+# Delete Eidos Kubernetes resources, don't fail if they don't exist
+kubectl -n gpu-operator delete job eidos || true
+kubectl -n gpu-operator delete sa eidos || true
+kubectl -n gpu-operator delete role eidos || true
+kubectl -n gpu-operator delete rolebinding eidos || true
+kubectl delete clusterrole eidos || true
+kubectl delete clusterrolebinding eidos || true
+
+msg "Eidos resources cleanup complete."

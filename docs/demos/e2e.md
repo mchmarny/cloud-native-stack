@@ -27,7 +27,8 @@ dist/eidos_darwin_all/eidos snapshot \
     --deploy-agent \
     --namespace gpu-operator \
     --image ghcr.io/mchmarny/eidos:latest \
-    --node-selector nodeGroup=customer-gpu
+    --node-selector nodeGroup=customer-gpu \
+    --cleanup
 ```
 
 > **Tip**: By default, the Job and RBAC resources remain after completion for debugging. Add `--cleanup` to remove them automatically. If the job fails, you can inspect logs with `kubectl -n gpu-operator logs job/eidos`.
@@ -68,9 +69,9 @@ data:
     kind: Snapshot
     apiVersion: cns.nvidia.com/v1alpha1
     metadata:
-        snapshot-timestamp: "2026-01-07T16:11:21Z"
-        snapshot-version: 0.9.0
-        source-node: ip-10-0-160-248.ec2.internal
+        timestamp: "2026-01-07T16:11:21Z"
+        version: 0.9.0
+        source: ip-10-0-160-248.ec2.internal
     measurements:
     ...
   timestamp: "2026-01-07T16:11:24Z"

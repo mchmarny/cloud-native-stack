@@ -94,13 +94,26 @@ type Header struct {
 
 // Init initializes the Header with the specified kind, apiVersion, and version.
 // It sets the Kind, APIVersion, and populates Metadata with timestamp and version.
+// For Snapshot kind, uses unprefixed keys (timestamp, version).
+// For Recipe kind, uses prefixed keys (recipe-timestamp, recipe-version).
 func (h *Header) Init(kind Kind, apiVersion string, version string) {
 	h.Kind = kind
 	h.APIVersion = apiVersion
-	kindStr := strings.ToLower(string(kind))
 	h.Metadata = make(map[string]string)
-	h.Metadata[fmt.Sprintf("%s-timestamp", kindStr)] = time.Now().UTC().Format(time.RFC3339)
+
+	// Use unprefixed keys for Snapshot, prefixed for other kinds
+	var timestampKey, versionKey string
+	if kind == KindSnapshot {
+		timestampKey = "timestamp"
+		versionKey = "version"
+	} else {
+		kindStr := strings.ToLower(string(kind))
+		timestampKey = fmt.Sprintf("%s-timestamp", kindStr)
+		versionKey = fmt.Sprintf("%s-version", kindStr)
+	}
+
+	h.Metadata[timestampKey] = time.Now().UTC().Format(time.RFC3339)
 	if version != "" {
-		h.Metadata[fmt.Sprintf("%s-version", kindStr)] = version
+		h.Metadata[versionKey] = version
 	}
 }

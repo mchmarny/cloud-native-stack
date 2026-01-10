@@ -221,7 +221,7 @@ flowchart TD
     
     C --> D["Parallel Collection<br/>(errgroup)"]
     
-    D --> D1["Go Routine 1: Metadata<br/>• snapshot-version<br/>• source-node<br/>• timestamp"]
+    D --> D1["Go Routine 1: Metadata<br/>• version<br/>• source<br/>• timestamp"]
     D --> D2["Go Routine 2: Kubernetes<br/>• Server Version<br/>• Container Images<br/>• ClusterPolicies"]
     D --> D3["Go Routine 3: SystemD<br/>• containerd.service<br/>• docker.service<br/>• kubelet.service"]
     D --> D4["Go Routine 4: OS Config<br/>• GRUB parameters<br/>• Kernel modules<br/>• Sysctl parameters"]
