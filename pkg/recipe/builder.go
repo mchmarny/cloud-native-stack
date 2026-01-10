@@ -44,10 +44,22 @@ func (b *Builder) BuildFromCriteria(ctx context.Context, c *Criteria) (*RecipeRe
 		return nil, cnserrors.New(cnserrors.ErrCodeInvalidRequest, "criteria cannot be nil")
 	}
 
+	// Enforce timeout budget: 25s for building, leaving 5s buffer for handler response
+	// This prevents handler deadline from being reached before we can respond
+	buildCtx, cancel := context.WithTimeout(ctx, 25*time.Second)
+	defer cancel()
+
 	// Check context before expensive operations
 	select {
-	case <-ctx.Done():
-		return nil, cnserrors.Wrap(cnserrors.ErrCodeTimeout, "request context cancelled", ctx.Err())
+	case <-buildCtx.Done():
+		return nil, cnserrors.WrapWithContext(
+			cnserrors.ErrCodeTimeout,
+			"recipe build context cancelled during initialization",
+			buildCtx.Err(),
+			map[string]interface{}{
+				"stage": "initialization",
+			},
+		)
 	default:
 	}
 
@@ -57,9 +69,16 @@ func (b *Builder) BuildFromCriteria(ctx context.Context, c *Criteria) (*RecipeRe
 		recipeBuiltDuration.Observe(time.Since(start).Seconds())
 	}()
 
-	store, err := loadMetadataStore(ctx)
+	store, err := loadMetadataStore(buildCtx)
 	if err != nil {
-		return nil, cnserrors.Wrap(cnserrors.ErrCodeInternal, "failed to load metadata store", err)
+		return nil, cnserrors.WrapWithContext(
+			cnserrors.ErrCodeInternal,
+			"failed to load metadata store",
+			err,
+			map[string]interface{}{
+				"stage": "metadata_load",
+			},
+		)
 	}
 
 	result, err := store.BuildRecipeResult(ctx, c)

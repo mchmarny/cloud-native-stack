@@ -40,11 +40,33 @@ func NewConfigMapWriter(namespace, name string, format Format) *ConfigMapWriter 
 // - data.snapshot.{yaml|json}: The serialized snapshot content
 // - data.format: The format used (yaml or json)
 // - data.timestamp: ISO 8601 timestamp of when the snapshot was created
-func (w *ConfigMapWriter) Serialize(snapshot any) error {
-	client, _, err := client.GetKubeClient()
+func (w *ConfigMapWriter) Serialize(ctx context.Context, snapshot any) error {
+	// Create context with timeout for Kubernetes API operations
+	writeCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	client, config, err := client.GetKubeClient()
 	if err != nil {
 		return fmt.Errorf("failed to get kubernetes client: %w", err)
 	}
+
+	// Log authentication context for audit
+	authInfo := "default"
+	if config.AuthProvider != nil {
+		authInfo = config.AuthProvider.Name
+	} else if config.ExecProvider != nil {
+		authInfo = "exec"
+	} else if config.BearerToken != "" {
+		authInfo = "bearer-token"
+	} else if config.CertData != nil {
+		authInfo = "cert"
+	}
+
+	slog.Info("configmap operation",
+		"namespace", w.namespace,
+		"name", w.name,
+		"auth_method", authInfo,
+		"format", w.format)
 
 	// Serialize snapshot to bytes using appropriate format
 	var content []byte
@@ -87,11 +109,10 @@ func (w *ConfigMapWriter) Serialize(snapshot any) error {
 		Data: configMapData,
 	}
 
-	ctx := context.Background()
 	cmClient := client.CoreV1().ConfigMaps(w.namespace)
 
 	// Try to get existing ConfigMap
-	existing, err := cmClient.Get(ctx, w.name, metav1.GetOptions{})
+	existing, err := cmClient.Get(writeCtx, w.name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// Create new ConfigMap
@@ -99,7 +120,7 @@ func (w *ConfigMapWriter) Serialize(snapshot any) error {
 				"namespace", w.namespace,
 				"name", w.name,
 				"format", w.format)
-			_, err = cmClient.Create(ctx, configMap, metav1.CreateOptions{})
+			_, err = cmClient.Create(writeCtx, configMap, metav1.CreateOptions{})
 			if err != nil {
 				return fmt.Errorf("failed to create ConfigMap: %w", err)
 			}
@@ -115,7 +136,7 @@ func (w *ConfigMapWriter) Serialize(snapshot any) error {
 		"namespace", w.namespace,
 		"name", w.name,
 		"format", w.format)
-	_, err = cmClient.Update(ctx, existing, metav1.UpdateOptions{})
+	_, err = cmClient.Update(writeCtx, existing, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to update ConfigMap: %w", err)
 	}

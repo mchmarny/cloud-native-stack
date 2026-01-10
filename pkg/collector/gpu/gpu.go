@@ -20,8 +20,18 @@ type Collector struct {
 // Collect retrieves the NVIDIA SMI information by executing nvidia-smi command and
 // parses the XML output into NVSMIDevice structures
 func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+	// Use parent context deadline if it's sooner than our default 10s timeout
+	deadline, ok := ctx.Deadline()
+	timeout := 10 * time.Second
+	if ok {
+		remaining := time.Until(deadline)
+		if remaining < timeout && remaining > 0 {
+			timeout = remaining
+		}
+	}
+
 	// Add timeout to prevent runaway operations
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	// Check if context is canceled

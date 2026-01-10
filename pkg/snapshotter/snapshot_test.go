@@ -117,7 +117,7 @@ type mockSerializer struct {
 	data       interface{}
 }
 
-func (m *mockSerializer) Serialize(data interface{}) error {
+func (m *mockSerializer) Serialize(ctx context.Context, data interface{}) error {
 	m.serialized = true
 	m.data = data
 	return nil

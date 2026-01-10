@@ -2,6 +2,7 @@ package serializer
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -619,7 +620,7 @@ func TestReader_RoundTrip(t *testing.T) {
 			{Name: "test1", Value: 123},
 			{Name: "test2", Value: 456},
 		}
-		if serErr := writer.Serialize(original); serErr != nil {
+		if serErr := writer.Serialize(context.Background(), original); serErr != nil {
 			t.Fatalf("Writer.Serialize failed: %v", serErr)
 		}
 		if closeErr := writer.Close(); closeErr != nil {
@@ -663,7 +664,7 @@ func TestReader_RoundTrip(t *testing.T) {
 			{Name: "test1", Value: 123},
 			{Name: "test2", Value: 456},
 		}
-		if serErr := writer.Serialize(original); serErr != nil {
+		if serErr := writer.Serialize(context.Background(), original); serErr != nil {
 			t.Fatalf("Writer.Serialize failed: %v", serErr)
 		}
 		if closeErr := writer.Close(); closeErr != nil {

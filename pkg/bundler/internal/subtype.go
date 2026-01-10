@@ -1,5 +1,7 @@
 package internal
 
+import "log/slog"
+
 // ValueWithContext holds a configuration value with its context/explanation.
 // This is used to track both the value and the reason/source for that value
 // from the recipe measurements.
@@ -13,6 +15,9 @@ func GetConfigValue(config map[string]string, key, defaultValue string) string {
 	if val, ok := config[key]; ok && val != "" {
 		return val
 	}
+
+	slog.Debug("config value not found, using default", "key", key, "default", defaultValue)
+
 	return defaultValue
 }
 

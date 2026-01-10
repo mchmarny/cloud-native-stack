@@ -1,6 +1,7 @@
 package serializer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -134,7 +135,10 @@ func (w *Writer) Close() error {
 }
 
 // Serialize outputs the given configuration data in the configured format.
-func (w *Writer) Serialize(config any) error {
+// Serialize writes the configuration data in the specified format.
+// Context is provided for consistency with the Serializer interface,
+// but is not actively used for file/stdout writes (which are fast and blocking).
+func (w *Writer) Serialize(ctx context.Context, config any) error {
 	switch w.format {
 	case FormatJSON:
 		return w.serializeJSON(config)

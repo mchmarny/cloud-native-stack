@@ -12,8 +12,17 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/server"
 )
 
+const (
+	// DefaultRecipeCacheTTL is the default cache duration for recipe responses.
+	// 10 minutes balances freshness with reduced load on recipe store.
+	// Recipe metadata rarely changes; longer TTL would be safe but reduces
+	// visibility of updates during development.
+	DefaultRecipeCacheTTL = 10 * time.Minute
+)
+
 var (
-	recipeCacheTTLInSec = 600 // 10 minutes in seconds
+	// recipeCacheTTL can be overridden for testing or custom configurations
+	recipeCacheTTL = DefaultRecipeCacheTTL
 )
 
 // HandleRecipes processes recipe requests using the criteria-based system.
@@ -66,7 +75,7 @@ func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set caching headers
-	w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", recipeCacheTTLInSec))
+	w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(recipeCacheTTL.Seconds())))
 
 	serializer.RespondJSON(w, http.StatusOK, result)
 }

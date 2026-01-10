@@ -39,6 +39,9 @@ type MetadataStore struct {
 // loadMetadataStore loads and caches the metadata store from embedded data.
 func loadMetadataStore(_ context.Context) (*MetadataStore, error) {
 	metadataStoreOnce.Do(func() {
+		// Record cache miss on first load
+		recipeCacheMisses.Inc()
+
 		store := &MetadataStore{
 			Overlays:    make(map[string]*RecipeMetadata),
 			ValuesFiles: make(map[string][]byte),
@@ -116,6 +119,11 @@ func loadMetadataStore(_ context.Context) (*MetadataStore, error) {
 
 		cachedMetadataStore = store
 	})
+
+	// Record cache hit if store was already loaded (not on first load)
+	if cachedMetadataStore != nil && cachedMetadataErr == nil {
+		recipeCacheHits.Inc()
+	}
 
 	if cachedMetadataErr != nil {
 		return nil, cachedMetadataErr

@@ -372,7 +372,7 @@ func TestGlobalRegistry_Register(t *testing.T) {
 	}
 }
 
-// TestGlobalRegistry_Register_Duplicate tests duplicate registration panic
+// TestGlobalRegistry_Register_Duplicate tests duplicate registration returns error
 func TestGlobalRegistry_Register_Duplicate(t *testing.T) {
 	// Save and restore global state
 	globalMu.Lock()
@@ -390,16 +390,15 @@ func TestGlobalRegistry_Register_Duplicate(t *testing.T) {
 		return &mockBundler{name: "test"}
 	}
 
-	Register(types.BundleTypeGpuOperator, factory)
+	// First registration should succeed
+	if err := Register(types.BundleTypeGpuOperator, factory); err != nil {
+		t.Fatalf("first registration failed: %v", err)
+	}
 
-	// Test duplicate registration panics
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("Expected panic on duplicate registration")
-		}
-	}()
-
-	Register(types.BundleTypeGpuOperator, factory)
+	// Second registration should return error
+	if err := Register(types.BundleTypeGpuOperator, factory); err == nil {
+		t.Error("expected error on duplicate registration, got nil")
+	}
 }
 
 // TestGlobalRegistry_MustRegister tests MustRegister convenience function

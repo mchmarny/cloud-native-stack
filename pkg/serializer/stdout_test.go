@@ -2,6 +2,7 @@ package serializer
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -24,7 +25,7 @@ func TestStdoutSerializer_Serialize(t *testing.T) {
 		"count": 42,
 	}
 
-	err := serializer.Serialize(data)
+	err := serializer.Serialize(context.Background(), data)
 	if err != nil {
 		t.Fatalf("Serialize failed: %v", err)
 	}
@@ -55,7 +56,7 @@ func TestStdoutSerializer_MarshalError(t *testing.T) {
 	// Channel cannot be marshaled to JSON
 	badData := make(chan int)
 
-	err := serializer.Serialize(badData)
+	err := serializer.Serialize(context.Background(), badData)
 	if err == nil {
 		t.Fatal("expected error for unmarshalable data")
 	}
@@ -77,7 +78,7 @@ func TestStdoutSerializer_NilData(t *testing.T) {
 
 	serializer := &StdoutSerializer{}
 
-	err := serializer.Serialize(nil)
+	err := serializer.Serialize(context.Background(), nil)
 	if err != nil {
 		t.Fatalf("Serialize failed for nil: %v", err)
 	}
@@ -122,7 +123,7 @@ func TestStdoutSerializer_ComplexStructure(t *testing.T) {
 		Active: true,
 	}
 
-	err := serializer.Serialize(data)
+	err := serializer.Serialize(context.Background(), data)
 	if err != nil {
 		t.Fatalf("Serialize failed: %v", err)
 	}
@@ -174,7 +175,7 @@ func TestStdoutSerializer_EmptyStruct(t *testing.T) {
 	serializer := &StdoutSerializer{}
 	data := struct{}{}
 
-	err := serializer.Serialize(data)
+	err := serializer.Serialize(context.Background(), data)
 	if err != nil {
 		t.Fatalf("Serialize failed: %v", err)
 	}

@@ -24,11 +24,16 @@
 //   - Resource cleanup via Close() method
 package serializer
 
+import "context"
+
 // Serializer is an interface for serializing snapshot data.
 // Implementations of this interface can serialize data to various formats
 // such as JSON, YAML, or plain text.
+//
+// The context parameter is used for cancellation and timeouts, particularly
+// important for implementations that perform I/O operations (e.g., ConfigMap writes).
 type Serializer interface {
-	Serialize(snapshot any) error
+	Serialize(ctx context.Context, snapshot any) error
 }
 
 // Closer is an optional interface that Serializers can implement

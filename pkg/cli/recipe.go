@@ -135,7 +135,7 @@ Output can be in JSON or YAML format.`,
 				}
 			}()
 
-			if err := ser.Serialize(result); err != nil {
+			if err := ser.Serialize(ctx, result); err != nil {
 				return fmt.Errorf("failed to serialize recipe: %w", err)
 			}
 

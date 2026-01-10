@@ -124,8 +124,16 @@ func ParseVersion(s string) (Version, error) {
 }
 
 // MustParseVersion parses a version string and panics if parsing fails.
-// This function is useful for initializing package-level constants where
-// the version string is known to be valid at compile time.
+// This function is useful for initializing package-level constants or test data
+// where the version string is known to be valid at compile time.
+//
+// Only use this for hardcoded strings or in tests. For user input or runtime data,
+// always use ParseVersion and handle errors explicitly.
+//
+// Example usage:
+//
+//	v := version.MustParseVersion("1.33.0") // OK in init() or tests
+//	v, err := version.ParseVersion(userInput) // Required for runtime data
 func MustParseVersion(s string) Version {
 	v, err := ParseVersion(s)
 	if err != nil {

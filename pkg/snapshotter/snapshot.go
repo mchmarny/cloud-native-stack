@@ -9,6 +9,7 @@ import (
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector"
 	"github.com/NVIDIA/cloud-native-stack/pkg/collector/k8s"
+	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/header"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 
@@ -68,6 +69,8 @@ func (n *NodeSnapshotter) measure(ctx context.Context) error {
 
 	// Initialize snapshot structure
 	snap := NewSnapshot()
+	// Pre-allocate measurements slice with capacity for 5 collectors
+	snap.Measurements = make([]*measurement.Measurement, 0, 5)
 
 	// Collect metadata
 	g.Go(func() error {
@@ -176,7 +179,7 @@ func (n *NodeSnapshotter) measure(ctx context.Context) error {
 		n.Serializer = serializer.NewStdoutWriter(serializer.FormatJSON)
 	}
 
-	if err := n.Serializer.Serialize(snap); err != nil {
+	if err := n.Serializer.Serialize(ctx, snap); err != nil {
 		slog.Error("failed to serialize", slog.String("error", err.Error()))
 		return fmt.Errorf("failed to serialize: %w", err)
 	}

@@ -66,5 +66,13 @@ func parseConfig() *Config {
 		}
 	}
 
+	// Allow customization of shutdown timeout to match K8s eviction grace period
+	if shutdownStr := os.Getenv("SHUTDOWN_TIMEOUT_SECONDS"); shutdownStr != "" {
+		var seconds int
+		if _, err := fmt.Sscanf(shutdownStr, "%d", &seconds); err == nil && seconds > 0 {
+			cfg.ShutdownTimeout = time.Duration(seconds) * time.Second
+		}
+	}
+
 	return cfg
 }

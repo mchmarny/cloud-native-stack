@@ -40,22 +40,25 @@ var (
 
 // Register registers a bundler factory globally.
 // This is typically called from init() functions in bundler packages.
-// Panics if a bundler with the same type is already registered.
-func Register(bundleType types.BundleType, factory Factory) {
+// Returns an error if a bundler with the same type is already registered.
+func Register(bundleType types.BundleType, factory Factory) error {
 	globalMu.Lock()
 	defer globalMu.Unlock()
 
 	if _, exists := globalFactories[bundleType]; exists {
-		panic(fmt.Sprintf("bundler type %s already registered", bundleType))
+		return fmt.Errorf("bundler type %s already registered", bundleType)
 	}
 
 	globalFactories[bundleType] = factory
+	return nil
 }
 
 // MustRegister is a convenience function that panics on registration error.
 // Use this in init() functions where registration must succeed.
 func MustRegister(bundleType types.BundleType, factory Factory) {
-	Register(bundleType, factory)
+	if err := Register(bundleType, factory); err != nil {
+		panic(err)
+	}
 }
 
 // NewFromGlobal creates a new Registry populated with all globally registered bundlers.

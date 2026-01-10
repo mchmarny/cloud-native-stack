@@ -2,6 +2,7 @@ package serializer
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 	"strings"
@@ -24,7 +25,7 @@ func TestWriter_SerializeJSON(t *testing.T) {
 		{Name: "test2", Value: 456},
 	}
 
-	err := writer.Serialize(data)
+	err := writer.Serialize(context.Background(), data)
 	if err != nil {
 		t.Fatalf("Serialize failed: %v", err)
 	}
@@ -53,7 +54,7 @@ func TestWriter_SerializeYAML(t *testing.T) {
 		{Name: "test2", Value: 456},
 	}
 
-	err := writer.Serialize(data)
+	err := writer.Serialize(context.Background(), data)
 	if err != nil {
 		t.Fatalf("Serialize failed: %v", err)
 	}
@@ -82,7 +83,7 @@ func TestWriter_SerializeTable(t *testing.T) {
 		testConfig{Name: "test2", Value: 456},
 	}
 
-	err := writer.Serialize(data)
+	err := writer.Serialize(context.Background(), data)
 	if err != nil {
 		t.Fatalf("Serialize failed: %v", err)
 	}
@@ -111,7 +112,7 @@ func TestWriter_UnsupportedFormat(t *testing.T) {
 
 	// Should succeed because it falls back to JSON
 	data := testConfig{Name: "test", Value: 123}
-	err := writer.Serialize(data)
+	err := writer.Serialize(context.Background(), data)
 	if err != nil {
 		t.Fatalf("Serialize should not fail with unknown format (falls back to JSON): %v", err)
 	}
@@ -188,7 +189,7 @@ func TestNewFileWriterOrStdout_Success(t *testing.T) {
 
 	// Write some data
 	data := testConfig{Name: testName, Value: 123}
-	err := writer.Serialize(data)
+	err := writer.Serialize(context.Background(), data)
 	if err != nil {
 		t.Fatalf("Serialize failed: %v", err)
 	}
@@ -271,7 +272,7 @@ func TestNewWriter_UnknownFormat(t *testing.T) {
 
 	// Should default to JSON format
 	data := testConfig{Name: "test", Value: 123}
-	err := writer.Serialize(data)
+	err := writer.Serialize(context.Background(), data)
 	if err != nil {
 		t.Fatalf("Serialize failed: %v", err)
 	}
@@ -288,7 +289,7 @@ func TestWriter_SerializeTable_EmptyData(t *testing.T) {
 	writer := NewWriter(FormatTable, &buf)
 
 	// Empty slice
-	err := writer.Serialize([]testConfig{})
+	err := writer.Serialize(context.Background(), []testConfig{})
 	if err != nil {
 		t.Fatalf("Serialize empty slice failed: %v", err)
 	}
@@ -321,7 +322,7 @@ func TestWriter_SerializeTable_NestedStructs(t *testing.T) {
 		},
 	}
 
-	err := writer.Serialize(data)
+	err := writer.Serialize(context.Background(), data)
 	if err != nil {
 		t.Fatalf("Serialize failed: %v", err)
 	}
@@ -356,7 +357,7 @@ func TestWriter_SerializeTable_Maps(t *testing.T) {
 		"key3": true,
 	}
 
-	err := writer.Serialize(data)
+	err := writer.Serialize(context.Background(), data)
 	if err != nil {
 		t.Fatalf("Serialize failed: %v", err)
 	}
@@ -383,7 +384,7 @@ func TestWriter_SerializeTable_NilValues(t *testing.T) {
 		Value: nil,
 	}
 
-	err := writer.Serialize(data)
+	err := writer.Serialize(context.Background(), data)
 	if err != nil {
 		t.Fatalf("Serialize failed: %v", err)
 	}
