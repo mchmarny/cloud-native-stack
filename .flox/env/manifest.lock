@@ -32,9 +32,6 @@
     "hook": {
       "on-activate": "  export GOPATH=\"${FLOX_ENV_CACHE:-$HOME/.cache}/go\"\n  export GOCACHE=\"${FLOX_ENV_CACHE:-$HOME/.cache}/go-build\"\n  mkdir -p \"$GOPATH\" \"$GOCACHE\"\n"
     },
-    "profile": {
-      "common": "  export PATH=\"$FLOX_ENV_PROJECT/dist:$PATH\"\n"
-    },
     "options": {
       "systems": [
         "aarch64-darwin",
