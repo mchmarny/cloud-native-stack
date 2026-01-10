@@ -1,8 +1,16 @@
-# eidos s3c demo
+# Software Supply Chain Security Demo
+
+Demonstration of supply chain security artifacts provided by Cloud Native Stack.
 
 ![software supply chain security](images/s3c.png)
 
+## Overview
+
 Cloud Native Stack (CNS) provides supply chain security artifacts:
+
+- **SBOM Attestation**: Complete inventory of packages, libraries, and components in SPDX format
+- **SLSA Build Provenance**: Verifiable build information (how and where images were created)
+- **Keyless Signing**: Artifacts signed using Sigstore (Fulcio + Rekor)
 
 ## Image Attestations
 
@@ -16,13 +24,13 @@ Cloud Native Stack (CNS) provides supply chain security artifacts:
 Get latest release tag:
 
 ```shell
-export TAG=$(curl -s https://api.github.com/repos/mchmarny/cloud-native-stack/releases/latest | jq -r '.tag_name')
+export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/releases/latest | jq -r '.tag_name')
 echo "Using tag: $TAG"
 ```
 Resolve tag to immutable digest:
 
 ```shell
-export IMAGE="ghcr.io/mchmarny/eidos"
+export IMAGE="ghcr.io/nvidia/eidos"
 export DIGEST=$(crane digest "${IMAGE}:${TAG}")
 echo "Resolved digest: $DIGEST"
 export IMAGE_DIGEST="${IMAGE}@${DIGEST}"
@@ -35,15 +43,15 @@ export IMAGE_DIGEST="${IMAGE}@${DIGEST}"
 Verify using digest:
 
 ```shell
-gh attestation verify oci://${IMAGE_DIGEST} --owner mchmarny
+gh attestation verify oci://${IMAGE_DIGEST} --owner nvidia
 ```
 
 Verify the eidos-api-server image:
 
 ```shell
-export IMAGE_API="ghcr.io/mchmarny/eidos-api-server"
+export IMAGE_API="ghcr.io/nvidia/eidos-api-server"
 export DIGEST_API=$(crane digest "${IMAGE_API}:${TAG}")
-gh attestation verify oci://${IMAGE_API}@${DIGEST_API} --owner mchmarny
+gh attestation verify oci://${IMAGE_API}@${DIGEST_API} --owner nvidia
 ```
 
 **Method 2: Cosign (SBOM Attestations)**
@@ -54,7 +62,7 @@ Verify SBOM attestation using digest:
 cosign verify-attestation \
   --type spdxjson \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp 'https://github.com/mchmarny/cloud-native-stack/.github/workflows/.*' \
+  --certificate-identity-regexp 'https://github.com/NVIDIA/cloud-native-stack/.github/workflows/.*' \
   ${IMAGE_DIGEST}
 ```
 
@@ -72,7 +80,7 @@ cosign verify-attestation \
 Get latest release tag:
 
 ```shell
-export TAG=$(curl -s https://api.github.com/repos/mchmarny/cloud-native-stack/releases/latest | jq -r '.tag_name')
+export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/releases/latest | jq -r '.tag_name')
 export VERSION=${TAG#v}  # Remove 'v' prefix for filenames
 ```
 
@@ -84,13 +92,13 @@ export ARCH=$(uname -m | sed 's/x86_64/amd64/; s/aarch64/arm64/')
 
 Download binary from GitHub releases:
 ```shell
-curl -LO https://github.com/mchmarny/cloud-native-stack/releases/download/${TAG}/eidos_${TAG}_${OS}_${ARCH}
+curl -LO https://github.com/NVIDIA/cloud-native-stack/releases/download/${TAG}/eidos_${TAG}_${OS}_${ARCH}
 chmod +x eidos_${TAG}_${OS}_${ARCH}
 ```
 
 Download SBOM (separate file):
 ```shell
-curl -LO https://github.com/mchmarny/cloud-native-stack/releases/download/${TAG}/eidos_${VERSION}_${OS}_${ARCH}.sbom.json
+curl -LO https://github.com/NVIDIA/cloud-native-stack/releases/download/${TAG}/eidos_${VERSION}_${OS}_${ARCH}.sbom.json
 ```
 
 View SBOM
@@ -103,8 +111,8 @@ cat eidos_${VERSION}_${OS}_${ARCH}.sbom.json
 Get latest release tag and resolve digest:
 
 ```shell
-export TAG=$(curl -s https://api.github.com/repos/mchmarny/cloud-native-stack/releases/latest | jq -r '.tag_name')
-export IMAGE="ghcr.io/mchmarny/eidos-api-server"
+export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/releases/latest | jq -r '.tag_name')
+export IMAGE="ghcr.io/nvidia/eidos-api-server"
 export DIGEST=$(crane digest "${IMAGE}:${TAG}")
 export IMAGE_DIGEST="${IMAGE}@${DIGEST}"
 ```
@@ -115,14 +123,14 @@ export IMAGE_DIGEST="${IMAGE}@${DIGEST}"
 cosign verify-attestation \
   --type spdxjson \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp 'https://github.com/mchmarny/cloud-native-stack/.github/workflows/.*' \
+  --certificate-identity-regexp 'https://github.com/NVIDIA/cloud-native-stack/.github/workflows/.*' \
   ${IMAGE_DIGEST} | \
   jq -r '.payload' | base64 -d | jq '.predicate' > sbom.json
 ```
 
 *Method 2*: Using GitHub CLI (shows all attestations)
 ```shell
-gh attestation verify oci://${IMAGE_DIGEST} --owner mchmarny --format json
+gh attestation verify oci://${IMAGE_DIGEST} --owner nvidia --format json
 ```
 
 **SBOM Use Cases:**
@@ -175,7 +183,7 @@ spec:
       url: https://fulcio.sigstore.dev
       identities:
       - issuerRegExp: ".*\.github\.com.*"
-        subjectRegExp: "https://github.com/mchmarny/cloud-native-stack/.*"
+        subjectRegExp: "https://github.com/NVIDIA/cloud-native-stack/.*"
     attestations:
     - name: build-provenance
       predicateType: https://slsa.dev/provenance/v1
@@ -204,14 +212,14 @@ spec:
           - Pod
     verifyImages:
     - imageReferences:
-      - "ghcr.io/mchmarny/eidos*"
+      - "ghcr.io/nvidia/eidos*"
       attestations:
       - predicateType: https://slsa.dev/provenance/v1
         attestors:
         - entries:
           - keyless:
               issuer: https://token.actions.githubusercontent.com
-              subject: https://github.com/mchmarny/cloud-native-stack/.github/workflows/*
+              subject: https://github.com/NVIDIA/cloud-native-stack/.github/workflows/*
 ```
 
 **Test Policy Enforcement:**
@@ -219,13 +227,13 @@ spec:
 Get latest release tag:
 
 ```shell
-export TAG=$(curl -s https://api.github.com/repos/mchmarny/cloud-native-stack/releases/latest | jq -r '.tag_name')
+export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/releases/latest | jq -r '.tag_name')
 ```
 
 This should succeed (image with valid attestation):
 
 ```shell
-kubectl run test-valid --image=ghcr.io/mchmarny/eidos:${TAG}
+kubectl run test-valid --image=ghcr.io/nvidia/eidos:${TAG}
 ```
 This should fail (unsigned image):
 
@@ -250,15 +258,15 @@ All CNS releases are built using GitHub Actions with full transparency:
 List all releases with attestations:
 
 ```shell
-gh api repos/mchmarny/cloud-native-stack/releases | \
+gh api repos/NVIDIA/cloud-native-stack/releases | \
   jq -r '.[] | "\(.tag_name): \(.html_url)"'
 ```
 
 View specific build logs:
 
 ```shell
-gh run list --repo mchmarny/cloud-native-stack --workflow=on-tag.yaml
-gh run view 20642050863 --repo mchmarny/cloud-native-stack --log
+gh run list --repo NVIDIA/cloud-native-stack --workflow=on-tag.yaml
+gh run view 20642050863 --repo NVIDIA/cloud-native-stack --log
 ```
 
 **Verify in Transparency Log (Rekor):**
@@ -266,7 +274,7 @@ gh run view 20642050863 --repo mchmarny/cloud-native-stack --log
 Search Rekor for attestations:
 
 ```shell
-rekor-cli search --artifact ghcr.io/mchmarny/eidos:v0.8.12
+rekor-cli search --artifact ghcr.io/nvidia/eidos:v0.8.12
 ```
 
 Get entry details:

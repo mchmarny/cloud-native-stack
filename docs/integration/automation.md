@@ -111,7 +111,7 @@ generate_recipe:
 
 create_bundle:
   stage: bundle
-  image: ghcr.io/mchmarny/eidos:latest
+  image: ghcr.io/nvidia/eidos:latest
   script:
     - eidos bundle --recipe recipe.yaml --bundlers gpu-operator --output ./bundles
     # Override values at bundle generation time

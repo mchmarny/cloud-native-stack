@@ -464,7 +464,7 @@ eidos bundle --recipe recipe.yaml --output ./bundles
 kubectl delete job eidos -n gpu-operator
 
 # Delete RBAC (if no longer needed)
-kubectl delete -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/deployments/eidos-agent/1-deps.yaml
+kubectl delete -f https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/deployments/eidos-agent/1-deps.yaml
 ```
 
 ## Complete Workflow Examples

@@ -44,41 +44,20 @@
 //
 // # API Endpoints
 //
-// GET /v1/recommendations - Get system configuration recommendations
+// GET /v1/recipe - Generate configuration recipe
 //
 //	Query parameters:
-//	  - osFamily: Ubuntu, RHEL, ALL (default: ALL)
-//	  - osVersion: e.g., 24.04, 22.04, ALL (default: ALL)
-//	  - kernel: e.g., 6.8, 5.15.0, ALL (default: ALL)
-//	  - environment: GKE, EKS, OKE, ALL (default: ALL)
-//	  - kubernetes: e.g., 1.33, 1.32, ALL (default: ALL)
-//	  - gpu: H100, GB200, A100, L40, ALL (default: ALL)
-//	  - intent: training, inference, ALL (default: ALL)
+//	  - os: ubuntu, cos, any (default: any)
+//	  - osv: OS version (e.g., 24.04, 22.04)
+//	  - kernel: kernel version (e.g., 6.8, 5.15.0)
+//	  - service: eks, gke, aks, self-managed, any (default: any)
+//	  - k8s: Kubernetes version (e.g., 1.33, 1.32)
+//	  - gpu: h100, gb200, a100, l40, any (default: any)
+//	  - intent: training, inference, any (default: any)
+//	  - context: true/false - include context metadata (default: false)
 //
 //	Example:
-//	  curl "http://localhost:8080/v1/recommendations?osFamily=Ubuntu&osVersion=24.04&gpu=H100&intent=training"
-//
-// POST /v1/recommendations/resolve - Bulk resolve recommendations
-//
-//	Request body (JSON):
-//	  {
-//	    "requests": [
-//	      {
-//	        "osFamily": "Ubuntu",
-//	        "osVersion": "24.04",
-//	        "kubernetes": "1.33",
-//	        "gpu": "H100",
-//	        "intent": "training"
-//	      }
-//	    ],
-//	    "pageSize": 20,
-//	    "continuationToken": ""
-//	  }
-//
-//	Example:
-//	  curl -X POST http://localhost:8080/v1/recommendations/resolve \
-//	    -H "Content-Type: application/json" \
-//	    -d '{"requests": [{"osFamily": "Ubuntu", "osVersion": "24.04"}]}'
+//	  curl "http://localhost:8080/v1/recipe?os=ubuntu&osv=24.04&gpu=h100&intent=training"
 //
 // GET /health - Health check (for liveness probe)
 //

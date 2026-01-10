@@ -34,7 +34,7 @@ Snapshot captured from a GB200 NVL72 system. Contents:
 eidos recipe --snapshot examples/snapshots/gb200.yaml --intent training
 ```
 
-### H100 System ([h100.yaml](h100.yaml))
+### H100 System ([h100.yaml](snapshots/h100.yaml))
 
 Snapshot from an H100 GPU cluster with:
 - OS configuration (Ubuntu 22.04)
@@ -156,8 +156,8 @@ From your GPU cluster:
 eidos snapshot --output my-snapshot.yaml
 
 # Or deploy agent to Kubernetes
-kubectl apply -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/deployments/eidos-agent/1-deps.yaml
-kubectl apply -f https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/deployments/eidos-agent/2-job.yaml
+kubectl apply -f https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/deployments/eidos-agent/1-deps.yaml
+kubectl apply -f https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/deployments/eidos-agent/2-job.yaml
 kubectl logs -n gpu-operator job/eidos > my-snapshot.yaml
 ```
 

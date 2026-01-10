@@ -383,7 +383,7 @@ gh attestation verify oci://${IMAGE_DIGEST} \
     "signature": {
       "certificate": {
         "certificateIssuer": "CN=sigstore-intermediate,O=sigstore.dev",
-        "subjectAlternativeName": "https://github.com/mchmarny/cloud-native-stack/.github/workflows/on-tag.yaml@refs/tags/v0.8.12",
+        "subjectAlternativeName": "https://github.com/NVIDIA/cloud-native-stack/.github/workflows/on-tag.yaml@refs/tags/v0.8.12",
         "issuer": "https://token.actions.githubusercontent.com",
         "githubWorkflowTrigger": "push",
         "githubWorkflowSHA": "ba6cbbe8b1a8fc8b72bb18454c10a3ba31d94a2e",
@@ -433,7 +433,7 @@ spec:
       url: https://fulcio.sigstore.dev
       identities:
       - issuerRegExp: ".*\.github\.com.*"
-        subjectRegExp: "https://github.com/mchmarny/cloud-native-stack/.*"
+        subjectRegExp: "https://github.com/NVIDIA/cloud-native-stack/.*"
     attestations:
     - name: build-provenance
       predicateType: https://slsa.dev/provenance/v1
@@ -462,24 +462,24 @@ spec:
           - Pod
     verifyImages:
     - imageReferences:
-      - "ghcr.io/mchmarny/eidos*"
+      - "ghcr.io/nvidia/eidos*"
       attestations:
       - predicateType: https://slsa.dev/provenance/v1
         attestors:
         - entries:
           - keyless:
               issuer: https://token.actions.githubusercontent.com
-              subject: https://github.com/mchmarny/cloud-native-stack/.github/workflows/*
+              subject: https://github.com/NVIDIA/cloud-native-stack/.github/workflows/*
 ```
 
 **Test Policy Enforcement:**
 
 ```shell
 # Get latest release tag
-export TAG=$(curl -s https://api.github.com/repos/mchmarny/cloud-native-stack/releases/latest | jq -r '.tag_name')
+export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/releases/latest | jq -r '.tag_name')
 
 # This should succeed (image with valid attestation)
-kubectl run test-valid --image=ghcr.io/mchmarny/eidos:${TAG}
+kubectl run test-valid --image=ghcr.io/nvidia/eidos:${TAG}
 
 # This should fail (unsigned image)
 kubectl run test-invalid --image=nginx:latest
@@ -500,19 +500,19 @@ All CNS releases are built using GitHub Actions with full transparency:
 
 ```shell
 # List all releases with attestations
-gh api repos/mchmarny/cloud-native-stack/releases | \
+gh api repos/NVIDIA/cloud-native-stack/releases | \
   jq -r '.[] | "\(.tag_name): \(.html_url)"'
 
 # View specific build logs
-gh run list --repo mchmarny/cloud-native-stack --workflow=on-tag.yaml
-gh run view 20642050863 --repo mchmarny/cloud-native-stack --log
+gh run list --repo NVIDIA/cloud-native-stack --workflow=on-tag.yaml
+gh run view 20642050863 --repo NVIDIA/cloud-native-stack --log
 ```
 
 **Verify in Transparency Log (Rekor):**
 
 ```shell
 # Search Rekor for attestations
-rekor-cli search --artifact ghcr.io/mchmarny/eidos:v0.8.12
+rekor-cli search --artifact ghcr.io/nvidia/eidos:v0.8.12
 
 # Get entry details
 rekor-cli get --uuid <entry-uuid>

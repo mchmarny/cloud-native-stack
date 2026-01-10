@@ -732,7 +732,7 @@ env:
 ```shell
 # Update image
 kubectl set image deployment/eidos-api-server \
-  api-server=ghcr.io/mchmarny/eidos-api-server:v0.8.0 \
+  api-server=ghcr.io/nvidia/eidos-api-server:v0.8.0 \
   -n eidos
 
 # Watch rollout

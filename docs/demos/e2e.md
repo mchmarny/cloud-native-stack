@@ -1,13 +1,13 @@
-# eidos demo
+# Eidos End-to-End Demo
+
+End-to-end demonstration of the three-stage workflow: Snapshot → Recipe → Bundle.
 
 ![demo overview](images/e2e.png)
-
-> Note: latest CNS updates are all in a fork (https://github.com/mchmarny/cloud-native-stack/tree/main). Some of the links in there won’t work until PR is merged upstream. Here are the key bits you can use today.
 
 ## Install
 
 ```shell
-curl -sfL https://raw.githubusercontent.com/mchmarny/cloud-native-stack/refs/heads/main/install | bash -s --
+curl -sfL https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/install | bash -s --
 ```
 
 Validate install: 
@@ -24,7 +24,7 @@ eidos version 0.9.0 (commit: 72930f3, date: 2026-01-06T18:49:40Z)
 
 ## Snapshot 
 
-Supports `kubectl` [deployment](https://github.com/mchmarny/cloud-native-stack/tree/main/deployments/eidos-agent) as well as CLI-based agent deployment:
+Supports `kubectl` [deployment](https://github.com/NVIDIA/cloud-native-stack/tree/main/deployments/eidos-agent) as well as CLI-based agent deployment:
 
 > Note: You may need to update node selector and toleration flags in your cluster.
 
@@ -32,7 +32,7 @@ Supports `kubectl` [deployment](https://github.com/mchmarny/cloud-native-stack/t
 eidos snapshot \
     --deploy-agent \
     --namespace gpu-operator \
-    --image ghcr.io/mchmarny/eidos:latest \
+    --image ghcr.io/nvidia/eidos:latest \
     --toleration dedicated=user-workload:NoSchedule \
     --toleration dedicated=user-workload:NoExecute \
     --node-selector nodeGroup=customer-gpu \
