@@ -50,6 +50,11 @@ mig:
 gds:
   enabled: {{ .EnableGDS }}
 
+{{- if .GDRCopy.Enabled }}
+gdrcopy:
+  enabled: {{ .GDRCopy.Enabled }}
+{{- end }}
+
 {{- if .VGPULicenseServer }}
 vgpuManager:
   enabled: true

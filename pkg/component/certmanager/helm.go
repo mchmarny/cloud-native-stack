@@ -319,46 +319,15 @@ func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 }
 
 // applyValueOverrides applies value overrides from --set flags.
+// Uses reflection-based approach to dynamically set any field using dot notation.
 func (v *HelmValues) applyValueOverrides(overrides map[string]string) {
-	if overrides == nil {
+	if len(overrides) == 0 {
 		return
 	}
 
-	fieldMap := map[string]*string{
-		"version":                             &v.CertManagerVersion,
-		"installCRDs":                         &v.InstallCRDs,
-		"prometheus.enabled":                  &v.EnablePrometheus,
-		"controller.image":                    &v.ControllerImage,
-		"webhook.image":                       &v.WebhookImage,
-		"cainjector.image":                    &v.CAInjectorImage,
-		"controller.resources.cpu.request":    &v.ControllerCPURequest,
-		"controller.resources.cpu.limit":      &v.ControllerCPULimit,
-		"controller.resources.memory.request": &v.ControllerMemoryRequest,
-		"controller.resources.memory.limit":   &v.ControllerMemoryLimit,
-		"webhook.resources.cpu.request":       &v.WebhookCPURequest,
-		"webhook.resources.cpu.limit":         &v.WebhookCPULimit,
-		"webhook.resources.memory.request":    &v.WebhookMemoryRequest,
-		"webhook.resources.memory.limit":      &v.WebhookMemoryLimit,
-		"cainjector.resources.cpu.request":    &v.CAInjectorCPURequest,
-		"cainjector.resources.cpu.limit":      &v.CAInjectorCPULimit,
-		"cainjector.resources.memory.request": &v.CAInjectorMemoryRequest,
-		"cainjector.resources.memory.limit":   &v.CAInjectorMemoryLimit,
-		"tolerations.key":                     &v.TolerationKey,
-		"tolerations.value":                   &v.TolerationValue,
-		"nodeSelector.key":                    &v.NodeSelectorKey,
-		"nodeSelector.value":                  &v.NodeSelectorValue,
-		"imagePullSecret":                     &v.ImagePullSecret,
-	}
-
-	// Apply overrides
-	for path, value := range overrides {
-		if field, exists := fieldMap[path]; exists {
-			*field = value
-		}
-	}
-
-	// Handle namespace separately (same type now)
-	if ns, exists := overrides["namespace"]; exists {
-		v.Namespace = ns
+	// Use reflection-based override utility for dynamic field setting
+	if err := common.ApplyValueOverrides(v, overrides); err != nil {
+		// Log error but continue - some overrides may have succeeded
+		fmt.Printf("Warning: failed to apply some value overrides: %v\n", err)
 	}
 }

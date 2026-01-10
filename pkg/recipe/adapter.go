@@ -6,8 +6,6 @@ import (
 	"fmt"
 
 	"gopkg.in/yaml.v3"
-
-	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
 
 //go:embed data/*.yaml data/components/*/*.yaml
@@ -16,9 +14,6 @@ var dataFS embed.FS
 // RecipeInput is an interface that both Recipe and RecipeResult implement.
 // This allows bundlers to work with either format during the transition period.
 type RecipeInput interface {
-	// GetMeasurements returns the measurements for bundler configuration.
-	GetMeasurements() []*measurement.Measurement
-
 	// GetComponentRef returns the component reference for a given component name.
 	// Returns nil if the component is not found.
 	GetComponentRef(name string) *ComponentRef
@@ -35,11 +30,6 @@ type RecipeInput interface {
 
 // Ensure Recipe implements RecipeInput
 var _ RecipeInput = (*Recipe)(nil)
-
-// GetMeasurements returns the measurements from a Recipe.
-func (r *Recipe) GetMeasurements() []*measurement.Measurement {
-	return r.Measurements
-}
 
 // GetComponentRef returns nil for Recipe (v1 format doesn't have components).
 func (r *Recipe) GetComponentRef(name string) *ComponentRef {
@@ -64,12 +54,6 @@ func (r *Recipe) GetVersion() string {
 
 // Ensure RecipeResult implements RecipeInput
 var _ RecipeInput = (*RecipeResult)(nil)
-
-// GetMeasurements returns an empty slice for RecipeResult.
-// The new format uses ComponentRefs with valuesFiles instead of measurements.
-func (r *RecipeResult) GetMeasurements() []*measurement.Measurement {
-	return nil
-}
 
 // GetVersion returns the recipe version from metadata.
 func (r *RecipeResult) GetVersion() string {

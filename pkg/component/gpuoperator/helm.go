@@ -10,25 +10,81 @@ import (
 )
 
 // HelmValues represents the data structure for GPU Operator Helm values.
+// All fields are strings to support template rendering with type conversion.
 type HelmValues struct {
-	Timestamp                     string
-	DriverRegistry                string
-	GPUOperatorVersion            string
-	EnableDriver                  string
-	DriverVersion                 string
-	UseOpenKernelModule           string
+	Timestamp     string
+	Version       string
+	RecipeVersion string
+	Namespace     string
+	CustomLabels  map[string]string
+
+	// Operator
+	GPUOperatorVersion string
+	DriverRegistry     string
+
+	// Driver
+	EnableDriver        string
+	DriverVersion       string
+	UseOpenKernelModule string
+
+	// Container Toolkit
 	NvidiaContainerToolkitVersion string
-	DevicePluginVersion           string
-	DCGMVersion                   string
-	DCGMExporterVersion           string
-	MIGStrategy                   string
-	EnableGDS                     string
-	VGPULicenseServer             string
-	EnableSecureBoot              string
-	CustomLabels                  map[string]string
-	Namespace                     string
-	Version                       string
-	RecipeVersion                 string
+
+	// Device Plugin
+	DevicePluginVersion string
+
+	// DCGM
+	DCGMVersion string
+
+	// DCGM Exporter
+	DCGMExporterVersion string
+
+	// MIG Manager
+	MIGStrategy string
+
+	// GDS (GPUDirect Storage)
+	EnableGDS string
+
+	// GDRCopy (GPUDirect RDMA Copy)
+	GDRCopy struct {
+		Enabled string
+	}
+
+	// GFD (GPU Feature Discovery)
+	GFD struct {
+		Enabled string
+	}
+
+	// Node Status Exporter
+	NodeStatusExporter struct {
+		Enabled string
+	}
+
+	// NVIDIA Driver CRD
+	NvidiaDriverCRD struct {
+		Enabled string
+	}
+
+	// Validator
+	Validator struct {
+		Enabled string
+	}
+
+	// VFIO Manager
+	VFIOManager struct {
+		Enabled string
+	}
+
+	// vGPU Device Manager
+	VGPUDeviceManager struct {
+		Enabled string
+	}
+
+	// vGPU License Server
+	VGPULicenseServer string
+
+	// Sandbox Workloads / Secure Boot
+	EnableSecureBoot string
 }
 
 // GenerateHelmValues generates Helm values from a recipe.
@@ -192,52 +248,28 @@ func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 }
 
 // applyValueOverrides applies user-specified value overrides from --set flags.
-// Supports dot notation paths like "gds.enabled", "mig.strategy", "driver.version".
+// Uses reflection-based approach to dynamically set any field using dot notation.
+// Supports paths like "gds.enabled", "gdrcopy.enabled", "mig.strategy", "driver.version".
 func (v *HelmValues) applyValueOverrides(overrides map[string]string) {
-	if overrides == nil {
+	if len(overrides) == 0 {
 		return
 	}
 
-	// Apply overrides based on path
+	// Use reflection-based override utility for dynamic field setting
+	if err := common.ApplyValueOverrides(v, overrides); err != nil {
+		// Log error but continue - some overrides may have succeeded
+		fmt.Printf("Warning: failed to apply some value overrides: %v\n", err)
+	}
+
+	// Handle special cases that need custom logic
 	for path, value := range overrides {
-		switch path {
-		case "gds.enabled":
-			v.EnableGDS = common.BoolToString(common.ParseBoolString(value))
-		case "driver.enabled":
-			v.EnableDriver = common.BoolToString(common.ParseBoolString(value))
-		case "driver.version":
-			v.DriverVersion = value
-		case "driver.useOpenKernelModules":
-			v.UseOpenKernelModule = common.BoolToString(common.ParseBoolString(value))
-		case "driver.repository", "operator.repository":
-			v.DriverRegistry = value
-		case "operator.version":
-			v.GPUOperatorVersion = value
-		case "toolkit.version":
-			v.NvidiaContainerToolkitVersion = value
-		case "devicePlugin.version":
-			v.DevicePluginVersion = value
-		case "dcgm.version":
-			v.DCGMVersion = value
-		case "dcgmExporter.version":
-			v.DCGMExporterVersion = value
-		case "mig.strategy":
-			v.MIGStrategy = value
-		case "vgpuManager.licenseServerURL":
-			v.VGPULicenseServer = value
-		case "sandboxWorkloads.enabled":
-			v.EnableSecureBoot = common.BoolToString(common.ParseBoolString(value))
-		case "namespace":
-			v.Namespace = value
-		default:
-			// Handle custom labels
-			if len(path) > 13 && path[:13] == "nodeSelector." {
-				labelKey := path[13:]
-				if v.CustomLabels == nil {
-					v.CustomLabels = make(map[string]string)
-				}
-				v.CustomLabels[labelKey] = value
+		// Handle custom labels with nodeSelector prefix
+		if len(path) > 13 && path[:13] == "nodeSelector." {
+			labelKey := path[13:]
+			if v.CustomLabels == nil {
+				v.CustomLabels = make(map[string]string)
 			}
+			v.CustomLabels[labelKey] = value
 		}
 	}
 }

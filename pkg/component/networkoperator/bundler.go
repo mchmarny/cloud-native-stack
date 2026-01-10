@@ -141,6 +141,13 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 			"failed to get values for network-operator", err)
 	}
 
+	// Apply user value overrides from --set flags to values map
+	if overrides := b.getValueOverrides(); len(overrides) > 0 {
+		if applyErr := internal.ApplyMapOverrides(values, overrides); applyErr != nil {
+			slog.Warn("failed to apply some value overrides to values map", "error", applyErr)
+		}
+	}
+
 	// Create bundle directory structure
 	dirs, err := b.CreateBundleDir(outputDir, Name)
 	if err != nil {
@@ -170,6 +177,9 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 
 	// Generate HelmValues from values map
 	helmValues := GenerateHelmValuesFromMap(configMap)
+
+	// Apply user value overrides from --set flags
+	helmValues.applyValueOverrides(b.getValueOverrides())
 
 	// Generate ScriptData from config
 	scriptData := GenerateScriptDataFromConfig(configMap)

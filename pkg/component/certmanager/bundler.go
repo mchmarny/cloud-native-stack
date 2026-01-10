@@ -134,6 +134,15 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 			"failed to get values for cert-manager", err)
 	}
 
+	// Apply user value overrides from --set flags to values map
+	if overrides := b.getValueOverrides(); len(overrides) > 0 {
+		if applyErr := internal.ApplyMapOverrides(values, overrides); applyErr != nil {
+			slog.Warn("failed to apply some value overrides to values map",
+				"error", applyErr,
+				"component", Name)
+		}
+	}
+
 	// Create bundle directory structure
 	dirs, err := b.CreateBundleDir(outputDir, Name)
 	if err != nil {
@@ -165,6 +174,8 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 	// Generate README with pre-built data
 	if b.Config.IncludeReadme() {
 		helmValues := GenerateHelmValuesFromMap(configMap)
+		// Apply user value overrides from --set flags
+		helmValues.applyValueOverrides(b.getValueOverrides())
 		scriptData := GenerateScriptDataFromConfig(configMap)
 		if err := b.generateReadmeFromData(ctx, helmValues, scriptData, dirs.Root); err != nil {
 			return b.Result, err

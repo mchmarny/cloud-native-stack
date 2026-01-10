@@ -1,6 +1,7 @@
 package skyhook
 
 import (
+	"fmt"
 	"time"
 
 	common "github.com/NVIDIA/cloud-native-stack/pkg/component/internal"
@@ -160,37 +161,15 @@ func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 }
 
 // applyValueOverrides applies value overrides from --set flags.
+// Uses reflection-based approach to dynamically set any field using dot notation.
 func (v *HelmValues) applyValueOverrides(overrides map[string]string) {
-	if overrides == nil {
+	if len(overrides) == 0 {
 		return
 	}
 
-	for path, value := range overrides {
-		switch path {
-		case "operator.registry":
-			v.OperatorRegistry = value
-		case "operator.version":
-			v.SkyhookOperatorVersion = value
-		case "kubeRbacProxy.version":
-			v.KubeRbacProxyVersion = value
-		case "agent.image":
-			v.SkyhookAgentImage = value
-		case "manager.resources.cpu.limit":
-			v.ManagerCPULimit = value
-		case "manager.resources.memory.limit":
-			v.ManagerMemoryLimit = value
-		case "manager.resources.cpu.request":
-			v.ManagerCPURequest = value
-		case "manager.resources.memory.request":
-			v.ManagerMemoryRequest = value
-		case "nodeSelector":
-			v.NodeSelector = value
-		case "tolerations.key":
-			v.TolerationKey = value
-		case "tolerations.value":
-			v.TolerationValue = value
-		case "namespace":
-			v.Namespace = value
-		}
+	// Use reflection-based override utility for dynamic field setting
+	if err := common.ApplyValueOverrides(v, overrides); err != nil {
+		// Log error but continue - some overrides may have succeeded
+		fmt.Printf("Warning: failed to apply some value overrides: %v\n", err)
 	}
 }

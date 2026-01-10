@@ -219,40 +219,17 @@ func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 }
 
 // applyValueOverrides applies value overrides from --set flags.
+// Uses reflection-based approach to dynamically set any field using dot notation.
+// Supports paths like "rdma.enabled", "operator.version", "ofed.version".
 func (v *HelmValues) applyValueOverrides(overrides map[string]string) {
-	if overrides == nil {
+	if len(overrides) == 0 {
 		return
 	}
 
-	for path, value := range overrides {
-		switch path {
-		case "driver.registry":
-			v.DriverRegistry = value
-		case "operator.version":
-			v.NetworkOperatorVersion = value
-		case "ofed.version":
-			v.OFEDVersion = value
-		case "rdma.enabled":
-			v.EnableRDMA = common.BoolToString(common.ParseBoolString(value))
-		case "sriov.enabled":
-			v.EnableSRIOV = common.BoolToString(common.ParseBoolString(value))
-		case "hostDevice.enabled":
-			v.EnableHostDevice = common.BoolToString(common.ParseBoolString(value))
-		case "ipam.enabled":
-			v.EnableIPAM = common.BoolToString(common.ParseBoolString(value))
-		case "multus.enabled":
-			v.EnableMultus = common.BoolToString(common.ParseBoolString(value))
-		case "whereabouts.enabled":
-			v.EnableWhereabouts = common.BoolToString(common.ParseBoolString(value))
-		case "ofed.deploy":
-			v.DeployOFED = common.BoolToString(common.ParseBoolString(value))
-		case "nic.type":
-			v.NicType = value
-		case "containerRuntime.socket":
-			v.ContainerRuntimeSocket = value
-		case "namespace":
-			v.Namespace = value
-		}
+	// Use reflection-based override utility for dynamic field setting
+	if err := common.ApplyValueOverrides(v, overrides); err != nil {
+		// Log error but continue - some overrides may have succeeded
+		fmt.Printf("Warning: failed to apply some value overrides: %v\n", err)
 	}
 }
 
