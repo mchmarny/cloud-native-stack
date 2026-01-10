@@ -2,70 +2,46 @@
 # Generated from Cloud Native Stack Recipe
 # Timestamp: {{ .Timestamp }}
 # Bundler Version: {{ .Version }}
-# Recipe Bundler Version: {{ .RecipeVersion }}
+# Recipe Version: {{ .RecipeVersion }}
 
 operator:
-  {{- if .NetworkOperatorVersion.Value }}
-  {{- if .NetworkOperatorVersion.Context }}
-  # {{ .NetworkOperatorVersion.Context }}
-  {{- end }}
-  tag: {{ .NetworkOperatorVersion.Value }}
+  {{- if .NetworkOperatorVersion }}
+  tag: {{ .NetworkOperatorVersion }}
   {{- end }}
 
 deployCR: true
 
-{{- if .DeployOFED.Context }}
-# {{ .DeployOFED.Context }}
-{{- end }}
 ofedDriver:
-  deploy: {{ .DeployOFED.Value }}
-  {{- if .OFEDVersion.Value }}
-  {{- if .OFEDVersion.Context }}
-  # {{ .OFEDVersion.Context }}
-  {{- end }}
-  version: {{ .OFEDVersion.Value }}
+  deploy: {{ .DeployOFED }}
+  {{- if .OFEDVersion }}
+  version: {{ .OFEDVersion }}
   {{- end }}
 
-{{- if .EnableRDMA.Context }}
-# {{ .EnableRDMA.Context }}
-{{- end }}
 rdmaSharedDevicePlugin:
-  deploy: {{ .EnableRDMA.Value }}
-  {{- if .EnableRDMA.Value }}
+  deploy: {{ .EnableRDMA }}
+  {{- if eq .EnableRDMA "true" }}
   config:
     resources:
       - name: rdma_shared_device
         rdmaHcaMax: 1000
   {{- end }}
 
-{{- if .EnableSRIOV.Context }}
-# {{ .EnableSRIOV.Context }}
-{{- end }}
 sriovDevicePlugin:
-  deploy: {{ .EnableSRIOV.Value }}
+  deploy: {{ .EnableSRIOV }}
 
-{{- if .EnableIPAM.Context }}
-# {{ .EnableIPAM.Context }}
-{{- end }}
 nvIPAM:
-  deploy: {{ .EnableIPAM.Value }}
-  {{- if .EnableIPAM.Value }}
+  deploy: {{ .EnableIPAM }}
+  {{- if eq .EnableIPAM "true" }}
   config:
     enableWebhook: false
   {{- end }}
 
 secondaryNetwork:
   deploy: true
-  {{- if .EnableMultus.Context }}
-  # {{ .EnableMultus.Context }}
-  {{- end }}
   multus:
-    deploy: {{ .EnableMultus.Value }}
-  {{- if .EnableWhereabouts.Context }}
-  # {{ .EnableWhereabouts.Context }}
-  {{- end }}
+    deploy: {{ .EnableMultus }}
   ipamPlugin:
-    deploy: {{ .EnableWhereabouts.Value }}
+    deploy: {{ .EnableWhereabouts }}
 
 nicFeatureDiscovery:
   deploy: true
@@ -92,9 +68,6 @@ nfd:
   enabled: true
   deployNodeFeatureRules: true
 
-{{- if .ContainerRuntimeSocket.Context }}
-# {{ .ContainerRuntimeSocket.Context }}
-{{- end }}
 # Container Runtime
 containerRuntime:
-  socket: {{ .ContainerRuntimeSocket.Value }}
+  socket: {{ .ContainerRuntimeSocket }}

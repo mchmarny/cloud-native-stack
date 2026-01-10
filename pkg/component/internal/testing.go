@@ -365,11 +365,3 @@ func AssertConfigValue(t *testing.T, config map[string]string, key, expected str
 		t.Errorf("Config[%s] = %s, want %s", key, val, expected)
 	}
 }
-
-// AssertValueWithContext checks if a ValueWithContext has the expected value.
-func AssertValueWithContext(t *testing.T, vwc ValueWithContext, expected interface{}, fieldName string) {
-	t.Helper()
-	if vwc.Value != expected {
-		t.Errorf("%s = %v, want %v", fieldName, vwc.Value, expected)
-	}
-}

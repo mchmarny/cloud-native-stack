@@ -45,29 +45,26 @@ Namespace: `{{ .Helm.Namespace }}`
 {{- end }}
 
 ### cert-manager Version
-{{- if .Helm.CertManagerVersion.Value }}
-Version: `{{ .Helm.CertManagerVersion.Value }}`
-{{- if .Helm.CertManagerVersion.Context }}
-{{ .Helm.CertManagerVersion.Context }}
-{{- end }}
+{{- if .Helm.CertManagerVersion }}
+Version: `{{ .Helm.CertManagerVersion }}`
 {{- end }}
 
 ### Configuration
-{{- if .Helm.InstallCRDs.Value }}
-- Install CRDs: {{ .Helm.InstallCRDs.Value }}
+{{- if .Helm.InstallCRDs }}
+- Install CRDs: {{ .Helm.InstallCRDs }}
 {{- end }}
-{{- if .Helm.EnablePrometheus.Value }}
-- Enable Prometheus: {{ .Helm.EnablePrometheus.Value }}
+{{- if .Helm.EnablePrometheus }}
+- Enable Prometheus: {{ .Helm.EnablePrometheus }}
 {{- end }}
 
 ### Resource Allocations
-- Controller: {{ .Helm.ControllerCPURequest.Value }} CPU / {{ .Helm.ControllerMemoryRequest.Value }} Memory
-- Webhook: {{ .Helm.WebhookCPURequest.Value }} CPU / {{ .Helm.WebhookMemoryRequest.Value }} Memory
-- CA Injector: {{ .Helm.CAInjectorCPURequest.Value }} CPU / {{ .Helm.CAInjectorMemoryRequest.Value }} Memory
+- Controller: {{ .Helm.ControllerCPURequest }} CPU / {{ .Helm.ControllerMemoryRequest }} Memory
+- Webhook: {{ .Helm.WebhookCPURequest }} CPU / {{ .Helm.WebhookMemoryRequest }} Memory
+- CA Injector: {{ .Helm.CAInjectorCPURequest }} CPU / {{ .Helm.CAInjectorMemoryRequest }} Memory
 
 ### Node Placement
-- Node Selector: {{ .Helm.NodeSelectorKey.Value }}={{ .Helm.NodeSelectorValue.Value }}
-- Toleration: {{ .Helm.TolerationKey.Value }}={{ .Helm.TolerationValue.Value }}
+- Node Selector: {{ .Helm.NodeSelectorKey }}={{ .Helm.NodeSelectorValue }}
+- Toleration: {{ .Helm.TolerationKey }}={{ .Helm.TolerationValue }}
 
 ## Installation
 

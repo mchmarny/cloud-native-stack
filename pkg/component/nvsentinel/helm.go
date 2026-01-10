@@ -14,7 +14,7 @@ type HelmValues struct {
 	Version           string
 	RecipeVersion     string
 	Namespace         string
-	NVSentinelVersion common.ValueWithContext
+	NVSentinelVersion string
 }
 
 // GenerateHelmValues generates Helm values from a recipe.
@@ -23,8 +23,8 @@ func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string, overrid
 		Timestamp:         time.Now().UTC().Format(time.RFC3339),
 		Namespace:         common.GetConfigValue(config, "namespace", Name),
 		Version:           common.GetBundlerVersion(config),
-		RecipeVersion:     common.GetRecipeBundlerVersion(recipe.Metadata),
-		NVSentinelVersion: common.ValueWithContext{Value: common.GetConfigValue(config, "nvsentinel_version", "v0.6.0")},
+		RecipeVersion:     common.GetRecipeBundlerVersion(config),
+		NVSentinelVersion: common.GetConfigValue(config, "nvsentinel_version", "v0.6.0"),
 	}
 
 	// Extract NVSentinel-specific settings from recipe measurements
@@ -52,7 +52,8 @@ func GenerateHelmValuesFromMap(config map[string]string) *HelmValues {
 		Timestamp:         time.Now().UTC().Format(time.RFC3339),
 		Namespace:         common.GetConfigValue(config, "namespace", Name),
 		Version:           common.GetBundlerVersion(config),
-		NVSentinelVersion: common.ValueWithContext{Value: common.GetConfigValue(config, "helm_chart_version", "v0.6.0")},
+		RecipeVersion:     common.GetRecipeBundlerVersion(config),
+		NVSentinelVersion: common.GetConfigValue(config, "helm_chart_version", "v0.6.0"),
 	}
 
 	return helmValues
@@ -61,17 +62,11 @@ func GenerateHelmValuesFromMap(config map[string]string) *HelmValues {
 // extractK8sSettings extracts Kubernetes-related settings from measurements.
 func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 	for _, st := range m.Subtypes {
-		subtypeContext := common.GetSubtypeContext(st.Context)
-
 		// Extract version information from 'image' subtype
 		if st.Name == "image" {
 			if val, ok := st.Data["nvsentinel"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "nvsentinel", subtypeContext)
-					v.NVSentinelVersion = common.ValueWithContext{
-						Value:   s,
-						Context: ctx,
-					}
+					v.NVSentinelVersion = s
 				}
 			}
 		}
@@ -81,7 +76,7 @@ func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 // applyConfigOverrides applies configuration overrides.
 func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 	if val := common.GetConfigValue(config, "nvsentinel_version", ""); val != "" {
-		v.NVSentinelVersion = common.ValueWithContext{Value: val}
+		v.NVSentinelVersion = val
 	}
 }
 
@@ -91,22 +86,12 @@ func (v *HelmValues) applyValueOverrides(overrides map[string]string) {
 		return
 	}
 
-	fieldMap := map[string]*common.ValueWithContext{
-		"version": &v.NVSentinelVersion,
-	}
-
-	// Apply overrides
 	for path, value := range overrides {
-		if field, exists := fieldMap[path]; exists {
-			*field = common.ValueWithContext{
-				Value:   value,
-				Context: "User override via --set flag",
-			}
+		switch path {
+		case "version":
+			v.NVSentinelVersion = value
+		case "namespace":
+			v.Namespace = value
 		}
-	}
-
-	// Handle namespace separately (it's a string, not ValueWithContext)
-	if ns, exists := overrides["namespace"]; exists {
-		v.Namespace = ns
 	}
 }

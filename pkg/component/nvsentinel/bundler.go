@@ -151,14 +151,13 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 			"failed to write values file", err)
 	}
 
-	// Build config map from component reference
-	configMap := map[string]string{
-		"namespace":            Name,
-		"helm_repository":      componentRef.Source,
-		"helm_chart_version":   componentRef.Version,
-		"nvsentinel_version":   componentRef.Version,
-		"nvsentinel_chart_url": componentRef.Source,
-	}
+	// Build config map with base settings and recipe version
+	configMap := b.BuildConfigMapFromInput(input)
+	configMap["namespace"] = Name
+	configMap["helm_repository"] = componentRef.Source
+	configMap["helm_chart_version"] = componentRef.Version
+	configMap["nvsentinel_version"] = componentRef.Version
+	configMap["nvsentinel_chart_url"] = componentRef.Source
 
 	// Generate HelmValues from values map
 	helmValues := GenerateHelmValuesFromMap(configMap)

@@ -10,24 +10,33 @@ import (
 )
 
 const (
-	strTrue = "true"
+	strTrue  = "true"
+	strFalse = "false"
 )
+
+// boolToString converts a boolean to its string representation.
+func boolToString(b bool) string {
+	if b {
+		return strTrue
+	}
+	return strFalse
+}
 
 // HelmValues represents the data structure for Network Operator Helm values.
 type HelmValues struct {
 	Timestamp              string
-	DriverRegistry         common.ValueWithContext
-	NetworkOperatorVersion common.ValueWithContext
-	OFEDVersion            common.ValueWithContext
-	EnableRDMA             common.ValueWithContext
-	EnableSRIOV            common.ValueWithContext
-	EnableHostDevice       common.ValueWithContext
-	EnableIPAM             common.ValueWithContext
-	EnableMultus           common.ValueWithContext
-	EnableWhereabouts      common.ValueWithContext
-	DeployOFED             common.ValueWithContext
-	NicType                common.ValueWithContext
-	ContainerRuntimeSocket common.ValueWithContext
+	DriverRegistry         string
+	NetworkOperatorVersion string
+	OFEDVersion            string
+	EnableRDMA             string
+	EnableSRIOV            string
+	EnableHostDevice       string
+	EnableIPAM             string
+	EnableMultus           string
+	EnableWhereabouts      string
+	DeployOFED             string
+	NicType                string
+	ContainerRuntimeSocket string
 	CustomLabels           map[string]string
 	Namespace              string
 	Version                string
@@ -38,20 +47,20 @@ type HelmValues struct {
 func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string, overrides map[string]string) *HelmValues {
 	values := &HelmValues{
 		Timestamp:              time.Now().UTC().Format(time.RFC3339),
-		DriverRegistry:         common.ValueWithContext{Value: common.GetConfigValue(config, "driver_registry", "nvcr.io/nvidia")},
-		EnableRDMA:             common.ValueWithContext{Value: false},
-		EnableSRIOV:            common.ValueWithContext{Value: false},
-		EnableHostDevice:       common.ValueWithContext{Value: true},
-		EnableIPAM:             common.ValueWithContext{Value: true},
-		EnableMultus:           common.ValueWithContext{Value: true},
-		EnableWhereabouts:      common.ValueWithContext{Value: true},
-		DeployOFED:             common.ValueWithContext{Value: false},
-		NicType:                common.ValueWithContext{Value: "ConnectX"},
-		ContainerRuntimeSocket: common.ValueWithContext{Value: "/var/run/containerd/containerd.sock"},
+		DriverRegistry:         common.GetConfigValue(config, "driver_registry", "nvcr.io/nvidia"),
+		EnableRDMA:             strFalse,
+		EnableSRIOV:            strFalse,
+		EnableHostDevice:       strTrue,
+		EnableIPAM:             strTrue,
+		EnableMultus:           strTrue,
+		EnableWhereabouts:      strTrue,
+		DeployOFED:             strFalse,
+		NicType:                "ConnectX",
+		ContainerRuntimeSocket: "/var/run/containerd/containerd.sock",
 		CustomLabels:           common.ExtractCustomLabels(config),
 		Namespace:              common.GetConfigValue(config, "namespace", Name),
 		Version:                common.GetBundlerVersion(config),
-		RecipeVersion:          common.GetRecipeBundlerVersion(recipe.Metadata),
+		RecipeVersion:          common.GetRecipeBundlerVersion(config),
 	}
 
 	// Extract Network Operator configuration from recipe measurements
@@ -77,11 +86,12 @@ func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string, overrid
 func GenerateHelmValuesFromMap(config map[string]string) *HelmValues {
 	helmValues := &HelmValues{
 		Timestamp:        time.Now().UTC().Format(time.RFC3339),
-		EnableRDMA:       common.ValueWithContext{Value: false},
-		EnableSRIOV:      common.ValueWithContext{Value: false},
-		EnableHostDevice: common.ValueWithContext{Value: false},
+		EnableRDMA:       strFalse,
+		EnableSRIOV:      strFalse,
+		EnableHostDevice: strFalse,
 		Namespace:        common.GetConfigValue(config, "namespace", Name),
 		Version:          common.GetBundlerVersion(config),
+		RecipeVersion:    common.GetRecipeBundlerVersion(config),
 	}
 
 	return helmValues
@@ -90,21 +100,16 @@ func GenerateHelmValuesFromMap(config map[string]string) *HelmValues {
 // extractK8sSettings extracts Kubernetes-related settings from measurements.
 func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 	for _, st := range m.Subtypes {
-		// Extract context for this subtype
-		subtypeContext := common.GetSubtypeContext(st.Context)
-
 		// Extract version information from 'image' subtype
 		if st.Name == "image" {
 			if val, ok := st.Data["network-operator"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "network-operator", subtypeContext)
-					v.NetworkOperatorVersion = common.ValueWithContext{Value: s, Context: ctx}
+					v.NetworkOperatorVersion = s
 				}
 			}
 			if val, ok := st.Data["ofed-driver"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "ofed-driver", subtypeContext)
-					v.OFEDVersion = common.ValueWithContext{Value: s, Context: ctx}
+					v.OFEDVersion = s
 				}
 			}
 		}
@@ -114,57 +119,49 @@ func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 			// RDMA configuration
 			if val, ok := st.Data["rdma"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					ctx := common.GetFieldContext(st.Context, "rdma", subtypeContext)
-					v.EnableRDMA = common.ValueWithContext{Value: b, Context: ctx}
+					v.EnableRDMA = boolToString(b)
 				}
 			}
 			// SR-IOV configuration
 			if val, ok := st.Data["sr-iov"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					ctx := common.GetFieldContext(st.Context, "sr-iov", subtypeContext)
-					v.EnableSRIOV = common.ValueWithContext{Value: b, Context: ctx}
+					v.EnableSRIOV = boolToString(b)
 				}
 			}
 			// OFED deployment
 			if val, ok := st.Data["deploy-ofed"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					ctx := common.GetFieldContext(st.Context, "deploy-ofed", subtypeContext)
-					v.DeployOFED = common.ValueWithContext{Value: b, Context: ctx}
+					v.DeployOFED = boolToString(b)
 				}
 			}
 			// Host device plugin
 			if val, ok := st.Data["host-device"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					ctx := common.GetFieldContext(st.Context, "host-device", subtypeContext)
-					v.EnableHostDevice = common.ValueWithContext{Value: b, Context: ctx}
+					v.EnableHostDevice = boolToString(b)
 				}
 			}
 			// IPAM plugin
 			if val, ok := st.Data["ipam"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					ctx := common.GetFieldContext(st.Context, "ipam", subtypeContext)
-					v.EnableIPAM = common.ValueWithContext{Value: b, Context: ctx}
+					v.EnableIPAM = boolToString(b)
 				}
 			}
 			// Multus CNI
 			if val, ok := st.Data["multus"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					ctx := common.GetFieldContext(st.Context, "multus", subtypeContext)
-					v.EnableMultus = common.ValueWithContext{Value: b, Context: ctx}
+					v.EnableMultus = boolToString(b)
 				}
 			}
 			// Whereabouts IPAM
 			if val, ok := st.Data["whereabouts"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					ctx := common.GetFieldContext(st.Context, "whereabouts", subtypeContext)
-					v.EnableWhereabouts = common.ValueWithContext{Value: b, Context: ctx}
+					v.EnableWhereabouts = boolToString(b)
 				}
 			}
 			// NIC type
 			if val, ok := st.Data["nic-type"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "nic-type", subtypeContext)
-					v.NicType = common.ValueWithContext{Value: s, Context: ctx}
+					v.NicType = s
 				}
 			}
 		}
@@ -173,7 +170,6 @@ func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 		if st.Name == "server" {
 			if val, ok := st.Data["container-runtime"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "container-runtime", subtypeContext)
 					var socket string
 					switch s {
 					case "containerd":
@@ -185,7 +181,7 @@ func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 					default:
 						socket = "/var/run/containerd/containerd.sock"
 					}
-					v.ContainerRuntimeSocket = common.ValueWithContext{Value: socket, Context: ctx}
+					v.ContainerRuntimeSocket = socket
 				}
 			}
 		}
@@ -195,37 +191,37 @@ func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 // applyConfigOverrides applies configuration overrides to values.
 func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 	if val, ok := config["network_operator_version"]; ok && val != "" {
-		v.NetworkOperatorVersion = common.ValueWithContext{Value: val, Context: "Override from bundler configuration"}
+		v.NetworkOperatorVersion = val
 	}
 	if val, ok := config["ofed_version"]; ok && val != "" {
-		v.OFEDVersion = common.ValueWithContext{Value: val, Context: "Override from bundler configuration"}
+		v.OFEDVersion = val
 	}
 	if val, ok := config["enable_rdma"]; ok {
-		v.EnableRDMA = common.ValueWithContext{Value: val == strTrue, Context: "Override from bundler configuration"}
+		v.EnableRDMA = boolToString(val == strTrue)
 	}
 	if val, ok := config["enable_sriov"]; ok {
-		v.EnableSRIOV = common.ValueWithContext{Value: val == strTrue, Context: "Override from bundler configuration"}
+		v.EnableSRIOV = boolToString(val == strTrue)
 	}
 	if val, ok := config["deploy_ofed"]; ok {
-		v.DeployOFED = common.ValueWithContext{Value: val == strTrue, Context: "Override from bundler configuration"}
+		v.DeployOFED = boolToString(val == strTrue)
 	}
 	if val, ok := config["enable_host_device"]; ok {
-		v.EnableHostDevice = common.ValueWithContext{Value: val == strTrue, Context: "Override from bundler configuration"}
+		v.EnableHostDevice = boolToString(val == strTrue)
 	}
 	if val, ok := config["enable_ipam"]; ok {
-		v.EnableIPAM = common.ValueWithContext{Value: val == strTrue, Context: "Override from bundler configuration"}
+		v.EnableIPAM = boolToString(val == strTrue)
 	}
 	if val, ok := config["enable_multus"]; ok {
-		v.EnableMultus = common.ValueWithContext{Value: val == strTrue, Context: "Override from bundler configuration"}
+		v.EnableMultus = boolToString(val == strTrue)
 	}
 	if val, ok := config["enable_whereabouts"]; ok {
-		v.EnableWhereabouts = common.ValueWithContext{Value: val == strTrue, Context: "Override from bundler configuration"}
+		v.EnableWhereabouts = boolToString(val == strTrue)
 	}
 	if val, ok := config["nic_type"]; ok && val != "" {
-		v.NicType = common.ValueWithContext{Value: val, Context: "Override from bundler configuration"}
+		v.NicType = val
 	}
 	if val, ok := config["container_runtime_socket"]; ok && val != "" {
-		v.ContainerRuntimeSocket = common.ValueWithContext{Value: val, Context: "Override from bundler configuration"}
+		v.ContainerRuntimeSocket = val
 	}
 	if val, ok := config["namespace"]; ok && val != "" {
 		v.Namespace = val
@@ -241,47 +237,47 @@ func (v *HelmValues) applyValueOverrides(overrides map[string]string) {
 		return
 	}
 
-	fieldMap := map[string]*common.ValueWithContext{
-		"driver.registry":         &v.DriverRegistry,
-		"operator.version":        &v.NetworkOperatorVersion,
-		"ofed.version":            &v.OFEDVersion,
-		"rdma.enabled":            &v.EnableRDMA,
-		"sriov.enabled":           &v.EnableSRIOV,
-		"hostDevice.enabled":      &v.EnableHostDevice,
-		"ipam.enabled":            &v.EnableIPAM,
-		"multus.enabled":          &v.EnableMultus,
-		"whereabouts.enabled":     &v.EnableWhereabouts,
-		"ofed.deploy":             &v.DeployOFED,
-		"nic.type":                &v.NicType,
-		"containerRuntime.socket": &v.ContainerRuntimeSocket,
-	}
-
-	// Apply overrides
 	for path, value := range overrides {
-		if field, exists := fieldMap[path]; exists {
-			*field = common.ValueWithContext{
-				Value:   value,
-				Context: "User override via --set flag",
-			}
+		switch path {
+		case "driver.registry":
+			v.DriverRegistry = value
+		case "operator.version":
+			v.NetworkOperatorVersion = value
+		case "ofed.version":
+			v.OFEDVersion = value
+		case "rdma.enabled":
+			v.EnableRDMA = boolToString(value == strTrue)
+		case "sriov.enabled":
+			v.EnableSRIOV = boolToString(value == strTrue)
+		case "hostDevice.enabled":
+			v.EnableHostDevice = boolToString(value == strTrue)
+		case "ipam.enabled":
+			v.EnableIPAM = boolToString(value == strTrue)
+		case "multus.enabled":
+			v.EnableMultus = boolToString(value == strTrue)
+		case "whereabouts.enabled":
+			v.EnableWhereabouts = boolToString(value == strTrue)
+		case "ofed.deploy":
+			v.DeployOFED = boolToString(value == strTrue)
+		case "nic.type":
+			v.NicType = value
+		case "containerRuntime.socket":
+			v.ContainerRuntimeSocket = value
+		case "namespace":
+			v.Namespace = value
 		}
-	}
-
-	// Handle namespace separately (it's a string, not ValueWithContext)
-	if ns, exists := overrides["namespace"]; exists {
-		v.Namespace = ns
 	}
 }
 
-// ToMap converts HelmValues to a map for template rendering.
 // Validate validates the Helm values.
 func (v *HelmValues) Validate() error {
 	if v.Namespace == "" {
 		return fmt.Errorf("namespace cannot be empty")
 	}
-	if nt, ok := v.NicType.Value.(string); !ok || nt == "" {
+	if v.NicType == "" {
 		return fmt.Errorf("NIC type cannot be empty")
 	}
-	if crs, ok := v.ContainerRuntimeSocket.Value.(string); !ok || crs == "" {
+	if v.ContainerRuntimeSocket == "" {
 		return fmt.Errorf("container runtime socket cannot be empty")
 	}
 	return nil

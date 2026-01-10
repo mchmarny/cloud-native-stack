@@ -27,6 +27,10 @@ type RecipeInput interface {
 	// For Recipe, this extracts values from measurements.
 	// For RecipeResult, this loads values from the component's valuesFile.
 	GetValuesForComponent(name string) (map[string]interface{}, error)
+
+	// GetVersion returns the recipe version (CLI version that generated the recipe).
+	// Returns empty string if version is not available.
+	GetVersion() string
 }
 
 // Ensure Recipe implements RecipeInput
@@ -50,6 +54,14 @@ func (r *Recipe) GetValuesForComponent(name string) (map[string]interface{}, err
 	return make(map[string]interface{}), nil
 }
 
+// GetVersion returns the recipe version from metadata.
+func (r *Recipe) GetVersion() string {
+	if r.Metadata == nil {
+		return ""
+	}
+	return r.Metadata["recipe-version"]
+}
+
 // Ensure RecipeResult implements RecipeInput
 var _ RecipeInput = (*RecipeResult)(nil)
 
@@ -57,6 +69,11 @@ var _ RecipeInput = (*RecipeResult)(nil)
 // The new format uses ComponentRefs with valuesFiles instead of measurements.
 func (r *RecipeResult) GetMeasurements() []*measurement.Measurement {
 	return nil
+}
+
+// GetVersion returns the recipe version from metadata.
+func (r *RecipeResult) GetVersion() string {
+	return r.Metadata.Version
 }
 
 // GetComponentRef returns the component reference for a given component name.

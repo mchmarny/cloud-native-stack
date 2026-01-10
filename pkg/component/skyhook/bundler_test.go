@@ -131,12 +131,12 @@ func TestGenerateHelmValues(t *testing.T) {
 		t.Fatal("GenerateHelmValues() returned nil")
 	}
 
-	if values.SkyhookOperatorVersion.Value != "v0.1.0" {
-		t.Errorf("SkyhookOperatorVersion = %s, want v0.1.0", values.SkyhookOperatorVersion.Value)
+	if values.SkyhookOperatorVersion != "v0.1.0" {
+		t.Errorf("SkyhookOperatorVersion = %s, want v0.1.0", values.SkyhookOperatorVersion)
 	}
 
-	if values.OperatorRegistry.Value != "nvcr.io/nvidia" {
-		t.Errorf("OperatorRegistry = %s, want nvcr.io/nvidia", values.OperatorRegistry.Value)
+	if values.OperatorRegistry != "nvcr.io/nvidia" {
+		t.Errorf("OperatorRegistry = %s, want nvcr.io/nvidia", values.OperatorRegistry)
 	}
 }
 
@@ -154,12 +154,12 @@ func TestGenerateSkyhookCRData(t *testing.T) {
 		t.Fatal("GenerateSkyhookCRData() returned nil")
 	}
 
-	if crData.RuntimeRequired.Value != "true" {
-		t.Errorf("RuntimeRequired = %s, want true", crData.RuntimeRequired.Value)
+	if crData.RuntimeRequired != "true" {
+		t.Errorf("RuntimeRequired = %s, want true", crData.RuntimeRequired)
 	}
 
-	if crData.InterruptionBudgetPercent.Value != "100" {
-		t.Errorf("InterruptionBudgetPercent = %s, want 100", crData.InterruptionBudgetPercent.Value)
+	if crData.InterruptionBudgetPercent != "100" {
+		t.Errorf("InterruptionBudgetPercent = %s, want 100", crData.InterruptionBudgetPercent)
 	}
 
 	// Verify GRUB config is built
@@ -190,8 +190,8 @@ func TestGenerateScriptData(t *testing.T) {
 		t.Fatal("GenerateScriptData() returned nil")
 	}
 
-	if scriptData.HelmChartRepo.Value != "https://test.repo" {
-		t.Errorf("HelmChartRepo = %s, want https://test.repo", scriptData.HelmChartRepo.Value)
+	if scriptData.HelmChartRepo != "https://test.repo" {
+		t.Errorf("HelmChartRepo = %s, want https://test.repo", scriptData.HelmChartRepo)
 	}
 }
 

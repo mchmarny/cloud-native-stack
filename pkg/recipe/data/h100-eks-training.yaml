@@ -6,13 +6,13 @@ metadata:
 spec:
   criteria:
     service: eks
-    accelerator: gb200
+    accelerator: h100
     intent: training
 
   # Specific constraints for GB200 on EKS training workloads
   constraints:
     - name: k8s
-      value: ">= 1.32.4"
+      value: ">= 1.30"
     - name: worker-os
       value: "ubuntu"
     - name: worker-os-version

@@ -10,25 +10,34 @@ import (
 )
 
 const (
-	strTrue = "true"
+	strTrue  = "true"
+	strFalse = "false"
 )
+
+// boolToString converts a boolean to "true" or "false" string.
+func boolToString(b bool) string {
+	if b {
+		return strTrue
+	}
+	return strFalse
+}
 
 // HelmValues represents the data structure for GPU Operator Helm values.
 type HelmValues struct {
 	Timestamp                     string
-	DriverRegistry                common.ValueWithContext
-	GPUOperatorVersion            common.ValueWithContext
-	EnableDriver                  common.ValueWithContext
-	DriverVersion                 common.ValueWithContext
-	UseOpenKernelModule           common.ValueWithContext
-	NvidiaContainerToolkitVersion common.ValueWithContext
-	DevicePluginVersion           common.ValueWithContext
-	DCGMVersion                   common.ValueWithContext
-	DCGMExporterVersion           common.ValueWithContext
-	MIGStrategy                   common.ValueWithContext
-	EnableGDS                     common.ValueWithContext
-	VGPULicenseServer             common.ValueWithContext
-	EnableSecureBoot              common.ValueWithContext
+	DriverRegistry                string
+	GPUOperatorVersion            string
+	EnableDriver                  string
+	DriverVersion                 string
+	UseOpenKernelModule           string
+	NvidiaContainerToolkitVersion string
+	DevicePluginVersion           string
+	DCGMVersion                   string
+	DCGMExporterVersion           string
+	MIGStrategy                   string
+	EnableGDS                     string
+	VGPULicenseServer             string
+	EnableSecureBoot              string
 	CustomLabels                  map[string]string
 	Namespace                     string
 	Version                       string
@@ -39,15 +48,15 @@ type HelmValues struct {
 func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string, overrides map[string]string) *HelmValues {
 	values := &HelmValues{
 		Timestamp:        time.Now().UTC().Format(time.RFC3339),
-		DriverRegistry:   common.ValueWithContext{Value: common.GetConfigValue(config, "driver_registry", "nvcr.io/nvidia")},
-		EnableDriver:     common.ValueWithContext{Value: true},
-		MIGStrategy:      common.ValueWithContext{Value: "single"},
-		EnableGDS:        common.ValueWithContext{Value: false},
-		EnableSecureBoot: common.ValueWithContext{Value: false},
+		DriverRegistry:   common.GetConfigValue(config, "driver_registry", "nvcr.io/nvidia"),
+		EnableDriver:     "true",
+		MIGStrategy:      "single",
+		EnableGDS:        "false",
+		EnableSecureBoot: "false",
 		CustomLabels:     common.ExtractCustomLabels(config),
 		Namespace:        common.GetConfigValue(config, "namespace", Name),
 		Version:          common.GetBundlerVersion(config),
-		RecipeVersion:    common.GetRecipeBundlerVersion(recipe.Metadata),
+		RecipeVersion:    common.GetRecipeBundlerVersion(config),
 	}
 
 	// Extract GPU Operator configuration from recipe measurements
@@ -75,13 +84,14 @@ func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string, overrid
 func GenerateHelmValuesFromMap(config map[string]string) *HelmValues {
 	helmValues := &HelmValues{
 		Timestamp:        time.Now().UTC().Format(time.RFC3339),
-		DriverRegistry:   common.ValueWithContext{Value: common.GetConfigValue(config, "driver_registry", "nvcr.io/nvidia")},
-		EnableDriver:     common.ValueWithContext{Value: true},
-		MIGStrategy:      common.ValueWithContext{Value: "single"},
-		EnableGDS:        common.ValueWithContext{Value: false},
-		EnableSecureBoot: common.ValueWithContext{Value: false},
+		DriverRegistry:   common.GetConfigValue(config, "driver_registry", "nvcr.io/nvidia"),
+		EnableDriver:     "true",
+		MIGStrategy:      "single",
+		EnableGDS:        "false",
+		EnableSecureBoot: "false",
 		Namespace:        common.GetConfigValue(config, "namespace", Name),
 		Version:          common.GetBundlerVersion(config),
+		RecipeVersion:    common.GetRecipeBundlerVersion(config),
 	}
 
 	return helmValues
@@ -90,45 +100,36 @@ func GenerateHelmValuesFromMap(config map[string]string) *HelmValues {
 // extractK8sSettings extracts Kubernetes-related settings from measurements.
 func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 	for _, st := range m.Subtypes {
-		// Extract context for this subtype
-		subtypeContext := common.GetSubtypeContext(st.Context)
-
 		// Extract version information from 'image' subtype
 		if st.Name == "image" {
 			if val, ok := st.Data["gpu-operator"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "gpu-operator", subtypeContext)
-					v.GPUOperatorVersion = common.ValueWithContext{Value: s, Context: ctx}
+					v.GPUOperatorVersion = s
 				}
 			}
 			if val, ok := st.Data["driver"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "driver", subtypeContext)
-					v.DriverVersion = common.ValueWithContext{Value: s, Context: ctx}
+					v.DriverVersion = s
 				}
 			}
 			if val, ok := st.Data["container-toolkit"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "container-toolkit", subtypeContext)
-					v.NvidiaContainerToolkitVersion = common.ValueWithContext{Value: s, Context: ctx}
+					v.NvidiaContainerToolkitVersion = s
 				}
 			}
 			if val, ok := st.Data["k8s-device-plugin"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "k8s-device-plugin", subtypeContext)
-					v.DevicePluginVersion = common.ValueWithContext{Value: s, Context: ctx}
+					v.DevicePluginVersion = s
 				}
 			}
 			if val, ok := st.Data["dcgm"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "dcgm", subtypeContext)
-					v.DCGMVersion = common.ValueWithContext{Value: s, Context: ctx}
+					v.DCGMVersion = s
 				}
 			}
 			if val, ok := st.Data["dcgm-exporter"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "dcgm-exporter", subtypeContext)
-					v.DCGMExporterVersion = common.ValueWithContext{Value: s, Context: ctx}
+					v.DCGMExporterVersion = s
 				}
 			}
 		}
@@ -138,22 +139,27 @@ func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 			// MIG configuration (boolean in recipe)
 			if val, ok := st.Data["mig"]; ok {
 				if b, ok := val.Any().(bool); ok && b {
-					ctx := common.GetFieldContext(st.Context, "mig", subtypeContext)
-					v.MIGStrategy = common.ValueWithContext{Value: "mixed", Context: ctx}
+					v.MIGStrategy = "mixed"
 				}
 			}
 			// UseOpenKernelModule (camelCase in recipe)
 			if val, ok := st.Data["useOpenKernelModule"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					ctx := common.GetFieldContext(st.Context, "useOpenKernelModule", subtypeContext)
-					v.UseOpenKernelModule = common.ValueWithContext{Value: b, Context: ctx}
+					if b {
+						v.UseOpenKernelModule = strTrue
+					} else {
+						v.UseOpenKernelModule = strFalse
+					}
 				}
 			}
 			// RDMA support (affects GDS)
 			if val, ok := st.Data["rdma"]; ok {
 				if b, ok := val.Any().(bool); ok {
-					ctx := common.GetFieldContext(st.Context, "rdma", subtypeContext)
-					v.EnableGDS = common.ValueWithContext{Value: b, Context: ctx}
+					if b {
+						v.EnableGDS = strTrue
+					} else {
+						v.EnableGDS = "false"
+					}
 				}
 			}
 		}
@@ -163,16 +169,13 @@ func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 // extractGPUSettings extracts GPU-related settings from measurements.
 func (v *HelmValues) extractGPUSettings(m *measurement.Measurement) {
 	for _, st := range m.Subtypes {
-		subtypeContext := common.GetSubtypeContext(st.Context)
-
 		// Recipe uses 'smi' subtype for nvidia-smi output
 		if st.Name == "smi" {
 			if val, ok := st.Data["driver-version"]; ok {
 				if s, ok := val.Any().(string); ok {
 					// Only set if not already set from K8s measurements
-					if cv, ok := v.DriverVersion.Value.(string); !ok || cv == "" {
-						ctx := common.GetFieldContext(st.Context, "driver-version", subtypeContext)
-						v.DriverVersion = common.ValueWithContext{Value: s, Context: ctx}
+					if v.DriverVersion == "" {
+						v.DriverVersion = s
 					}
 				}
 			}
@@ -183,19 +186,23 @@ func (v *HelmValues) extractGPUSettings(m *measurement.Measurement) {
 // applyConfigOverrides applies configuration overrides to values.
 func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 	if val, ok := config["driver_version"]; ok && val != "" {
-		v.DriverVersion = common.ValueWithContext{Value: val, Context: "Override from bundler configuration"}
+		v.DriverVersion = val
 	}
 	if val, ok := config["gpu_operator_version"]; ok && val != "" {
-		v.GPUOperatorVersion = common.ValueWithContext{Value: val, Context: "Override from bundler configuration"}
+		v.GPUOperatorVersion = val
 	}
 	if val, ok := config["mig_strategy"]; ok && val != "" {
-		v.MIGStrategy = common.ValueWithContext{Value: val, Context: "Override from bundler configuration"}
+		v.MIGStrategy = val
 	}
 	if val, ok := config["enable_gds"]; ok {
-		v.EnableGDS = common.ValueWithContext{Value: val == strTrue, Context: "Override from bundler configuration"}
+		if val == strTrue {
+			v.EnableGDS = strTrue
+		} else {
+			v.EnableGDS = "false"
+		}
 	}
 	if val, ok := config["vgpu_license_server"]; ok && val != "" {
-		v.VGPULicenseServer = common.ValueWithContext{Value: val, Context: "Override from bundler configuration"}
+		v.VGPULicenseServer = val
 	}
 	if val, ok := config["namespace"]; ok && val != "" {
 		v.Namespace = val
@@ -216,40 +223,46 @@ func (v *HelmValues) applyValueOverrides(overrides map[string]string) {
 		return
 	}
 
-	// Map of field paths to struct fields
-	fieldMap := map[string]*common.ValueWithContext{
-		"gds.enabled":                  &v.EnableGDS,
-		"driver.enabled":               &v.EnableDriver,
-		"driver.version":               &v.DriverVersion,
-		"driver.useOpenKernelModules":  &v.UseOpenKernelModule,
-		"driver.repository":            &v.DriverRegistry,
-		"operator.version":             &v.GPUOperatorVersion,
-		"operator.repository":          &v.DriverRegistry,
-		"toolkit.version":              &v.NvidiaContainerToolkitVersion,
-		"devicePlugin.version":         &v.DevicePluginVersion,
-		"dcgm.version":                 &v.DCGMVersion,
-		"dcgmExporter.version":         &v.DCGMExporterVersion,
-		"mig.strategy":                 &v.MIGStrategy,
-		"vgpuManager.licenseServerURL": &v.VGPULicenseServer,
-		"sandboxWorkloads.enabled":     &v.EnableSecureBoot,
-	}
-
 	// Apply overrides based on path
 	for path, value := range overrides {
-		if field, ok := fieldMap[path]; ok {
-			*field = common.ApplyValueOverrides(path, *field, overrides)
-		}
-		// Handle namespace separately (not a ValueWithContext)
-		if path == "namespace" {
+		switch path {
+		case "gds.enabled":
+			v.EnableGDS = boolToString(value == strTrue || value == "1")
+		case "driver.enabled":
+			v.EnableDriver = boolToString(value == strTrue || value == "1")
+		case "driver.version":
+			v.DriverVersion = value
+		case "driver.useOpenKernelModules":
+			v.UseOpenKernelModule = boolToString(value == strTrue || value == "1")
+		case "driver.repository", "operator.repository":
+			v.DriverRegistry = value
+		case "operator.version":
+			v.GPUOperatorVersion = value
+		case "toolkit.version":
+			v.NvidiaContainerToolkitVersion = value
+		case "devicePlugin.version":
+			v.DevicePluginVersion = value
+		case "dcgm.version":
+			v.DCGMVersion = value
+		case "dcgmExporter.version":
+			v.DCGMExporterVersion = value
+		case "mig.strategy":
+			v.MIGStrategy = value
+		case "vgpuManager.licenseServerURL":
+			v.VGPULicenseServer = value
+		case "sandboxWorkloads.enabled":
+			v.EnableSecureBoot = boolToString(value == strTrue || value == "1")
+		case "namespace":
 			v.Namespace = value
-		}
-		// Handle custom labels
-		if len(path) > 13 && path[:13] == "nodeSelector." {
-			labelKey := path[13:]
-			if v.CustomLabels == nil {
-				v.CustomLabels = make(map[string]string)
+		default:
+			// Handle custom labels
+			if len(path) > 13 && path[:13] == "nodeSelector." {
+				labelKey := path[13:]
+				if v.CustomLabels == nil {
+					v.CustomLabels = make(map[string]string)
+				}
+				v.CustomLabels[labelKey] = value
 			}
-			v.CustomLabels[labelKey] = value
 		}
 	}
 }
@@ -259,13 +272,11 @@ func (v *HelmValues) Validate() error {
 	if v.Namespace == "" {
 		return fmt.Errorf("namespace cannot be empty")
 	}
-	if dr, ok := v.DriverRegistry.Value.(string); !ok || dr == "" {
+	if v.DriverRegistry == "" {
 		return fmt.Errorf("driver registry cannot be empty")
 	}
-	if ms, ok := v.MIGStrategy.Value.(string); ok {
-		if ms != "single" && ms != "mixed" {
-			return fmt.Errorf("invalid MIG strategy: %s (must be single or mixed)", ms)
-		}
+	if v.MIGStrategy != "" && v.MIGStrategy != "single" && v.MIGStrategy != "mixed" {
+		return fmt.Errorf("invalid MIG strategy: %s (must be single or mixed)", v.MIGStrategy)
 	}
 	return nil
 }

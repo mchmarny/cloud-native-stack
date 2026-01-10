@@ -10,7 +10,7 @@ echo "Uninstalling NVSentinel..."
 
 # Uninstall Helm release
 echo "Uninstalling NVSentinel Helm release..."
-helm uninstall {{ .HelmReleaseName.Value }} -n {{ .Namespace }} || true
+helm uninstall {{ .HelmReleaseName }} -n {{ .Namespace }} || true
 
 # Wait for cleanup
 echo "Waiting for resources to be cleaned up..."

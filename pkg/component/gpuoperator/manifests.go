@@ -45,19 +45,11 @@ func GenerateManifestData(recipe *recipe.Recipe, config map[string]string, overr
 	// Extract values from recipe (similar to HelmValues)
 	helmValues := GenerateHelmValues(recipe, config, overrides)
 
-	// Convert helm values to manifest data - extract Value from ConfigValue
-	if dv, ok := helmValues.DriverVersion.Value.(string); ok {
-		data.DriverVersion = dv
-	}
-	if okm, ok := helmValues.UseOpenKernelModule.Value.(bool); ok {
-		data.UseOpenKernelModule = okm
-	}
-	if ms, ok := helmValues.MIGStrategy.Value.(string); ok {
-		data.MIGStrategy = ms
-	}
-	if gds, ok := helmValues.EnableGDS.Value.(bool); ok {
-		data.EnableGDS = gds
-	}
+	// Copy helm values to manifest data
+	data.DriverVersion = helmValues.DriverVersion
+	data.UseOpenKernelModule = helmValues.UseOpenKernelModule == strTrue
+	data.MIGStrategy = helmValues.MIGStrategy
+	data.EnableGDS = helmValues.EnableGDS == strTrue
 	data.CustomLabels = helmValues.CustomLabels
 
 	// Extract CDI setting from K8s config subtype
@@ -104,19 +96,11 @@ func GenerateManifestDataFromValues(helmValues *HelmValues) *ManifestData {
 		RecipeVersion: helmValues.RecipeVersion,
 	}
 
-	// Convert helm values to manifest data - extract Value from ValueWithContext
-	if dv, ok := helmValues.DriverVersion.Value.(string); ok {
-		data.DriverVersion = dv
-	}
-	if okm, ok := helmValues.UseOpenKernelModule.Value.(bool); ok {
-		data.UseOpenKernelModule = okm
-	}
-	if ms, ok := helmValues.MIGStrategy.Value.(string); ok {
-		data.MIGStrategy = ms
-	}
-	if gds, ok := helmValues.EnableGDS.Value.(bool); ok {
-		data.EnableGDS = gds
-	}
+	// Copy helm values to manifest data
+	data.DriverVersion = helmValues.DriverVersion
+	data.UseOpenKernelModule = helmValues.UseOpenKernelModule == strTrue
+	data.MIGStrategy = helmValues.MIGStrategy
+	data.EnableGDS = helmValues.EnableGDS == strTrue
 
 	return data
 }

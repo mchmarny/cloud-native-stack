@@ -86,5 +86,10 @@ func (b *Builder) BuildFromCriteria(ctx context.Context, c *Criteria) (*RecipeRe
 		return nil, err
 	}
 
+	// Set recipe version from builder configuration
+	if b.Version != "" {
+		result.Metadata.Version = b.Version
+	}
+
 	return result, nil
 }

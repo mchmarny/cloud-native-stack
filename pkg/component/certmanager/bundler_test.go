@@ -70,30 +70,30 @@ func TestGenerateHelmValues(t *testing.T) {
 		t.Errorf("Namespace = %s, want %s", helmValues.Namespace, Name)
 	}
 
-	if helmValues.InstallCRDs.Value != trueValue {
-		t.Errorf("InstallCRDs = %s, want true", helmValues.InstallCRDs.Value)
+	if helmValues.InstallCRDs != trueValue {
+		t.Errorf("InstallCRDs = %s, want true", helmValues.InstallCRDs)
 	}
 
-	if helmValues.EnablePrometheus.Value != trueValue {
-		t.Errorf("EnablePrometheus = %v, want true", helmValues.EnablePrometheus.Value)
+	if helmValues.EnablePrometheus != trueValue {
+		t.Errorf("EnablePrometheus = %v, want true", helmValues.EnablePrometheus)
 	}
 
 	// Verify controller resources
-	if helmValues.ControllerCPURequest.Value != "50m" {
-		t.Errorf("ControllerCPURequest = %v, want 50m", helmValues.ControllerCPURequest.Value)
+	if helmValues.ControllerCPURequest != "50m" {
+		t.Errorf("ControllerCPURequest = %v, want 50m", helmValues.ControllerCPURequest)
 	}
 
-	if helmValues.ControllerMemoryRequest.Value != "90Mi" {
-		t.Errorf("ControllerMemoryRequest = %v, want 90Mi", helmValues.ControllerMemoryRequest.Value)
+	if helmValues.ControllerMemoryRequest != "90Mi" {
+		t.Errorf("ControllerMemoryRequest = %v, want 90Mi", helmValues.ControllerMemoryRequest)
 	}
 
 	// Verify scheduling
-	if helmValues.TolerationKey.Value != "dedicated" {
-		t.Errorf("TolerationKey = %v, want dedicated", helmValues.TolerationKey.Value)
+	if helmValues.TolerationKey != "dedicated" {
+		t.Errorf("TolerationKey = %v, want dedicated", helmValues.TolerationKey)
 	}
 
-	if helmValues.NodeSelectorValue.Value != "system-cpu" {
-		t.Errorf("NodeSelectorValue = %v, want system-cpu", helmValues.NodeSelectorValue.Value)
+	if helmValues.NodeSelectorValue != "system-cpu" {
+		t.Errorf("NodeSelectorValue = %v, want system-cpu", helmValues.NodeSelectorValue)
 	}
 }
 

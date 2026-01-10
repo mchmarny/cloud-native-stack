@@ -23,31 +23,22 @@ This bundle contains configuration and deployment artifacts for the NVIDIA Skyho
 
 ### Operator Version
 
-- **Skyhook Operator**: {{ .Helm.SkyhookOperatorVersion.Value }}
-{{- if .Helm.SkyhookOperatorVersion.Context }}
-  - *{{ .Helm.SkyhookOperatorVersion.Context }}*
-{{- end }}
-- **Skyhook Agent**: {{ .Helm.SkyhookAgentImage.Value }}
-{{- if .Helm.SkyhookAgentImage.Context }}
-  - *{{ .Helm.SkyhookAgentImage.Context }}*
-{{- end }}
-- **Kube RBAC Proxy**: {{ .Helm.KubeRbacProxyVersion.Value }}
-{{- if .Helm.KubeRbacProxyVersion.Context }}
-  - *{{ .Helm.KubeRbacProxyVersion.Context }}*
-{{- end }}
+- **Skyhook Operator**: {{ .Helm.SkyhookOperatorVersion }}
+- **Skyhook Agent**: {{ .Helm.SkyhookAgentImage }}
+- **Kube RBAC Proxy**: {{ .Helm.KubeRbacProxyVersion }}
 
 ### Resource Requirements
 
-- **CPU Limit**: {{ .Helm.ManagerCPULimit.Value }}
-- **Memory Limit**: {{ .Helm.ManagerMemoryLimit.Value }}
-- **CPU Request**: {{ .Helm.ManagerCPURequest.Value }}
-- **Memory Request**: {{ .Helm.ManagerMemoryRequest.Value }}
+- **CPU Limit**: {{ .Helm.ManagerCPULimit }}
+- **Memory Limit**: {{ .Helm.ManagerMemoryLimit }}
+- **CPU Request**: {{ .Helm.ManagerCPURequest }}
+- **Memory Request**: {{ .Helm.ManagerMemoryRequest }}
 
 ### Node Configuration
 
-- **Runtime Required**: {{ .CR.RuntimeRequired.Value }}
-- **Interruption Budget**: {{ .CR.InterruptionBudgetPercent.Value }}%
-- **Tuning Package**: {{ .CR.TuningVersion.Value }}
+- **Runtime Required**: {{ .CR.RuntimeRequired }}
+- **Interruption Budget**: {{ .CR.InterruptionBudgetPercent }}%
+- **Tuning Package**: {{ .CR.TuningVersion }}
 
 ## Installation
 
@@ -84,13 +75,13 @@ chmod +x scripts/install.sh
 
 2. **Add Helm repository**:
    ```bash
-   helm repo add skyhook {{ .Script.HelmChartRepo.Value }}
+   helm repo add skyhook {{ .Script.HelmChartRepo }}
    helm repo update
    ```
 
 3. **Install operator**:
    ```bash
-   helm upgrade --install {{ .Script.HelmReleaseName.Value }} skyhook/{{ .Script.HelmChartName.Value }} \
+   helm upgrade --install {{ .Script.HelmReleaseName }} skyhook/{{ .Script.HelmChartName }} \
      --namespace {{ .Helm.Namespace }} \
      --create-namespace \
      --values values.yaml \
@@ -136,7 +127,7 @@ Edit `manifests/skyhook.yaml` to change which nodes are tuned:
 ```yaml
 nodeSelectors:
   matchExpressions:
-    - key: {{ .CR.NodeSelectorKey.Value }}
+    - key: {{ .CR.NodeSelectorKey }}
       operator: In
       values:
         - your-node-group
@@ -151,8 +142,8 @@ controllerManager:
   manager:
     resources:
       limits:
-        cpu: {{ .Helm.ManagerCPULimit.Value }}
-        memory: {{ .Helm.ManagerMemoryLimit.Value }}
+        cpu: {{ .Helm.ManagerCPULimit }}
+        memory: {{ .Helm.ManagerMemoryLimit }}
 ```
 
 ### Custom Tuning Configuration
@@ -178,7 +169,7 @@ Or manually:
 kubectl delete -f manifests/skyhook.yaml
 
 # Uninstall Helm release
-helm uninstall {{ .Script.HelmReleaseName.Value }} -n {{ .Helm.Namespace }}
+helm uninstall {{ .Script.HelmReleaseName }} -n {{ .Helm.Namespace }}
 
 # Delete namespace (optional)
 kubectl delete namespace {{ .Helm.Namespace }}
@@ -197,7 +188,7 @@ kubectl logs -n {{ .Helm.Namespace }} deployment/skyhook-operator-controller-man
 
 1. Check node selectors match your nodes:
    ```bash
-   kubectl get nodes -L {{ .CR.NodeSelectorKey.Value }}
+   kubectl get nodes -L {{ .CR.NodeSelectorKey }}
    ```
 
 2. Check Skyhook status:

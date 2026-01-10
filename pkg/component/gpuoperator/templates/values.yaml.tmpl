@@ -2,103 +2,61 @@
 # Generated from Cloud Native Stack Recipe
 # Timestamp: {{ .Timestamp }}
 # Bundler Version: {{ .Version }}
-# Recipe Bundler Version: {{ .RecipeVersion }}
+# Recipe Version: {{ .RecipeVersion }}
 
 operator:
-  {{- if .DriverRegistry.Context }}
-  # {{ .DriverRegistry.Context }}
-  {{- end }}
-  repository: {{ .DriverRegistry.Value }}
-  {{- if .GPUOperatorVersion.Value }}
-  {{- if .GPUOperatorVersion.Context }}
-  # {{ .GPUOperatorVersion.Context }}
-  {{- end }}
-  version: {{ .GPUOperatorVersion.Value }}
+  repository: {{ .DriverRegistry }}
+  {{- if .GPUOperatorVersion }}
+  version: {{ .GPUOperatorVersion }}
   {{- end }}
 
 driver:
-  {{- if .EnableDriver.Context }}
-  # {{ .EnableDriver.Context }}
+  enabled: {{ .EnableDriver }}
+  {{- if .DriverVersion }}
+  version: "{{ .DriverVersion }}"
   {{- end }}
-  enabled: {{ .EnableDriver.Value }}
-  {{- if .DriverVersion.Value }}
-  {{- if .DriverVersion.Context }}
-  # {{ .DriverVersion.Context }}
-  {{- end }}
-  version: "{{ .DriverVersion.Value }}"
-  {{- end }}
-  {{- if .UseOpenKernelModule.Value }}
-  {{- if .UseOpenKernelModule.Context }}
-  # {{ .UseOpenKernelModule.Context }}
-  {{- end }}
+  {{- if eq .UseOpenKernelModule "true" }}
   useOpenKernelModules: true
   {{- end }}
-  {{- if .DriverRegistry.Context }}
-  # {{ .DriverRegistry.Context }}
-  {{- end }}
-  repository: {{ .DriverRegistry.Value }}
+  repository: {{ .DriverRegistry }}
 
 toolkit:
   enabled: true
-  {{- if .NvidiaContainerToolkitVersion.Value }}
-  {{- if .NvidiaContainerToolkitVersion.Context }}
-  # {{ .NvidiaContainerToolkitVersion.Context }}
-  {{- end }}
-  version: {{ .NvidiaContainerToolkitVersion.Value }}
+  {{- if .NvidiaContainerToolkitVersion }}
+  version: {{ .NvidiaContainerToolkitVersion }}
   {{- end }}
 
 devicePlugin:
   enabled: true
-  {{- if .DevicePluginVersion.Value }}
-  {{- if .DevicePluginVersion.Context }}
-  # {{ .DevicePluginVersion.Context }}
-  {{- end }}
-  version: {{ .DevicePluginVersion.Value }}
+  {{- if .DevicePluginVersion }}
+  version: {{ .DevicePluginVersion }}
   {{- end }}
 
 dcgm:
   enabled: true
-  {{- if .DCGMVersion.Value }}
-  {{- if .DCGMVersion.Context }}
-  # {{ .DCGMVersion.Context }}
-  {{- end }}
-  version: {{ .DCGMVersion.Value }}
+  {{- if .DCGMVersion }}
+  version: {{ .DCGMVersion }}
   {{- end }}
 
 dcgmExporter:
   enabled: true
-  {{- if .DCGMExporterVersion.Value }}
-  {{- if .DCGMExporterVersion.Context }}
-  # {{ .DCGMExporterVersion.Context }}
-  {{- end }}
-  version: {{ .DCGMExporterVersion.Value }}
+  {{- if .DCGMExporterVersion }}
+  version: {{ .DCGMExporterVersion }}
   {{- end }}
 
-{{- if .MIGStrategy.Context }}
-# {{ .MIGStrategy.Context }}
-{{- end }}
 mig:
-  strategy: {{ .MIGStrategy.Value }}
+  strategy: {{ .MIGStrategy }}
 
-{{- if .EnableGDS.Context }}
-# {{ .EnableGDS.Context }}
-{{- end }}
 gds:
-  enabled: {{ .EnableGDS.Value }}
+  enabled: {{ .EnableGDS }}
 
-{{- if .VGPULicenseServer.Value }}
-{{- if .VGPULicenseServer.Context }}
-# {{ .VGPULicenseServer.Context }}
-{{- end }}
+{{- if .VGPULicenseServer }}
 vgpuManager:
   enabled: true
-  licenseServerURL: {{ .VGPULicenseServer.Value }}
+  licenseServerURL: {{ .VGPULicenseServer }}
 {{- end }}
 
-{{- if .EnableSecureBoot.Value }}
-{{- if .EnableSecureBoot.Context }}
-# {{ .EnableSecureBoot.Context }}
-{{- end }}
+{{- if eq .EnableSecureBoot "true" }}
 sandboxWorkloads:
   enabled: true
   defaultWorkload: container

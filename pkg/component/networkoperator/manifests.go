@@ -51,31 +51,15 @@ func GenerateManifestData(recipe *recipe.Recipe, config map[string]string) *Mani
 	// (manifests use direct recipe values, not user-customizable helm values)
 	helmValues := GenerateHelmValues(recipe, config, nil)
 
-	// Convert helm values to manifest data - extract Value from ConfigValue
-	if rdma, ok := helmValues.EnableRDMA.Value.(bool); ok {
-		data.EnableRDMA = rdma
-	}
-	if sriov, ok := helmValues.EnableSRIOV.Value.(bool); ok {
-		data.EnableSRIOV = sriov
-	}
-	if hd, ok := helmValues.EnableHostDevice.Value.(bool); ok {
-		data.EnableHostDevice = hd
-	}
-	if ipam, ok := helmValues.EnableIPAM.Value.(bool); ok {
-		data.EnableIPAM = ipam
-	}
-	if ofed, ok := helmValues.DeployOFED.Value.(bool); ok {
-		data.DeployOFED = ofed
-	}
-	if ofedVer, ok := helmValues.OFEDVersion.Value.(string); ok {
-		data.OFEDVersion = ofedVer
-	}
-	if nt, ok := helmValues.NicType.Value.(string); ok {
-		data.NicType = nt
-	}
-	if crs, ok := helmValues.ContainerRuntimeSocket.Value.(string); ok {
-		data.ContainerRuntimeSocket = crs
-	}
+	// Convert helm values to manifest data - HelmValues now uses strings
+	data.EnableRDMA = helmValues.EnableRDMA == strTrue
+	data.EnableSRIOV = helmValues.EnableSRIOV == strTrue
+	data.EnableHostDevice = helmValues.EnableHostDevice == strTrue
+	data.EnableIPAM = helmValues.EnableIPAM == strTrue
+	data.DeployOFED = helmValues.DeployOFED == strTrue
+	data.OFEDVersion = helmValues.OFEDVersion
+	data.NicType = helmValues.NicType
+	data.ContainerRuntimeSocket = helmValues.ContainerRuntimeSocket
 	data.CustomLabels = helmValues.CustomLabels
 
 	// Extract additional settings from K8s config subtype

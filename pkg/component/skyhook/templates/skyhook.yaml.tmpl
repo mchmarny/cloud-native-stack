@@ -12,15 +12,15 @@ metadata:
     app.kubernetes.io/created-by: skyhook-operator
   name: {{ .Name }}
 spec:
-  runtimeRequired: {{ .RuntimeRequired.Value }}
+  runtimeRequired: {{ .RuntimeRequired }}
   additionalTolerations:
-    - key: {{ .TolerationKey.Value }}
+    - key: {{ .TolerationKey }}
       operator: Exists
   interruptionBudget:
-    percent: {{ .InterruptionBudgetPercent.Value }}
+    percent: {{ .InterruptionBudgetPercent }}
   nodeSelectors:
     matchExpressions:
-      - key: {{ .NodeSelectorKey.Value }}
+      - key: {{ .NodeSelectorKey }}
         operator: In
         values:
 {{- range .NodeSelectorValues }}
@@ -28,8 +28,8 @@ spec:
 {{- end }}
   packages:
     tuning:
-      version: {{ .TuningVersion.Value }}
-      image: {{ .TuningImage.Value }}
+      version: {{ .TuningVersion }}
+      image: {{ .TuningImage }}
       configInterrupts:
         grub.conf:
           type: reboot
@@ -39,7 +39,7 @@ spec:
         sysctl.conf:
           type: reboot
       interrupt: 
-        type: {{ .TuningInterruptType.Value }}
+        type: {{ .TuningInterruptType }}
       configMap:
         grub.conf: |-
 {{ .GrubConfig }}

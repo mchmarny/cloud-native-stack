@@ -12,11 +12,11 @@ echo "Installing NVSentinel..."
 kubectl create namespace {{ .Namespace }} --dry-run=client -o yaml | kubectl apply -f -
 
 # Install NVSentinel using Helm
-echo "Installing NVSentinel {{ .NVSentinelVersion.Value }} using Helm..."
-helm upgrade --install {{ .HelmReleaseName.Value }} {{ .HelmChartRepo.Value }} \
+echo "Installing NVSentinel {{ .NVSentinelVersion }} using Helm..."
+helm upgrade --install {{ .HelmReleaseName }} {{ .HelmChartRepo }} \
   --namespace {{ .Namespace }} \
   --create-namespace \
-  --version {{ .NVSentinelVersion.Value }} \
+  --version {{ .NVSentinelVersion }} \
   --timeout 15m \
   --wait
 

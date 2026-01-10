@@ -101,8 +101,8 @@ func TestGenerateHelmValues(t *testing.T) {
 		t.Errorf("Namespace = %s, want %s", values.Namespace, Name)
 	}
 
-	if values.NVSentinelVersion.Value != testVersion {
-		t.Errorf("NVSentinelVersion = %s, want %s", values.NVSentinelVersion.Value, testVersion)
+	if values.NVSentinelVersion != testVersion {
+		t.Errorf("NVSentinelVersion = %s, want %s", values.NVSentinelVersion, testVersion)
 	}
 }
 
@@ -120,18 +120,18 @@ func TestGenerateScriptData(t *testing.T) {
 		t.Errorf("Namespace = %s, want %s", data.Namespace, Name)
 	}
 
-	if data.NVSentinelVersion.Value != testVersion {
-		t.Errorf("NVSentinelVersion = %s, want %s", data.NVSentinelVersion.Value, testVersion)
+	if data.NVSentinelVersion != testVersion {
+		t.Errorf("NVSentinelVersion = %s, want %s", data.NVSentinelVersion, testVersion)
 	}
 
 	expectedRepo := "oci://ghcr.io/nvidia/nvsentinel"
-	if data.HelmChartRepo.Value != expectedRepo {
-		t.Errorf("HelmChartRepo = %s, want %s", data.HelmChartRepo.Value, expectedRepo)
+	if data.HelmChartRepo != expectedRepo {
+		t.Errorf("HelmChartRepo = %s, want %s", data.HelmChartRepo, expectedRepo)
 	}
 
 	expectedRelease := "nvsentinel"
-	if data.HelmReleaseName.Value != expectedRelease {
-		t.Errorf("HelmReleaseName = %s, want %s", data.HelmReleaseName.Value, expectedRelease)
+	if data.HelmReleaseName != expectedRelease {
+		t.Errorf("HelmReleaseName = %s, want %s", data.HelmReleaseName, expectedRelease)
 	}
 }
 

@@ -64,6 +64,7 @@ func GenerateScriptDataFromConfig(config map[string]string) *ScriptData {
 		HelmChart:        "nvidia/network-operator",
 		HelmChartVersion: common.GetConfigValue(config, "helm_chart_version", ""),
 		Version:          common.GetBundlerVersion(config),
+		RecipeVersion:    common.GetRecipeBundlerVersion(config),
 	}
 
 	return data

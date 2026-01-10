@@ -60,6 +60,7 @@ func GenerateScriptDataFromConfig(config map[string]string) *ScriptData {
 		HelmChart:        "jetstack/cert-manager",
 		HelmChartVersion: common.GetConfigValue(config, "helm_chart_version", "v1.19.1"),
 		Version:          common.GetBundlerVersion(config),
+		RecipeVersion:    common.GetRecipeBundlerVersion(config),
 		InstallCRDs:      true,
 	}
 

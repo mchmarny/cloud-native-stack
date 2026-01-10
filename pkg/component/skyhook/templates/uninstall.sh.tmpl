@@ -18,7 +18,7 @@ sleep 10
 
 # Uninstall Helm release
 echo "Uninstalling Skyhook Operator Helm release..."
-helm uninstall {{ .HelmReleaseName.Value }} -n {{ .Namespace }} || true
+helm uninstall {{ .HelmReleaseName }} -n {{ .Namespace }} || true
 
 # Optionally delete namespace
 read -p "Do you want to delete the namespace {{ .Namespace }}? (y/N) " -n 1 -r

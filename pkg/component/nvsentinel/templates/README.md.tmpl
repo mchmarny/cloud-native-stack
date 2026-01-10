@@ -24,10 +24,7 @@ NVSentinel provides automated fault detection, quarantine, and remediation for G
 
 ### NVSentinel Version
 
-- **Version**: {{ .Helm.NVSentinelVersion.Value }}
-{{- if .Helm.NVSentinelVersion.Context }}
-  - *{{ .Helm.NVSentinelVersion.Context }}*
-{{- end }}
+- **Version**: {{ .Helm.NVSentinelVersion }}
 
 ### Default Configuration
 
@@ -89,10 +86,10 @@ chmod +x scripts/install.sh
 
 2. **Install NVSentinel**:
    ```bash
-   helm upgrade --install {{ .Script.HelmReleaseName.Value }} {{ .Script.HelmChartRepo.Value }} \
+   helm upgrade --install {{ .Script.HelmReleaseName }} {{ .Script.HelmChartRepo }} \
      --namespace {{ .Helm.Namespace }} \
      --create-namespace \
-     --version {{ .Script.NVSentinelVersion.Value }} \
+     --version {{ .Script.NVSentinelVersion }} \
      --timeout 15m \
      --wait
    ```
@@ -152,9 +149,9 @@ global:
 Then install with:
 
 ```bash
-helm upgrade --install {{ .Script.HelmReleaseName.Value }} {{ .Script.HelmChartRepo.Value }} \
+helm upgrade --install {{ .Script.HelmReleaseName }} {{ .Script.HelmChartRepo }} \
   --namespace {{ .Helm.Namespace }} \
-  --version {{ .Script.NVSentinelVersion.Value }} \
+  --version {{ .Script.NVSentinelVersion }} \
   --values custom-values.yaml \
   --wait
 ```
@@ -214,7 +211,7 @@ Or manually:
 
 ```bash
 # Uninstall Helm release
-helm uninstall {{ .Script.HelmReleaseName.Value }} -n {{ .Helm.Namespace }}
+helm uninstall {{ .Script.HelmReleaseName }} -n {{ .Helm.Namespace }}
 
 # Delete namespace (optional)
 kubectl delete namespace {{ .Helm.Namespace }}

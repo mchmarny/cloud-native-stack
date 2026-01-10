@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	testNamespace = "test-ns"
-	strMixed      = "mixed"
+	testNamespace     = "test-ns"
+	testDriverVersion = "580.82.07"
 )
 
 func TestBundler_Make(t *testing.T) {
@@ -47,7 +47,7 @@ func TestBundler_Validate(t *testing.T) {
 			name: "missing K8s measurements",
 			recipe: internal.NewRecipeBuilder().
 				WithGPUMeasurement(internal.SMISubtype(map[string]string{
-					"driver-version": "580.82.07",
+					"driver-version": testDriverVersion,
 				})),
 			wantErr: true,
 		},
@@ -92,7 +92,7 @@ func TestBundler_buildConfigMap(t *testing.T) {
 	// Verify K8s image versions are extracted
 	expectedImageVersions := map[string]string{
 		"gpu_operator_version":      "v25.3.3",
-		"driver_version":            "580.82.07",
+		"driver_version":            testDriverVersion,
 		"container_toolkit_version": "v1.17.8",
 		"device_plugin_version":     "v0.17.4",
 		"dcgm_version":              "4.3.1-1",
@@ -185,7 +185,7 @@ func TestBundler_buildConfigMap_K8sDriverVersionTakesPrecedence(t *testing.T) {
 		WithK8sMeasurement(
 			internal.ImageSubtype(map[string]string{
 				"gpu-operator": "v25.3.3",
-				"driver":       "580.82.07",
+				"driver":       testDriverVersion,
 			}),
 		).
 		WithGPUMeasurement(
@@ -197,8 +197,8 @@ func TestBundler_buildConfigMap_K8sDriverVersionTakesPrecedence(t *testing.T) {
 	configMap := b.buildConfigMap(rec)
 
 	// Verify K8s driver version takes precedence
-	if got := configMap["driver_version"]; got != "580.82.07" {
-		t.Errorf("driver_version = %s, want 580.82.07 (K8s version should take precedence)", got)
+	if got := configMap["driver_version"]; got != testDriverVersion {
+		t.Errorf("driver_version = %s, want %s (K8s version should take precedence)", got, testDriverVersion)
 	}
 }
 
@@ -219,15 +219,33 @@ func TestGenerateHelmValues(t *testing.T) {
 	}
 
 	// Verify extracted values from recipe match expected structure
-	internal.AssertValueWithContext(t, values.GPUOperatorVersion, "v25.3.3", "GPUOperatorVersion")
-	internal.AssertValueWithContext(t, values.DriverVersion, "580.82.07", "DriverVersion")
-	internal.AssertValueWithContext(t, values.NvidiaContainerToolkitVersion, "v1.17.8", "NvidiaContainerToolkitVersion")
-	internal.AssertValueWithContext(t, values.DevicePluginVersion, "v0.17.4", "DevicePluginVersion")
-	internal.AssertValueWithContext(t, values.DCGMVersion, "4.3.1-1", "DCGMVersion")
-	internal.AssertValueWithContext(t, values.DCGMExporterVersion, "4.3.1", "DCGMExporterVersion")
-	internal.AssertValueWithContext(t, values.UseOpenKernelModule, true, "UseOpenKernelModule")
-	internal.AssertValueWithContext(t, values.EnableGDS, true, "EnableGDS")
-	internal.AssertValueWithContext(t, values.MIGStrategy, "single", "MIGStrategy")
+	if values.GPUOperatorVersion != "v25.3.3" {
+		t.Errorf("GPUOperatorVersion = %s, want v25.3.3", values.GPUOperatorVersion)
+	}
+	if values.DriverVersion != testDriverVersion {
+		t.Errorf("DriverVersion = %s, want %s", values.DriverVersion, testDriverVersion)
+	}
+	if values.NvidiaContainerToolkitVersion != "v1.17.8" {
+		t.Errorf("NvidiaContainerToolkitVersion = %s, want v1.17.8", values.NvidiaContainerToolkitVersion)
+	}
+	if values.DevicePluginVersion != "v0.17.4" {
+		t.Errorf("DevicePluginVersion = %s, want v0.17.4", values.DevicePluginVersion)
+	}
+	if values.DCGMVersion != "4.3.1-1" {
+		t.Errorf("DCGMVersion = %s, want 4.3.1-1", values.DCGMVersion)
+	}
+	if values.DCGMExporterVersion != "4.3.1" {
+		t.Errorf("DCGMExporterVersion = %s, want 4.3.1", values.DCGMExporterVersion)
+	}
+	if values.UseOpenKernelModule != "true" {
+		t.Errorf("UseOpenKernelModule = %s, want true", values.UseOpenKernelModule)
+	}
+	if values.EnableGDS != "true" {
+		t.Errorf("EnableGDS = %s, want true", values.EnableGDS)
+	}
+	if values.MIGStrategy != "single" {
+		t.Errorf("MIGStrategy = %s, want single", values.MIGStrategy)
+	}
 
 	if err := values.Validate(); err != nil {
 		t.Errorf("HelmValues.Validate() error = %v", err)
@@ -256,8 +274,8 @@ func TestGenerateManifestData(t *testing.T) {
 	}
 
 	// Verify other values propagated from HelmValues
-	if data.DriverVersion != "580.82.07" {
-		t.Errorf("DriverVersion = %s, want 580.82.07", data.DriverVersion)
+	if data.DriverVersion != testDriverVersion {
+		t.Errorf("DriverVersion = %s, want %s", data.DriverVersion, testDriverVersion)
 	}
 
 	if !data.UseOpenKernelModule {
@@ -304,8 +322,8 @@ func TestHelmValues_Validate(t *testing.T) {
 			name: "valid values",
 			values: &HelmValues{
 				Namespace:      "test",
-				DriverRegistry: internal.ValueWithContext{Value: "nvcr.io/nvidia"},
-				MIGStrategy:    internal.ValueWithContext{Value: "single"},
+				DriverRegistry: "nvcr.io/nvidia",
+				MIGStrategy:    "single",
 			},
 			wantErr: false,
 		},
@@ -313,8 +331,8 @@ func TestHelmValues_Validate(t *testing.T) {
 			name: "empty namespace",
 			values: &HelmValues{
 				Namespace:      "",
-				DriverRegistry: internal.ValueWithContext{Value: "nvcr.io/nvidia"},
-				MIGStrategy:    internal.ValueWithContext{Value: "single"},
+				DriverRegistry: "nvcr.io/nvidia",
+				MIGStrategy:    "single",
 			},
 			wantErr: true,
 		},
@@ -322,8 +340,8 @@ func TestHelmValues_Validate(t *testing.T) {
 			name: "invalid MIG strategy",
 			values: &HelmValues{
 				Namespace:      "test",
-				DriverRegistry: internal.ValueWithContext{Value: "nvcr.io/nvidia"},
-				MIGStrategy:    internal.ValueWithContext{Value: "invalid"},
+				DriverRegistry: "nvcr.io/nvidia",
+				MIGStrategy:    "invalid",
 			},
 			wantErr: true,
 		},
@@ -350,7 +368,7 @@ func createTestRecipe() *internal.RecipeBuilder {
 			}),
 			internal.ImageSubtype(map[string]string{
 				"gpu-operator":      "v25.3.3",
-				"driver":            "580.82.07",
+				"driver":            testDriverVersion,
 				"container-toolkit": "v1.17.8",
 				"k8s-device-plugin": "v0.17.4",
 				"dcgm":              "4.3.1-1",

@@ -13,12 +13,12 @@ kubectl create namespace {{ .Namespace }} --dry-run=client -o yaml | kubectl app
 
 # Add Helm repository
 echo "Adding Skyhook Helm repository..."
-helm repo add skyhook {{ .HelmChartRepo.Value }}
+helm repo add skyhook {{ .HelmChartRepo }}
 helm repo update
 
 # Install Skyhook Operator
 echo "Installing Skyhook Operator using Helm..."
-helm upgrade --install {{ .HelmReleaseName.Value }} skyhook/{{ .HelmChartName.Value }} \
+helm upgrade --install {{ .HelmReleaseName }} skyhook/{{ .HelmChartName }} \
   --namespace {{ .Namespace }} \
   --create-namespace \
   --values values.yaml \

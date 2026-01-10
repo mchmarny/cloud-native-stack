@@ -15,39 +15,39 @@ type HelmValues struct {
 	Version            string
 	RecipeVersion      string
 	Namespace          string
-	CertManagerVersion common.ValueWithContext
-	InstallCRDs        common.ValueWithContext
-	EnablePrometheus   common.ValueWithContext
+	CertManagerVersion string
+	InstallCRDs        string
+	EnablePrometheus   string
 
 	// Image repositories
-	ControllerImage common.ValueWithContext
-	WebhookImage    common.ValueWithContext
-	CAInjectorImage common.ValueWithContext
+	ControllerImage string
+	WebhookImage    string
+	CAInjectorImage string
 
 	// Controller resources
-	ControllerCPURequest    common.ValueWithContext
-	ControllerCPULimit      common.ValueWithContext
-	ControllerMemoryRequest common.ValueWithContext
-	ControllerMemoryLimit   common.ValueWithContext
+	ControllerCPURequest    string
+	ControllerCPULimit      string
+	ControllerMemoryRequest string
+	ControllerMemoryLimit   string
 
 	// Webhook resources
-	WebhookCPURequest    common.ValueWithContext
-	WebhookCPULimit      common.ValueWithContext
-	WebhookMemoryRequest common.ValueWithContext
-	WebhookMemoryLimit   common.ValueWithContext
+	WebhookCPURequest    string
+	WebhookCPULimit      string
+	WebhookMemoryRequest string
+	WebhookMemoryLimit   string
 
 	// CAInjector resources
-	CAInjectorCPURequest    common.ValueWithContext
-	CAInjectorCPULimit      common.ValueWithContext
-	CAInjectorMemoryRequest common.ValueWithContext
-	CAInjectorMemoryLimit   common.ValueWithContext
+	CAInjectorCPURequest    string
+	CAInjectorCPULimit      string
+	CAInjectorMemoryRequest string
+	CAInjectorMemoryLimit   string
 
 	// Scheduling
-	TolerationKey     common.ValueWithContext
-	TolerationValue   common.ValueWithContext
-	NodeSelectorKey   common.ValueWithContext
-	NodeSelectorValue common.ValueWithContext
-	ImagePullSecret   common.ValueWithContext
+	TolerationKey     string
+	TolerationValue   string
+	NodeSelectorKey   string
+	NodeSelectorValue string
+	ImagePullSecret   string
 
 	CustomLabels map[string]string
 }
@@ -57,41 +57,41 @@ func GenerateHelmValues(recipe *recipe.Recipe, config map[string]string, overrid
 	values := &HelmValues{
 		Timestamp:        time.Now().UTC().Format(time.RFC3339),
 		Version:          common.GetBundlerVersion(config),
-		RecipeVersion:    common.GetRecipeBundlerVersion(recipe.Metadata),
+		RecipeVersion:    common.GetRecipeBundlerVersion(config),
 		Namespace:        common.GetConfigValue(config, "namespace", Name),
-		InstallCRDs:      common.ValueWithContext{Value: "true"},
-		EnablePrometheus: common.ValueWithContext{Value: "true"},
+		InstallCRDs:      "true",
+		EnablePrometheus: "true",
 		CustomLabels:     common.ExtractCustomLabels(config),
 
 		// Default image repositories (with version tags)
-		ControllerImage: common.ValueWithContext{Value: "nvcr.io/0491946863192633/cert-manager-controller:v1.19.1"},
-		WebhookImage:    common.ValueWithContext{Value: "nvcr.io/0491946863192633/cert-manager-webhook:v1.19.1"},
-		CAInjectorImage: common.ValueWithContext{Value: "nvcr.io/0491946863192633/cert-manager-cainjector:v1.19.1"},
+		ControllerImage: "nvcr.io/0491946863192633/cert-manager-controller:v1.19.1",
+		WebhookImage:    "nvcr.io/0491946863192633/cert-manager-webhook:v1.19.1",
+		CAInjectorImage: "nvcr.io/0491946863192633/cert-manager-cainjector:v1.19.1",
 
 		// Default controller resources
-		ControllerCPURequest:    common.ValueWithContext{Value: "50m"},
-		ControllerCPULimit:      common.ValueWithContext{Value: "50m"},
-		ControllerMemoryRequest: common.ValueWithContext{Value: "90Mi"},
-		ControllerMemoryLimit:   common.ValueWithContext{Value: "90Mi"},
+		ControllerCPURequest:    "50m",
+		ControllerCPULimit:      "50m",
+		ControllerMemoryRequest: "90Mi",
+		ControllerMemoryLimit:   "90Mi",
 
 		// Default webhook resources
-		WebhookCPURequest:    common.ValueWithContext{Value: "50m"},
-		WebhookCPULimit:      common.ValueWithContext{Value: "50m"},
-		WebhookMemoryRequest: common.ValueWithContext{Value: "40Mi"},
-		WebhookMemoryLimit:   common.ValueWithContext{Value: "40Mi"},
+		WebhookCPURequest:    "50m",
+		WebhookCPULimit:      "50m",
+		WebhookMemoryRequest: "40Mi",
+		WebhookMemoryLimit:   "40Mi",
 
 		// Default CA injector resources
-		CAInjectorCPURequest:    common.ValueWithContext{Value: "50m"},
-		CAInjectorCPULimit:      common.ValueWithContext{Value: "50m"},
-		CAInjectorMemoryRequest: common.ValueWithContext{Value: "320Mi"},
-		CAInjectorMemoryLimit:   common.ValueWithContext{Value: "320Mi"},
+		CAInjectorCPURequest:    "50m",
+		CAInjectorCPULimit:      "50m",
+		CAInjectorMemoryRequest: "320Mi",
+		CAInjectorMemoryLimit:   "320Mi",
 
 		// Default scheduling
-		TolerationKey:     common.ValueWithContext{Value: "dedicated"},
-		TolerationValue:   common.ValueWithContext{Value: "system-workload"},
-		NodeSelectorKey:   common.ValueWithContext{Value: "nodeGroup"},
-		NodeSelectorValue: common.ValueWithContext{Value: "system-cpu"},
-		ImagePullSecret:   common.ValueWithContext{Value: "nvidia-ngcuser-pull-secret"},
+		TolerationKey:     "dedicated",
+		TolerationValue:   "system-workload",
+		NodeSelectorKey:   "nodeGroup",
+		NodeSelectorValue: "system-cpu",
+		ImagePullSecret:   "nvidia-ngcuser-pull-secret",
 	}
 
 	// Extract cert-manager configuration from recipe measurements
@@ -118,13 +118,14 @@ func GenerateHelmValuesFromMap(config map[string]string) *HelmValues {
 	helmValues := &HelmValues{
 		Timestamp:          time.Now().UTC().Format(time.RFC3339),
 		Version:            common.GetBundlerVersion(config),
+		RecipeVersion:      common.GetRecipeBundlerVersion(config),
 		Namespace:          common.GetConfigValue(config, "namespace", Name),
-		InstallCRDs:        common.ValueWithContext{Value: "true"},
-		EnablePrometheus:   common.ValueWithContext{Value: "true"},
-		CertManagerVersion: common.ValueWithContext{Value: common.GetConfigValue(config, "helm_chart_version", "v1.19.1")},
-		ControllerImage:    common.ValueWithContext{Value: "nvcr.io/0491946863192633/cert-manager-controller:v1.19.1"},
-		WebhookImage:       common.ValueWithContext{Value: "nvcr.io/0491946863192633/cert-manager-webhook:v1.19.1"},
-		CAInjectorImage:    common.ValueWithContext{Value: "nvcr.io/0491946863192633/cert-manager-cainjector:v1.19.1"},
+		InstallCRDs:        "true",
+		EnablePrometheus:   "true",
+		CertManagerVersion: common.GetConfigValue(config, "helm_chart_version", "v1.19.1"),
+		ControllerImage:    "nvcr.io/0491946863192633/cert-manager-controller:v1.19.1",
+		WebhookImage:       "nvcr.io/0491946863192633/cert-manager-webhook:v1.19.1",
+		CAInjectorImage:    "nvcr.io/0491946863192633/cert-manager-cainjector:v1.19.1",
 	}
 
 	return helmValues
@@ -136,45 +137,26 @@ func (v *HelmValues) extractK8sSettings(m *measurement.Measurement) {
 	certManagerRegistry := v.extractCertManagerRegistry(m)
 
 	for _, st := range m.Subtypes {
-		// Extract context for this subtype
-		subtypeContext := common.GetSubtypeContext(st.Context)
-
 		// Extract version information from 'image' subtype
 		if st.Name == "image" {
 			if val, ok := st.Data["cert-manager"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "cert-manager", subtypeContext)
-					v.CertManagerVersion = common.ValueWithContext{Value: s, Context: ctx}
+					v.CertManagerVersion = s
 				}
 			}
 			if val, ok := st.Data["cert-manager-controller"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "cert-manager-controller", subtypeContext)
-					// Construct full image URI: registry/component:version
-					v.ControllerImage = common.ValueWithContext{
-						Value:   fmt.Sprintf("%s/cert-manager-controller:%s", certManagerRegistry, s),
-						Context: ctx,
-					}
+					v.ControllerImage = fmt.Sprintf("%s/cert-manager-controller:%s", certManagerRegistry, s)
 				}
 			}
 			if val, ok := st.Data["cert-manager-webhook"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "cert-manager-webhook", subtypeContext)
-					// Construct full image URI: registry/component:version
-					v.WebhookImage = common.ValueWithContext{
-						Value:   fmt.Sprintf("%s/cert-manager-webhook:%s", certManagerRegistry, s),
-						Context: ctx,
-					}
+					v.WebhookImage = fmt.Sprintf("%s/cert-manager-webhook:%s", certManagerRegistry, s)
 				}
 			}
 			if val, ok := st.Data["cert-manager-cainjector"]; ok {
 				if s, ok := val.Any().(string); ok {
-					ctx := common.GetFieldContext(st.Context, "cert-manager-cainjector", subtypeContext)
-					// Construct full image URI: registry/component:version
-					v.CAInjectorImage = common.ValueWithContext{
-						Value:   fmt.Sprintf("%s/cert-manager-cainjector:%s", certManagerRegistry, s),
-						Context: ctx,
-					}
+					v.CAInjectorImage = fmt.Sprintf("%s/cert-manager-cainjector:%s", certManagerRegistry, s)
 				}
 			}
 		}
@@ -204,148 +186,121 @@ func (v *HelmValues) extractCertManagerRegistry(m *measurement.Measurement) stri
 
 // extractCertManagerConfig extracts configuration from cert-manager-config subtype.
 func (v *HelmValues) extractCertManagerConfig(st *measurement.Subtype) {
-	subtypeContext := common.GetSubtypeContext(st.Context)
-
 	// CRDs and monitoring
 	if val, ok := st.Data["install_crds"]; ok {
 		if b, ok := val.Any().(bool); ok {
-			ctx := common.GetFieldContext(st.Context, "install_crds", subtypeContext)
-			v.InstallCRDs = common.ValueWithContext{Value: fmt.Sprintf("%t", b), Context: ctx}
+			v.InstallCRDs = fmt.Sprintf("%t", b)
 		}
 	}
 	if val, ok := st.Data["enable_prometheus"]; ok {
 		if b, ok := val.Any().(bool); ok {
-			ctx := common.GetFieldContext(st.Context, "enable_prometheus", subtypeContext)
-			v.EnablePrometheus = common.ValueWithContext{Value: fmt.Sprintf("%t", b), Context: ctx}
+			v.EnablePrometheus = fmt.Sprintf("%t", b)
 		}
 	}
 
-	v.extractControllerResources(st, subtypeContext)
-	v.extractWebhookResources(st, subtypeContext)
-	v.extractCAInjectorResources(st, subtypeContext)
-	v.extractScheduling(st, subtypeContext)
+	v.extractControllerResources(st)
+	v.extractWebhookResources(st)
+	v.extractCAInjectorResources(st)
+	v.extractScheduling(st)
 }
 
 // extractControllerResources extracts controller resource settings.
-//
-//nolint:dupl // Intentional duplication - extracting same resource pattern for different components
-func (v *HelmValues) extractControllerResources(st *measurement.Subtype, subtypeContext string) {
+func (v *HelmValues) extractControllerResources(st *measurement.Subtype) {
 	if val, ok := st.Data["controller_cpu_request"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "controller_cpu_request", subtypeContext)
-			v.ControllerCPURequest = common.ValueWithContext{Value: s, Context: ctx}
+			v.ControllerCPURequest = s
 		}
 	}
 	if val, ok := st.Data["controller_cpu_limit"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "controller_cpu_limit", subtypeContext)
-			v.ControllerCPULimit = common.ValueWithContext{Value: s, Context: ctx}
+			v.ControllerCPULimit = s
 		}
 	}
 	if val, ok := st.Data["controller_memory_request"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "controller_memory_request", subtypeContext)
-			v.ControllerMemoryRequest = common.ValueWithContext{Value: s, Context: ctx}
+			v.ControllerMemoryRequest = s
 		}
 	}
 	if val, ok := st.Data["controller_memory_limit"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "controller_memory_limit", subtypeContext)
-			v.ControllerMemoryLimit = common.ValueWithContext{Value: s, Context: ctx}
+			v.ControllerMemoryLimit = s
 		}
 	}
 }
 
 // extractWebhookResources extracts webhook resource settings.
-//
-//nolint:dupl // Intentional duplication - extracting same resource pattern for different components
-func (v *HelmValues) extractWebhookResources(st *measurement.Subtype, subtypeContext string) {
+func (v *HelmValues) extractWebhookResources(st *measurement.Subtype) {
 	if val, ok := st.Data["webhook_cpu_request"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "webhook_cpu_request", subtypeContext)
-			v.WebhookCPURequest = common.ValueWithContext{Value: s, Context: ctx}
+			v.WebhookCPURequest = s
 		}
 	}
 	if val, ok := st.Data["webhook_cpu_limit"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "webhook_cpu_limit", subtypeContext)
-			v.WebhookCPULimit = common.ValueWithContext{Value: s, Context: ctx}
+			v.WebhookCPULimit = s
 		}
 	}
 	if val, ok := st.Data["webhook_memory_request"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "webhook_memory_request", subtypeContext)
-			v.WebhookMemoryRequest = common.ValueWithContext{Value: s, Context: ctx}
+			v.WebhookMemoryRequest = s
 		}
 	}
 	if val, ok := st.Data["webhook_memory_limit"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "webhook_memory_limit", subtypeContext)
-			v.WebhookMemoryLimit = common.ValueWithContext{Value: s, Context: ctx}
+			v.WebhookMemoryLimit = s
 		}
 	}
 }
 
 // extractCAInjectorResources extracts CA injector resource settings.
-//
-//nolint:dupl // Intentional duplication - extracting same resource pattern for different components
-func (v *HelmValues) extractCAInjectorResources(st *measurement.Subtype, subtypeContext string) {
+func (v *HelmValues) extractCAInjectorResources(st *measurement.Subtype) {
 	if val, ok := st.Data["cainjector_cpu_request"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "cainjector_cpu_request", subtypeContext)
-			v.CAInjectorCPURequest = common.ValueWithContext{Value: s, Context: ctx}
+			v.CAInjectorCPURequest = s
 		}
 	}
 	if val, ok := st.Data["cainjector_cpu_limit"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "cainjector_cpu_limit", subtypeContext)
-			v.CAInjectorCPULimit = common.ValueWithContext{Value: s, Context: ctx}
+			v.CAInjectorCPULimit = s
 		}
 	}
 	if val, ok := st.Data["cainjector_memory_request"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "cainjector_memory_request", subtypeContext)
-			v.CAInjectorMemoryRequest = common.ValueWithContext{Value: s, Context: ctx}
+			v.CAInjectorMemoryRequest = s
 		}
 	}
 	if val, ok := st.Data["cainjector_memory_limit"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "cainjector_memory_limit", subtypeContext)
-			v.CAInjectorMemoryLimit = common.ValueWithContext{Value: s, Context: ctx}
+			v.CAInjectorMemoryLimit = s
 		}
 	}
 }
 
 // extractScheduling extracts scheduling configuration (tolerations and node selectors).
-func (v *HelmValues) extractScheduling(st *measurement.Subtype, subtypeContext string) {
+func (v *HelmValues) extractScheduling(st *measurement.Subtype) {
 	if val, ok := st.Data["toleration_key"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "toleration_key", subtypeContext)
-			v.TolerationKey = common.ValueWithContext{Value: s, Context: ctx}
+			v.TolerationKey = s
 		}
 	}
 	if val, ok := st.Data["toleration_value"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "toleration_value", subtypeContext)
-			v.TolerationValue = common.ValueWithContext{Value: s, Context: ctx}
+			v.TolerationValue = s
 		}
 	}
 	if val, ok := st.Data["node_selector_key"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "node_selector_key", subtypeContext)
-			v.NodeSelectorKey = common.ValueWithContext{Value: s, Context: ctx}
+			v.NodeSelectorKey = s
 		}
 	}
 	if val, ok := st.Data["node_selector_value"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "node_selector_value", subtypeContext)
-			v.NodeSelectorValue = common.ValueWithContext{Value: s, Context: ctx}
+			v.NodeSelectorValue = s
 		}
 	}
 	if val, ok := st.Data["image_pull_secret"]; ok {
 		if s, ok := val.Any().(string); ok {
-			ctx := common.GetFieldContext(st.Context, "image_pull_secret", subtypeContext)
-			v.ImagePullSecret = common.ValueWithContext{Value: s, Context: ctx}
+			v.ImagePullSecret = s
 		}
 	}
 }
@@ -359,7 +314,7 @@ func (v *HelmValues) applyConfigOverrides(config map[string]string) {
 
 	// Override cert-manager version if specified
 	if version := common.GetConfigValue(config, "cert_manager_version", ""); version != "" {
-		v.CertManagerVersion = common.ValueWithContext{Value: version}
+		v.CertManagerVersion = version
 	}
 }
 
@@ -369,7 +324,7 @@ func (v *HelmValues) applyValueOverrides(overrides map[string]string) {
 		return
 	}
 
-	fieldMap := map[string]*common.ValueWithContext{
+	fieldMap := map[string]*string{
 		"version":                             &v.CertManagerVersion,
 		"installCRDs":                         &v.InstallCRDs,
 		"prometheus.enabled":                  &v.EnablePrometheus,
@@ -398,14 +353,11 @@ func (v *HelmValues) applyValueOverrides(overrides map[string]string) {
 	// Apply overrides
 	for path, value := range overrides {
 		if field, exists := fieldMap[path]; exists {
-			*field = common.ValueWithContext{
-				Value:   value,
-				Context: "User override via --set flag",
-			}
+			*field = value
 		}
 	}
 
-	// Handle namespace separately (it's a string, not ValueWithContext)
+	// Handle namespace separately (same type now)
 	if ns, exists := overrides["namespace"]; exists {
 		v.Namespace = ns
 	}

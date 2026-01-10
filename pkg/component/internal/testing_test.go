@@ -336,13 +336,3 @@ func TestAssertConfigValue(t *testing.T) {
 	// Should not panic for correct value
 	AssertConfigValue(t, config, "key1", "value1")
 }
-
-func TestAssertValueWithContext(t *testing.T) {
-	vwc := ValueWithContext{
-		Value:   "test-value",
-		Context: "test-context",
-	}
-
-	// Should not panic for correct value
-	AssertValueWithContext(t, vwc, "test-value", "TestField")
-}

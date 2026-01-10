@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	Name = "gpu-operator"
-
+	Name          = "gpu-operator"
+	strMixed      = "mixed"
 	configSubtype = "config"
 )
 
@@ -164,12 +164,11 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 			"failed to write values file", err)
 	}
 
-	// Build config map from component reference
-	configMap := map[string]string{
-		"namespace":          Name,
-		"helm_repository":    componentRef.Source,
-		"helm_chart_version": componentRef.Version,
-	}
+	// Build config map with base settings and recipe version
+	configMap := b.BuildConfigMapFromInput(input)
+	configMap["namespace"] = Name
+	configMap["helm_repository"] = componentRef.Source
+	configMap["helm_chart_version"] = componentRef.Version
 
 	// Generate HelmValues from values map
 	helmValues := GenerateHelmValuesFromMap(configMap)
@@ -225,6 +224,11 @@ func (b *Bundler) buildConfigMap(r *recipe.Recipe) map[string]string {
 	// Start with base config (namespace, helm settings, labels, annotations)
 	configMap := b.BuildBaseConfigMap()
 	configMap["namespace"] = Name
+
+	// Add recipe version from recipe metadata
+	if recipeVersion, ok := r.Metadata["recipe-version"]; ok {
+		configMap["recipe-version"] = recipeVersion
+	}
 
 	// Extract values from recipe measurements
 	for _, m := range r.Measurements {
@@ -295,7 +299,7 @@ func (b *Bundler) buildConfigMap(r *recipe.Recipe) map[string]string {
 							configMap["enable_mig"] = fmt.Sprintf("%t", b)
 							// If MIG is enabled, use mixed strategy
 							if b {
-								configMap["mig_strategy"] = "mixed"
+								configMap["mig_strategy"] = strMixed
 							}
 						}
 					}

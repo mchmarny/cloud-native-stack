@@ -210,3 +210,36 @@ func MarshalYAML(v interface{}) ([]byte, error) {
 	}
 	return buf.Bytes(), nil
 }
+
+// GetConfigValue gets a value from config map with a default fallback.
+func GetConfigValue(config map[string]string, key, defaultValue string) string {
+	if val, ok := config[key]; ok && val != "" {
+		return val
+	}
+
+	slog.Debug("config value not found, using default", "key", key, "default", defaultValue)
+
+	return defaultValue
+}
+
+// ExtractCustomLabels extracts custom labels from config map with "label_" prefix.
+func ExtractCustomLabels(config map[string]string) map[string]string {
+	labels := make(map[string]string)
+	for k, v := range config {
+		if len(k) > 6 && k[:6] == "label_" {
+			labels[k[6:]] = v
+		}
+	}
+	return labels
+}
+
+// ExtractCustomAnnotations extracts custom annotations from config map with "annotation_" prefix.
+func ExtractCustomAnnotations(config map[string]string) map[string]string {
+	annotations := make(map[string]string)
+	for k, v := range config {
+		if len(k) > 11 && k[:11] == "annotation_" {
+			annotations[k[11:]] = v
+		}
+	}
+	return annotations
+}

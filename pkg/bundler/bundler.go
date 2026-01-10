@@ -168,7 +168,7 @@ func (b *DefaultBundler) Make(ctx context.Context, input recipe.RecipeInput, dir
 	}
 
 	// Select bundlers to execute
-	bundlers := b.selectBundlers(b.BundlerTypes)
+	bundlers := b.selectBundlers(input, b.BundlerTypes)
 	if len(bundlers) == 0 {
 		return nil, errors.New(errors.ErrCodeInvalidRequest, "no bundlers selected")
 	}
@@ -335,17 +335,40 @@ func (b *DefaultBundler) executeBundler(ctx context.Context, bundlerType types.B
 }
 
 // selectBundlers selects which bundlers to execute based on options.
-func (b *DefaultBundler) selectBundlers(bundleType []types.BundleType) map[types.BundleType]registry.Bundler {
-	if len(bundleType) == 0 {
+func (b *DefaultBundler) selectBundlers(input recipe.RecipeInput, bundleTypes []types.BundleType) map[types.BundleType]registry.Bundler {
+	// If specific bundler types are requested, use them
+	if len(bundleTypes) > 0 {
+		selected := make(map[types.BundleType]registry.Bundler)
+		for _, t := range bundleTypes {
+			if bundler, ok := b.Registry.Get(t); ok {
+				selected[t] = bundler
+			}
+		}
+		return selected
+	}
+
+	// Otherwise, filter bundlers based on components in the recipe
+	// Get component names from recipe
+	componentNames := make(map[string]bool)
+	if recipeResult, ok := input.(*recipe.RecipeResult); ok {
+		for _, ref := range recipeResult.ComponentRefs {
+			componentNames[ref.Name] = true
+		}
+	}
+
+	// If no components found (legacy Recipe), return all bundlers
+	if len(componentNames) == 0 {
 		return b.Registry.GetAll()
 	}
 
-	// Return only specified bundlers
+	// Match bundlers to components by name
 	selected := make(map[types.BundleType]registry.Bundler)
-	for _, t := range bundleType {
-		if b, ok := b.Registry.Get(t); ok {
-			selected[t] = b
+	for bundlerType, bundler := range b.Registry.GetAll() {
+		// Convert bundler type to component name (e.g., "gpu-operator" -> "gpu-operator")
+		if componentNames[string(bundlerType)] {
+			selected[bundlerType] = bundler
 		}
 	}
+
 	return selected
 }

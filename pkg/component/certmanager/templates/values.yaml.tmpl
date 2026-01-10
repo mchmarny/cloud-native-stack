@@ -2,71 +2,71 @@
 # Generated from Cloud Native Stack Recipe
 # Timestamp: {{ .Timestamp }}
 # Bundler Version: {{ .Version }}
-# Recipe Bundler Version: {{ .RecipeVersion }}
+# Recipe Version: {{ .RecipeVersion }}
 
 global:
   imagePullSecrets:
-    - name: {{ .ImagePullSecret.Value }}
+    - name: {{ .ImagePullSecret }}
 
 image:
-  repository: {{ .ControllerImage.Value }}
+  repository: {{ .ControllerImage }}
 
 resources:
   requests:
-    memory: {{ .ControllerMemoryRequest.Value }}
-    cpu: {{ .ControllerCPURequest.Value }}
+    memory: {{ .ControllerMemoryRequest }}
+    cpu: {{ .ControllerCPURequest }}
   limits:
-    memory: {{ .ControllerMemoryLimit.Value }}
-    cpu: {{ .ControllerCPULimit.Value }}
+    memory: {{ .ControllerMemoryLimit }}
+    cpu: {{ .ControllerCPULimit }}
 
-installCRDs: {{ .InstallCRDs.Value }}
+installCRDs: {{ .InstallCRDs }}
 
 prometheus:
   servicemonitor:
-    enabled: {{ .EnablePrometheus.Value }}
+    enabled: {{ .EnablePrometheus }}
 
 tolerations:
-- key: {{ .TolerationKey.Value }}
-  value: {{ .TolerationValue.Value }}
+- key: {{ .TolerationKey }}
+  value: {{ .TolerationValue }}
 
 nodeSelector:
-  {{ .NodeSelectorKey.Value }}: {{ .NodeSelectorValue.Value }}
+  {{ .NodeSelectorKey }}: {{ .NodeSelectorValue }}
 
 webhook:
   image:
-    repository: {{ .WebhookImage.Value }}
+    repository: {{ .WebhookImage }}
   tolerations:
-  - key: {{ .TolerationKey.Value }}
-    value: {{ .TolerationValue.Value }}
+  - key: {{ .TolerationKey }}
+    value: {{ .TolerationValue }}
   nodeSelector:
-    {{ .NodeSelectorKey.Value }}: {{ .NodeSelectorValue.Value }}
+    {{ .NodeSelectorKey }}: {{ .NodeSelectorValue }}
   resources:
     requests:
-      memory: {{ .WebhookMemoryRequest.Value }}
-      cpu: {{ .WebhookCPURequest.Value }}
+      memory: {{ .WebhookMemoryRequest }}
+      cpu: {{ .WebhookCPURequest }}
     limits:
-      memory: {{ .WebhookMemoryLimit.Value }}
-      cpu: {{ .WebhookCPULimit.Value }}
+      memory: {{ .WebhookMemoryLimit }}
+      cpu: {{ .WebhookCPULimit }}
 
 cainjector:
   image:
-    repository: {{ .CAInjectorImage.Value }}
+    repository: {{ .CAInjectorImage }}
   tolerations:
-  - key: {{ .TolerationKey.Value }}
-    value: {{ .TolerationValue.Value }}
+  - key: {{ .TolerationKey }}
+    value: {{ .TolerationValue }}
   nodeSelector:
-    {{ .NodeSelectorKey.Value }}: {{ .NodeSelectorValue.Value }}
+    {{ .NodeSelectorKey }}: {{ .NodeSelectorValue }}
   resources:
     requests:
-      memory: {{ .CAInjectorMemoryRequest.Value }}
-      cpu: {{ .CAInjectorCPURequest.Value }}
+      memory: {{ .CAInjectorMemoryRequest }}
+      cpu: {{ .CAInjectorCPURequest }}
     limits:
-      memory: {{ .CAInjectorMemoryLimit.Value }}
-      cpu: {{ .CAInjectorCPULimit.Value }}
+      memory: {{ .CAInjectorMemoryLimit }}
+      cpu: {{ .CAInjectorCPULimit }}
 
 startupapicheck:
   tolerations:
-  - key: {{ .TolerationKey.Value }}
-    value: {{ .TolerationValue.Value }}
+  - key: {{ .TolerationKey }}
+    value: {{ .TolerationValue }}
   nodeSelector:
-    {{ .NodeSelectorKey.Value }}: {{ .NodeSelectorValue.Value }}
+    {{ .NodeSelectorKey }}: {{ .NodeSelectorValue }}

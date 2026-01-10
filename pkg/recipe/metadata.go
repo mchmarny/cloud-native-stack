@@ -104,6 +104,9 @@ type RecipeResult struct {
 		// GeneratedAt is the timestamp when this result was generated.
 		GeneratedAt time.Time `json:"generatedAt" yaml:"generatedAt"`
 
+		// Version is the recipe version (CLI version that generated this recipe).
+		Version string `json:"version,omitempty" yaml:"version,omitempty"`
+
 		// AppliedOverlays lists the overlay names in order of application.
 		AppliedOverlays []string `json:"appliedOverlays,omitempty" yaml:"appliedOverlays,omitempty"`
 	} `json:"metadata" yaml:"metadata"`

@@ -7,29 +7,29 @@
 controllerManager:
   kubeRbacProxy:
     image:
-      repository: {{ .OperatorRegistry.Value }}/kube-rbac-proxy
-      tag: {{ .KubeRbacProxyVersion.Value }}
+      repository: {{ .OperatorRegistry }}/kube-rbac-proxy
+      tag: {{ .KubeRbacProxyVersion }}
   manager:
     resources:
       limits:
-        cpu: {{ .ManagerCPULimit.Value }}
-        memory: {{ .ManagerMemoryLimit.Value }}
+        cpu: {{ .ManagerCPULimit }}
+        memory: {{ .ManagerMemoryLimit }}
       requests:
-        cpu: {{ .ManagerCPURequest.Value }}
-        memory: {{ .ManagerMemoryRequest.Value }}
+        cpu: {{ .ManagerCPURequest }}
+        memory: {{ .ManagerMemoryRequest }}
     env:
-      agentImage: {{ .SkyhookAgentImage.Value }}
+      agentImage: {{ .SkyhookAgentImage }}
     image:
-      repository: {{ .OperatorRegistry.Value }}/skyhook-operator
-      tag: {{ .SkyhookOperatorVersion.Value }}
+      repository: {{ .OperatorRegistry }}/skyhook-operator
+      tag: {{ .SkyhookOperatorVersion }}
   selectors:
-    dedicated: {{ .NodeSelector.Value }}
+    dedicated: {{ .NodeSelector }}
   tolerations:
-  - key: {{ .TolerationKey.Value }}
+  - key: {{ .TolerationKey }}
     operator: Equal
-    value: {{ .TolerationValue.Value }}
+    value: {{ .TolerationValue }}
     effect: NoSchedule
-  - key: {{ .TolerationKey.Value }}
+  - key: {{ .TolerationKey }}
     operator: Equal
-    value: {{ .TolerationValue.Value }}
+    value: {{ .TolerationValue }}
     effect: NoExecute

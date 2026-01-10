@@ -271,6 +271,20 @@ func (b *BaseBundler) BuildBaseConfigMap() map[string]string {
 	return config
 }
 
+// BuildConfigMapFromInput creates a configuration map from a RecipeInput.
+// This includes base config from bundler settings plus recipe version.
+// Use this when working with RecipeResult (new format) instead of Recipe.
+func (b *BaseBundler) BuildConfigMapFromInput(input interface{ GetVersion() string }) map[string]string {
+	config := b.BuildBaseConfigMap()
+
+	// Add recipe version if available
+	if version := input.GetVersion(); version != "" {
+		config[recipeBundlerVersionKey] = version
+	}
+
+	return config
+}
+
 // TemplateFunc is a function that retrieves templates by name.
 // Returns the template content and whether it was found.
 type TemplateFunc func(name string) (string, bool)

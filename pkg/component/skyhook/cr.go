@@ -15,15 +15,15 @@ type SkyhookCRData struct {
 	Version                   string
 	RecipeVersion             string
 	Name                      string
-	RuntimeRequired           common.ValueWithContext
-	InterruptionBudgetPercent common.ValueWithContext
-	NodeSelectorKey           common.ValueWithContext
+	RuntimeRequired           string
+	InterruptionBudgetPercent string
+	NodeSelectorKey           string
 	NodeSelectorValues        []string // Changed to slice for easier template iteration
-	TolerationKey             common.ValueWithContext
-	TuningVersion             common.ValueWithContext
-	TuningImage               common.ValueWithContext
-	TuningInterruptType       common.ValueWithContext
-	OperatorRegistry          common.ValueWithContext
+	TolerationKey             string
+	TuningVersion             string
+	TuningImage               string
+	TuningInterruptType       string
+	OperatorRegistry          string
 	GrubConfig                string
 	SysctlConfig              string
 	ContainerdServiceConfig   string
@@ -39,26 +39,23 @@ func GenerateSkyhookCRData(recipe *recipe.Recipe, config map[string]string) *Sky
 		nodeSelectorValues[i] = strings.TrimSpace(val)
 	}
 
+	operatorRegistry := common.GetConfigValue(config, "operator_registry", "nvcr.io/nvidia")
+	tuningVersion := common.GetConfigValue(config, "tuning_version", "v1.0.0")
+
 	data := &SkyhookCRData{
 		Timestamp:                 time.Now().UTC().Format(time.RFC3339),
 		Version:                   common.GetBundlerVersion(config),
 		RecipeVersion:             common.GetRecipeBundlerVersion(recipe.Metadata),
 		Name:                      "skyhook-system",
-		RuntimeRequired:           common.ValueWithContext{Value: common.GetConfigValue(config, "runtime_required", "true")},
-		InterruptionBudgetPercent: common.ValueWithContext{Value: common.GetConfigValue(config, "interruption_budget_percent", "100")},
-		NodeSelectorKey:           common.ValueWithContext{Value: common.GetConfigValue(config, "node_selector", "nvidia.com/gpu.product")},
+		RuntimeRequired:           common.GetConfigValue(config, "runtime_required", "true"),
+		InterruptionBudgetPercent: common.GetConfigValue(config, "interruption_budget_percent", "100"),
+		NodeSelectorKey:           common.GetConfigValue(config, "node_selector", "nvidia.com/gpu.product"),
 		NodeSelectorValues:        nodeSelectorValues,
-		TolerationKey:             common.ValueWithContext{Value: common.GetConfigValue(config, "toleration_key", "nvidia.com/gpu")},
-		TuningInterruptType:       common.ValueWithContext{Value: common.GetConfigValue(config, "tuning_interrupt_type", "reboot")},
-		OperatorRegistry:          common.ValueWithContext{Value: common.GetConfigValue(config, "operator_registry", "nvcr.io/nvidia")},
-	}
-
-	// Build tuning version and image
-	tuningVersion := common.GetConfigValue(config, "tuning_version", "v1.0.0")
-	data.TuningVersion = common.ValueWithContext{Value: tuningVersion}
-	operatorRegistry := common.GetConfigValue(config, "operator_registry", "nvcr.io/nvidia")
-	data.TuningImage = common.ValueWithContext{
-		Value: operatorRegistry + "/nodeos-updater-tuning:" + tuningVersion,
+		TolerationKey:             common.GetConfigValue(config, "toleration_key", "nvidia.com/gpu"),
+		TuningInterruptType:       common.GetConfigValue(config, "tuning_interrupt_type", "reboot"),
+		OperatorRegistry:          operatorRegistry,
+		TuningVersion:             tuningVersion,
+		TuningImage:               operatorRegistry + "/nodeos-updater-tuning:" + tuningVersion,
 	}
 
 	// Extract K8s settings
@@ -98,17 +95,17 @@ func (d *SkyhookCRData) extractK8sSettings(m *measurement.Measurement) {
 			// Override defaults with recipe values
 			if val, ok := st.Data["runtime_required"]; ok {
 				if s, ok := val.Any().(string); ok {
-					d.RuntimeRequired = common.ValueWithContext{Value: s}
+					d.RuntimeRequired = s
 				}
 			}
 			if val, ok := st.Data["interruption_budget_percent"]; ok {
 				if s, ok := val.Any().(string); ok {
-					d.InterruptionBudgetPercent = common.ValueWithContext{Value: s}
+					d.InterruptionBudgetPercent = s
 				}
 			}
 			if val, ok := st.Data["tuning_interrupt_type"]; ok {
 				if s, ok := val.Any().(string); ok {
-					d.TuningInterruptType = common.ValueWithContext{Value: s}
+					d.TuningInterruptType = s
 				}
 			}
 		}
