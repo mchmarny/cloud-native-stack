@@ -177,9 +177,9 @@ func TestParseTolerations(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			name:        "empty tolerations",
+			name:        "empty tolerations returns defaults",
 			tolerations: []string{},
-			wantLen:     0,
+			wantLen:     1, // Default "tolerate all" toleration
 			wantErr:     false,
 		},
 		{

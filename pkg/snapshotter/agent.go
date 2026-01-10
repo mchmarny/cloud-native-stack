@@ -42,8 +42,8 @@ type AgentConfig struct {
 	// Timeout for waiting for Job completion
 	Timeout time.Duration
 
-	// CleanupRBAC determines whether to remove RBAC on cleanup
-	CleanupRBAC bool
+	// Cleanup determines whether to remove Job and RBAC on completion
+	Cleanup bool
 
 	// Output destination for snapshot
 	Output string
@@ -65,8 +65,24 @@ func ParseNodeSelectors(selectors []string) (map[string]string, error) {
 	return result, nil
 }
 
+// DefaultTolerations returns tolerations that accept all taints.
+// This allows the agent Job to be scheduled on any node regardless of taints.
+func DefaultTolerations() []corev1.Toleration {
+	return []corev1.Toleration{
+		{
+			Operator: corev1.TolerationOpExists,
+		},
+	}
+}
+
 // ParseTolerations parses toleration strings in format "key=value:effect" or "key:effect".
+// If no tolerations are provided, returns DefaultTolerations() which accepts all taints.
 func ParseTolerations(tolerations []string) ([]corev1.Toleration, error) {
+	// Return default "tolerate all" if no custom tolerations specified
+	if len(tolerations) == 0 {
+		return DefaultTolerations(), nil
+	}
+
 	result := make([]corev1.Toleration, 0, len(tolerations))
 	for _, t := range tolerations {
 		// Format: key=value:effect or key:effect (for exists operator)
@@ -149,7 +165,7 @@ func (n *NodeSnapshotter) measureWithAgent(ctx context.Context) error {
 		cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		cleanupOpts := agent.CleanupOptions{RemoveRBAC: n.AgentConfig.CleanupRBAC}
+		cleanupOpts := agent.CleanupOptions{Enabled: n.AgentConfig.Cleanup}
 		if cleanupErr := deployer.Cleanup(cleanupCtx, cleanupOpts); cleanupErr != nil {
 			slog.Error("cleanup failed", "error", cleanupErr)
 		}

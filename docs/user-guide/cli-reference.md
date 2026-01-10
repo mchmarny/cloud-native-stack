@@ -82,9 +82,9 @@ eidos snapshot [flags]
 | `--job-name` | | string | eidos | Name for the agent Job |
 | `--service-account-name` | | string | eidos | ServiceAccount name for agent Job |
 | `--node-selector` | | string[] | | Node selector for agent scheduling (key=value, repeatable) |
-| `--toleration` | | string[] | | Tolerations for agent scheduling (key=value:effect, repeatable) |
+| `--toleration` | | string[] | | Tolerations for agent scheduling (key=value:effect, repeatable). By default, all taints are tolerated. |
 | `--timeout` | | duration | 5m | Timeout for agent Job completion |
-| `--cleanup-rbac` | | bool | false | Delete RBAC resources on cleanup (default: keep for reuse) |
+| `--cleanup` | | bool | false | Delete Job and RBAC on completion (default: keep for debugging) |
 
 **Output Destinations:**
 - **stdout**: Default when no `-o` flag specified
@@ -142,7 +142,7 @@ eidos snapshot --deploy-agent \
   --toleration nvidia.com/gpu:NoSchedule \
   --timeout 10m \
   --output cm://gpu-operator/eidos-snapshot \
-  --cleanup-rbac
+  --cleanup
 ```
 
 **Agent Deployment Mode:**
@@ -154,7 +154,7 @@ When `--deploy-agent` is specified, Eidos deploys a Kubernetes Job to capture th
 3. **Waits for completion**: Monitors Job status with configurable timeout
 4. **Retrieves snapshot**: Reads snapshot from ConfigMap after Job completes
 5. **Writes output**: Saves snapshot to specified output destination
-6. **Cleanup**: Deletes Job (optionally keeps RBAC for reuse)
+6. **Cleanup**: Optionally deletes Job and RBAC (default: keeps for debugging)
 
 **Benefits of agent deployment:**
 - Capture configuration from actual cluster nodes (not local machine)

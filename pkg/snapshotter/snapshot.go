@@ -65,7 +65,12 @@ func (n *NodeSnapshotter) measure(ctx context.Context) error {
 
 	// Pre-allocate with estimated capacity
 	var mu sync.Mutex
-	g, ctx := errgroup.WithContext(ctx)
+
+	// Using the gctx for errgroup goroutines and keeping original ctx for serialization.
+	// The errgroup context is canceled when any goroutine returns an error or
+	// when all goroutines complete, which causes issues with subsequent
+	// operations that use rate-limited K8s clients.
+	g, gctx := errgroup.WithContext(ctx)
 
 	// Initialize snapshot structure
 	snap := NewSnapshot()
@@ -95,7 +100,7 @@ func (n *NodeSnapshotter) measure(ctx context.Context) error {
 		}()
 		slog.Debug("collecting kubernetes resources")
 		kc := n.Factory.CreateKubernetesCollector()
-		k8sResources, err := kc.Collect(ctx)
+		k8sResources, err := kc.Collect(gctx)
 		if err != nil {
 			slog.Error("failed to collect kubernetes resources", slog.String("error", err.Error()))
 			return fmt.Errorf("failed to collect kubernetes resources: %w", err)
@@ -114,7 +119,7 @@ func (n *NodeSnapshotter) measure(ctx context.Context) error {
 		}()
 		slog.Debug("collecting systemd services")
 		sd := n.Factory.CreateSystemDCollector()
-		systemd, err := sd.Collect(ctx)
+		systemd, err := sd.Collect(gctx)
 		if err != nil {
 			slog.Error("failed to collect systemd", slog.String("error", err.Error()))
 			return fmt.Errorf("failed to collect systemd info: %w", err)
@@ -132,8 +137,8 @@ func (n *NodeSnapshotter) measure(ctx context.Context) error {
 			snapshotCollectorDuration.WithLabelValues("os").Observe(time.Since(collectorStart).Seconds())
 		}()
 		slog.Debug("collecting OS configuration")
-		g := n.Factory.CreateOSCollector()
-		grub, err := g.Collect(ctx)
+		oc := n.Factory.CreateOSCollector()
+		grub, err := oc.Collect(gctx)
 		if err != nil {
 			slog.Error("failed to collect OS", slog.String("error", err.Error()))
 			return fmt.Errorf("failed to collect OS info: %w", err)
@@ -152,7 +157,7 @@ func (n *NodeSnapshotter) measure(ctx context.Context) error {
 		}()
 		slog.Debug("collecting GPU configuration")
 		smi := n.Factory.CreateGPUCollector()
-		smiConfigs, err := smi.Collect(ctx)
+		smiConfigs, err := smi.Collect(gctx)
 		if err != nil {
 			slog.Error("failed to collect GPU", slog.String("error", err.Error()))
 			return fmt.Errorf("failed to collect SMI info: %w", err)

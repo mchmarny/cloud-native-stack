@@ -53,16 +53,14 @@ Basic agent deployment:
 Target specific GPU nodes with node selector:
   eidos snapshot --deploy-agent --node-selector nodeGroup=customer-gpu
 
-Schedule on tainted nodes with tolerations:
+Override default tolerations (by default, all taints are tolerated):
   eidos snapshot --deploy-agent \
-    --toleration dedicated=user-workload:NoSchedule \
-    --toleration dedicated=user-workload:NoExecute
+    --toleration dedicated=user-workload:NoSchedule
 
-Combined node selector and tolerations:
+Combined node selector and custom tolerations:
   eidos snapshot --deploy-agent \
     --node-selector nodeGroup=customer-gpu \
     --toleration dedicated=user-workload:NoSchedule \
-    --toleration dedicated=user-workload:NoExecute \
     --output cm://gpu-operator/eidos-snapshot`,
 		Flags: []cli.Flag{
 			// Agent deployment flags
@@ -98,7 +96,7 @@ Combined node selector and tolerations:
 			},
 			&cli.StringSliceFlag{
 				Name:  "toleration",
-				Usage: "Toleration for Job scheduling (format: key=value:effect, can be repeated)",
+				Usage: "Toleration for Job scheduling (format: key=value:effect). By default, all taints are tolerated. Specifying this flag overrides the defaults.",
 			},
 			&cli.DurationFlag{
 				Name:  "timeout",
@@ -106,8 +104,8 @@ Combined node selector and tolerations:
 				Value: 5 * time.Minute,
 			},
 			&cli.BoolFlag{
-				Name:  "cleanup-rbac",
-				Usage: "Remove RBAC resources on cleanup (default: keep for reuse)",
+				Name:  "cleanup",
+				Usage: "Remove Job and RBAC resources on completion (default: keep for debugging)",
 			},
 			outputFlag,
 			formatFlag,
@@ -157,7 +155,7 @@ Combined node selector and tolerations:
 					NodeSelector:       nodeSelector,
 					Tolerations:        tolerations,
 					Timeout:            cmd.Duration("timeout"),
-					CleanupRBAC:        cmd.Bool("cleanup-rbac"),
+					Cleanup:            cmd.Bool("cleanup"),
 					Output:             cmd.String("output"),
 					Debug:              cmd.Bool("debug"),
 				}

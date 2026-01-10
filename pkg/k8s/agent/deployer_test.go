@@ -365,16 +365,16 @@ func TestDeployer_Cleanup(t *testing.T) {
 		t.Fatalf("Deploy() failed: %v", err)
 	}
 
-	// Cleanup without removing RBAC
-	if err := deployer.Cleanup(ctx, CleanupOptions{RemoveRBAC: false}); err != nil {
+	// Cleanup without enabled flag (should keep everything)
+	if err := deployer.Cleanup(ctx, CleanupOptions{Enabled: false}); err != nil {
 		t.Fatalf("Cleanup() failed: %v", err)
 	}
 
-	// Job should be deleted
+	// Job should still exist (cleanup disabled)
 	_, err := clientset.BatchV1().Jobs(config.Namespace).
 		Get(ctx, config.JobName, metav1.GetOptions{})
-	if err == nil {
-		t.Errorf("Job should be deleted")
+	if err != nil {
+		t.Errorf("Job should still exist when cleanup disabled: %v", err)
 	}
 
 	// ServiceAccount should still exist
@@ -384,16 +384,16 @@ func TestDeployer_Cleanup(t *testing.T) {
 		t.Errorf("ServiceAccount should still exist: %v", err)
 	}
 
-	// Cleanup with RBAC removal
-	if cleanupErr := deployer.Cleanup(ctx, CleanupOptions{RemoveRBAC: true}); cleanupErr != nil {
-		t.Fatalf("Cleanup() with RemoveRBAC failed: %v", cleanupErr)
+	// Cleanup with enabled flag
+	if cleanupErr := deployer.Cleanup(ctx, CleanupOptions{Enabled: true}); cleanupErr != nil {
+		t.Fatalf("Cleanup() with Enabled failed: %v", cleanupErr)
 	}
 
-	// ServiceAccount should be deleted
-	_, err = clientset.CoreV1().ServiceAccounts(config.Namespace).
-		Get(ctx, testName, metav1.GetOptions{})
+	// Job should be deleted
+	_, err = clientset.BatchV1().Jobs(config.Namespace).
+		Get(ctx, config.JobName, metav1.GetOptions{})
 	if err == nil {
-		t.Errorf("ServiceAccount should be deleted")
+		t.Errorf("Job should be deleted")
 	}
 }
 

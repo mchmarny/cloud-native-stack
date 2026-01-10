@@ -58,35 +58,38 @@ func (d *Deployer) GetSnapshot(ctx context.Context) ([]byte, error) {
 	return d.getSnapshotFromConfigMap(ctx)
 }
 
-// Cleanup removes the agent Job and optionally the RBAC resources.
-// By default, RBAC resources are kept for reuse in future deployments.
+// Cleanup removes the agent Job and RBAC resources.
+// If opts.Enabled is false, no cleanup is performed (resources are kept for debugging).
 func (d *Deployer) Cleanup(ctx context.Context, opts CleanupOptions) error {
-	// Always delete the Job
+	// Skip cleanup if not enabled (keep resources for debugging)
+	if !opts.Enabled {
+		return nil
+	}
+
+	// Delete the Job
 	if err := d.deleteJob(ctx); err != nil {
 		return fmt.Errorf("failed to delete Job: %w", err)
 	}
 
-	// Optionally delete RBAC resources
-	if opts.RemoveRBAC {
-		if err := d.deleteServiceAccount(ctx); err != nil {
-			return fmt.Errorf("failed to delete ServiceAccount: %w", err)
-		}
+	// Delete RBAC resources
+	if err := d.deleteServiceAccount(ctx); err != nil {
+		return fmt.Errorf("failed to delete ServiceAccount: %w", err)
+	}
 
-		if err := d.deleteRole(ctx); err != nil {
-			return fmt.Errorf("failed to delete Role: %w", err)
-		}
+	if err := d.deleteRole(ctx); err != nil {
+		return fmt.Errorf("failed to delete Role: %w", err)
+	}
 
-		if err := d.deleteRoleBinding(ctx); err != nil {
-			return fmt.Errorf("failed to delete RoleBinding: %w", err)
-		}
+	if err := d.deleteRoleBinding(ctx); err != nil {
+		return fmt.Errorf("failed to delete RoleBinding: %w", err)
+	}
 
-		if err := d.deleteClusterRole(ctx); err != nil {
-			return fmt.Errorf("failed to delete ClusterRole: %w", err)
-		}
+	if err := d.deleteClusterRole(ctx); err != nil {
+		return fmt.Errorf("failed to delete ClusterRole: %w", err)
+	}
 
-		if err := d.deleteClusterRoleBinding(ctx); err != nil {
-			return fmt.Errorf("failed to delete ClusterRoleBinding: %w", err)
-		}
+	if err := d.deleteClusterRoleBinding(ctx); err != nil {
+		return fmt.Errorf("failed to delete ClusterRoleBinding: %w", err)
 	}
 
 	return nil

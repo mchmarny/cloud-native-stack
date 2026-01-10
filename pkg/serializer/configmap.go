@@ -42,7 +42,8 @@ func NewConfigMapWriter(namespace, name string, format Format) *ConfigMapWriter 
 // - data.timestamp: ISO 8601 timestamp of when the snapshot was created
 func (w *ConfigMapWriter) Serialize(ctx context.Context, snapshot any) error {
 	// Create context with timeout for Kubernetes API operations
-	writeCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	// Use longer timeout to accommodate rate limiter after heavy API usage
+	writeCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	client, config, err := client.GetKubeClient()

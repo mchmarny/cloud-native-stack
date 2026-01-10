@@ -130,9 +130,9 @@ eidos snapshot --deploy-agent \
 - `--job-name`: Job name (default: `eidos`)
 - `--service-account-name`: ServiceAccount name (default: `eidos`)
 - `--node-selector`: Node selector (format: `key=value`, repeatable)
-- `--toleration`: Toleration (format: `key=value:effect`, repeatable)
+- `--toleration`: Toleration (format: `key=value:effect`, repeatable). By default, all taints are tolerated.
 - `--timeout`: Wait timeout (default: `5m`)
-- `--cleanup-rbac`: Delete RBAC on cleanup (default: `false`, keeps for reuse)
+- `--cleanup`: Delete Job and RBAC on completion (default: `false`, keeps for debugging)
 
 ### 4. Check Agent Logs (Debugging)
 

@@ -7,7 +7,7 @@ End-to-end demonstration of the three-stage workflow: Snapshot → Recipe → Bu
 ## Install
 
 ```shell
-curl -sfL https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/install | bash -s --
+curl -sfL https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/install | bash -s --
 ```
 
 Validate install: 
@@ -16,28 +16,21 @@ Validate install:
 eidos -v
 ```
 
-Expected result: 
-
-```shell
-eidos version 0.9.0 (commit: 72930f3, date: 2026-01-06T18:49:40Z)
-```
-
 ## Snapshot 
 
-Supports `kubectl` [deployment](https://github.com/NVIDIA/cloud-native-stack/tree/main/deployments/eidos-agent) as well as CLI-based agent deployment:
+Supports `kubectl` [deployment](https://github.com/mchmarny/cloud-native-stack/tree/main/deployments/eidos-agent) as well as CLI-based agent deployment:
 
-> Note: You may need to update node selector and toleration flags in your cluster.
+> Note: You may need to update node selector flag for your cluster. Default tolerations accept all taints.
 
 ``` shell
-eidos snapshot \
+dist/eidos_darwin_all/eidos snapshot \
     --deploy-agent \
     --namespace gpu-operator \
-    --image ghcr.io/nvidia/eidos:latest \
-    --toleration dedicated=user-workload:NoSchedule \
-    --toleration dedicated=user-workload:NoExecute \
-    --node-selector nodeGroup=customer-gpu \
-    --cleanup-rbac
+    --image ghcr.io/mchmarny/eidos:latest \
+    --node-selector nodeGroup=customer-gpu
 ```
+
+> **Tip**: By default, the Job and RBAC resources remain after completion for debugging. Add `--cleanup` to remove them automatically. If the job fails, you can inspect logs with `kubectl -n gpu-operator logs job/eidos`.
 
 Terminal output:
 

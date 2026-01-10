@@ -33,5 +33,5 @@ func NewDeployer(clientset kubernetes.Interface, config Config) *Deployer {
 
 // CleanupOptions controls what resources to remove during cleanup.
 type CleanupOptions struct {
-	RemoveRBAC bool // If true, also removes ServiceAccount and RBAC resources
+	Enabled bool // If true, removes Job and all RBAC resources
 }
