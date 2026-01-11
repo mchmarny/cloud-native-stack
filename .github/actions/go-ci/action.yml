@@ -71,6 +71,11 @@ runs:
         make lint-yaml
 
     # E2E Integration Tests
+    - name: Setup build tools
+      uses: ./.github/actions/setup-build-tools
+      with:
+        install_goreleaser: 'true'
+
     - name: Config E2E Test
       id: e2e_config
       uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6  # v3.0.0
