@@ -2,7 +2,9 @@
 //
 // This package acts as a thin wrapper around the reusable pkg/server package,
 // configuring it with application-specific routes and handlers. It exposes the
-// recipe generation functionality (Step 2 of the three-stage workflow) via REST API.
+// recipe generation functionality (Step 2 of the four-stage workflow) via REST API.
+// Note: The API server does not support snapshot capture (Step 1) or validation (Step 3);
+// use the CLI for these operations.
 //
 // # Usage
 //

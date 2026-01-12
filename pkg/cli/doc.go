@@ -2,9 +2,9 @@
 //
 // # Overview
 //
-// The eidos CLI provides commands for the three-stage workflow: capturing system snapshots,
-// generating configuration recipes, and creating deployment bundles. It is designed for
-// cluster administrators and SREs managing NVIDIA GPU infrastructure.
+// The eidos CLI provides commands for the four-stage workflow: capturing system snapshots,
+// generating configuration recipes, validating constraints, and creating deployment bundles.
+// It is designed for cluster administrators and SREs managing NVIDIA GPU infrastructure.
 //
 // # Commands
 //
@@ -28,7 +28,17 @@
 //   - Specified environment parameters (OS, service, GPU, intent)
 //   - Existing system snapshot (analyzes snapshot to extract parameters)
 //
-// bundle - Create deployment bundles (Step 3):
+// validate - Validate recipe constraints (Step 3):
+//
+//	eidos validate --recipe recipe.yaml --snapshot snapshot.yaml
+//	eidos validate -f recipe.yaml -s cm://gpu-operator/eidos-snapshot
+//	eidos validate -f recipe.yaml -s cm://ns/snapshot --fail-on-error
+//
+// Validates recipe constraints against actual measurements from a snapshot.
+// Supports version comparisons (>=, <=, >, <), equality (==, !=), and exact match.
+// Use --fail-on-error for CI/CD pipelines (non-zero exit on failures).
+//
+// bundle - Create deployment bundles (Step 4):
 //
 //	eidos bundle --recipe recipe.yaml --output ./bundles
 //	eidos bundle -f recipe.yaml --bundlers gpu-operator,network-operator -o ./bundles
@@ -67,12 +77,14 @@
 //
 //	eidos snapshot --output snapshot.yaml
 //	eidos recipe --snapshot snapshot.yaml --intent training --output recipe.yaml
+//	eidos validate --recipe recipe.yaml --snapshot snapshot.yaml
 //	eidos bundle --recipe recipe.yaml --output ./bundles
 //
 // ConfigMap-based workflow:
 //
 //	eidos snapshot -o cm://gpu-operator/eidos-snapshot
 //	eidos recipe -f cm://gpu-operator/eidos-snapshot -o cm://gpu-operator/eidos-recipe
+//	eidos validate -f cm://gpu-operator/eidos-recipe -s cm://gpu-operator/eidos-snapshot
 //	eidos bundle -f cm://gpu-operator/eidos-recipe -o ./bundles
 //
 // Generate recipe for Ubuntu 24.04 on EKS with H100 GPUs:

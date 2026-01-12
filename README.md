@@ -35,8 +35,7 @@ Cloud Native Stack separates **validated configuration knowledge** from **how th
 
 - Human-readable documentation lives under `docs/`.
 - Version-locked configuration definitions (“recipes”) capture known-good system states.
-- Those definitions can be rendered into concrete artifacts such as Helm values, Kubernetes manifests, or install scripts.
-
+- Those definitions can be rendered into concrete artifacts such as Helm values, Kubernetes manifests, or install scripts.- Recipes can be validated against actual system configurations to verify compatibility.
 This separation allows the same validated configuration to be applied consistently across different environments and automation systems.
 
 *For example, a configuration validated for H100 on Ubuntu 22.04 with Kubernetes 1.29 can be rendered into Helm values and manifests suitable for use in an existing GitOps pipeline.*

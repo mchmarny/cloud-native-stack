@@ -676,7 +676,7 @@ eidos bundle -f recipe.yaml \
 
 ### Complete End-to-End Workflow
 
-Here's a complete example showing all three steps:
+Here's a complete example showing all four steps:
 
 ```bash
 # 1. Capture system configuration
@@ -695,7 +695,14 @@ eidos recipe \
 echo "Recipe generated:"
 cat recipe.yaml | grep "matchedRules" -A 5
 
-# 3. Create deployment bundle
+# 3. Validate recipe constraints against snapshot
+eidos validate \
+  --recipe recipe.yaml \
+  --snapshot snapshot.yaml
+
+echo "Validation complete"
+
+# 4. Create deployment bundle
 eidos bundle \
   --recipe recipe.yaml \
   --bundlers gpu-operator \
@@ -704,7 +711,7 @@ eidos bundle \
 echo "Bundle generated:"
 tree bundles/
 
-# 4. Deploy to cluster
+# 5. Deploy to cluster
 cd bundles/gpu-operator
 cat README.md  # Review deployment instructions
 sha256sum -c checksums.txt  # Verify file integrity

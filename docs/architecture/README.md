@@ -4,14 +4,15 @@ This directory contains architecture documentation for the Cloud Native Stack (C
 
 ## Components
 
-- **[CLI Architecture](cli.md)**: Command-line tool (`eidos`) implementing all three workflow stages
-  - Commands: `snapshot`, `recipe`, `bundle`
+- **[CLI Architecture](cli.md)**: Command-line tool (`eidos`) implementing all four workflow stages
+  - Commands: `snapshot`, `recipe`, `validate`, `bundle`
   - Recipe generation modes: Query mode (direct parameters) and snapshot mode (analyze captured state)
+  - Validation: Check recipe constraints against cluster snapshots
   - ConfigMap integration: Read and write operations using `cm://namespace/name` URI format
   - Testing: `tools/e2e` script validates complete workflow
 - **[API Server Architecture](api-server.md)**: HTTP REST API for recipe generation and bundle creation
   - Endpoints: `GET /v1/recipe` (query mode only), `POST /v1/bundle` (bundle generation)
-  - Does not support snapshot capture (use CLI or agent)
+  - Does not support snapshot capture or validation (use CLI or agent)
   - Production deployment: https://cns.dgxc.io
 - **Bundler Framework**: Extensible system for generating deployment artifacts
   - Execution model: Multiple bundlers run concurrently by default
@@ -22,14 +23,14 @@ This directory contains architecture documentation for the Cloud Native Stack (C
 
 ## Overview
 
-Cloud Native Stack provides a three-step workflow for optimizing GPU infrastructure deployments:
+Cloud Native Stack provides a four-step workflow for optimizing GPU infrastructure deployments:
 
 ```
-┌──────────────┐      ┌──────────────┐      ┌──────────────┐
-│   Snapshot   │─────▶│    Recipe    │─────▶│    Bundle    │
-└──────────────┘      └──────────────┘      └──────────────┘
-   Capture system      Generate optimized    Create deployment
-   configuration        recommendations       artifacts
+┌──────────────┐      ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│   Snapshot   │─────▶│    Recipe    │─────▶│   Validate   │─────▶│    Bundle    │
+└──────────────┘      └──────────────┘      └──────────────┘      └──────────────┘
+   Capture system      Generate optimized    Check cluster         Create deployment
+   configuration        recommendations       compatibility         artifacts
 ```
 
 ### Step 1: Snapshot – Capture System Configuration
@@ -49,7 +50,16 @@ Produces optimized configuration recipes based on environment criteria or captur
 - **Output**: Recipe with component references and deployment constraints
 - **Storage**: File, stdout, or **Kubernetes ConfigMap**
 
-### Step 3: Bundle – Create Deployment Artifacts
+### Step 3: Validate – Check Cluster Compatibility
+Validates recipe constraints against actual system measurements from a snapshot.
+- **CLI**: `eidos validate` command
+- **Input Sources**: File paths, HTTP/HTTPS URLs, or ConfigMap URIs for both recipe and snapshot
+- **Constraint Format**: Fully qualified paths (`K8s.server.version`, `OS.release.ID`)
+- **Operators**: Version comparisons (`>=`, `<=`, `>`, `<`), equality (`==`, `!=`), exact match
+- **Output**: Validation result with passed/failed/skipped constraints
+- **CI/CD Integration**: `--fail-on-error` flag for non-zero exit on failures
+
+### Step 4: Bundle – Create Deployment Artifacts
 Generates deployment-ready bundles (Helm values, Kubernetes manifests, installation scripts) from recipes.
 - **CLI**: `eidos bundle` command
 - **API Server**: `POST /v1/bundle` endpoint (returns zip archive)
@@ -262,34 +272,38 @@ flowchart TD
 
 ## Data Flow
 
-### Complete Three-Step Workflow (File-based)
+### Complete Four-Step Workflow (File-based)
 ```mermaid
 flowchart LR
     A[User] --> B[Step 1: Snapshot]
     B --> C[system.yaml]
     C --> D[Step 2: Recipe]
     D --> E[recipe.yaml]
-    E --> F[Step 3: Bundle]
-    F --> G[deployment/]
+    E --> F[Step 3: Validate]
+    F --> G[Step 4: Bundle]
+    G --> H[deployment/]
     
     B -.-> |CLI/Agent| C
     D -.-> |CLI/API| E
     F -.-> |CLI only| G
+    G -.-> |CLI only| H
 ```
 
-### Complete Three-Step Workflow (ConfigMap-based)
+### Complete Four-Step Workflow (ConfigMap-based)
 ```mermaid
 flowchart LR
     A[User/Agent] --> B[Step 1: Snapshot]
     B --> C["ConfigMap<br/>eidos-snapshot<br/>cm://ns/name"]
     C --> D[Step 2: Recipe]
     D --> E["ConfigMap<br/>eidos-recipe<br/>cm://ns/name"]
-    E --> F[Step 3: Bundle]
-    F --> G["Local Bundle<br/>deployment/"]
+    E --> F[Step 3: Validate]
+    F --> G[Step 4: Bundle]
+    G --> H["Local Bundle<br/>deployment/"]
     
     B -.-> |"Agent writes<br/>CLI writes"| C
     D -.-> |"CLI reads<br/>cm:// URI"| E
-    F -.-> |"CLI reads<br/>cm:// URI"| G
+    F -.-> |"CLI validates<br/>cm:// URI"| G
+    G -.-> |"CLI reads<br/>cm:// URI"| H
 ```
 
 ### CLI Snapshot Flow (Step 1)

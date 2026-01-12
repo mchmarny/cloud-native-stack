@@ -24,7 +24,7 @@ CNS replaces manual interpretation of documentation with a **automated approach*
 
 ## How CNS Works
 
-CNS simplifies operations through a logical three-stage workflow handled by the `eidos` command-line tool. This workflow transforms a raw system state into a deployable package.
+CNS simplifies operations through a logical four-stage workflow handled by the `eidos` command-line tool. This workflow transforms a raw system state into a deployable package.
 
 ### Step 1: Snapshot (Capture Reality)
 
@@ -40,7 +40,14 @@ Once the system state is known, CNS generates a "Recipe"—a set of configuratio
 *   **Intent-Based Tuning:** Users can specify an "Intent" (e.g., `training` or `inference`). CNS adjusts the recipe to optimize for throughput (training) or latency (inference).
 *   **How it helps:** It ensures version compatibility and applies expert-level optimizations automatically, acting as a dynamic compatibility matrix.
 
-### Step 3: Bundle (Create Artifacts)
+### Step 3: Validate (Check Compatibility)
+
+Before deploying, CNS can validate that a target cluster meets the recipe requirements.
+*   **What it does:** It compares recipe constraints (version requirements, configuration settings) against actual measurements from a cluster snapshot.
+*   **Constraint Types:** Supports version comparisons (`>=`, `<=`, `>`, `<`), equality (`==`, `!=`), and exact match for configuration values.
+*   **How it helps:** It catches compatibility issues before deployment, preventing failed rollouts and configuration drift. Ideal for CI/CD pipelines with `--fail-on-error` flag.
+
+### Step 4: Bundle (Create Artifacts)
 
 Finally, CNS converts the abstract Recipe into concrete deployment files.
 *   **What it does:** It generates a "Bundle" containing Helm values, Kubernetes manifests, installation scripts, and a custom README.

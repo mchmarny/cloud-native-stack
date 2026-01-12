@@ -4,17 +4,18 @@ Complete reference for the `eidos` command-line interface.
 
 ## Overview
 
-Eidos provides a three-step workflow for optimizing GPU infrastructure:
+Eidos provides a four-step workflow for optimizing GPU infrastructure:
 
 ```
-┌──────────────┐      ┌──────────────┐      ┌──────────────┐
-│   Snapshot   │─────▶│    Recipe    │─────▶│    Bundle    │
-└──────────────┘      └──────────────┘      └──────────────┘
+┌──────────────┐      ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│   Snapshot   │─────▶│    Recipe    │─────▶│   Validate   │─────▶│    Bundle    │
+└──────────────┘      └──────────────┘      └──────────────┘      └──────────────┘
 ```
 
 **Step 1**: Capture system configuration  
 **Step 2**: Generate optimization recipes  
-**Step 3**: Create deployment bundles  
+**Step 3**: Validate constraints against cluster  
+**Step 4**: Create deployment bundles  
 
 ## Global Flags
 
@@ -322,6 +323,132 @@ constraints:
 
 ---
 
+### eidos validate
+
+Validate a system snapshot against the constraints defined in a recipe to verify cluster compatibility.
+
+**Synopsis:**
+```shell
+eidos validate [flags]
+```
+
+**Flags:**
+| Flag | Short | Type | Description |
+|------|-------|------|-------------|
+| `--recipe` | `-f` | string | Path/URI to recipe file containing constraints (required) |
+| `--snapshot` | `-s` | string | Path/URI to snapshot file containing measurements (required) |
+| `--fail-on-error` | | bool | Exit with non-zero status if any constraint fails |
+| `--output` | `-o` | string | Output destination (file or stdout, default: stdout) |
+| `--format` | `-t` | string | Output format: json, yaml, table (default: yaml) |
+| `--kubeconfig` | `-k` | string | Path to kubeconfig file (for ConfigMap URIs) |
+
+**Input Sources:**
+- **File**: Local file path (`./recipe.yaml`, `./snapshot.yaml`)
+- **URL**: HTTP/HTTPS URL (`https://example.com/recipe.yaml`)
+- **ConfigMap**: Kubernetes ConfigMap URI (`cm://namespace/configmap-name`)
+
+**Constraint Format:**
+
+Constraints use fully qualified measurement paths: `{Type}.{Subtype}.{Key}`
+
+| Constraint Path | Description |
+|-----------------|-------------|
+| `K8s.server.version` | Kubernetes server version |
+| `OS.release.ID` | Operating system identifier (ubuntu, rhel) |
+| `OS.release.VERSION_ID` | OS version (24.04, 22.04) |
+| `OS.sysctl./proc/sys/kernel/osrelease` | Kernel version |
+| `GPU.info.type` | GPU hardware type |
+
+**Supported Operators:**
+| Operator | Example | Description |
+|----------|---------|-------------|
+| `>=` | `>= 1.30` | Greater than or equal (version comparison) |
+| `<=` | `<= 1.33` | Less than or equal (version comparison) |
+| `>` | `> 1.30` | Greater than (version comparison) |
+| `<` | `< 2.0` | Less than (version comparison) |
+| `==` | `== ubuntu` | Explicit equality |
+| `!=` | `!= rhel` | Not equal |
+| (none) | `ubuntu` | Exact string match |
+
+**Examples:**
+
+```shell
+# Validate snapshot against recipe (output to stdout)
+eidos validate --recipe recipe.yaml --snapshot snapshot.yaml
+
+# Load snapshot from ConfigMap
+eidos validate \
+  --recipe recipe.yaml \
+  --snapshot cm://gpu-operator/eidos-snapshot
+
+# Save results to file
+eidos validate \
+  --recipe recipe.yaml \
+  --snapshot cm://gpu-operator/eidos-snapshot \
+  --output validation-results.yaml
+
+# Fail on any constraint violation (for CI/CD)
+eidos validate \
+  --recipe recipe.yaml \
+  --snapshot snapshot.yaml \
+  --fail-on-error
+
+# JSON output format
+eidos validate \
+  --recipe recipe.yaml \
+  --snapshot snapshot.yaml \
+  --format json
+
+# With custom kubeconfig
+eidos validate \
+  --recipe recipe.yaml \
+  --snapshot cm://gpu-operator/eidos-snapshot \
+  --kubeconfig ~/.kube/prod-cluster
+```
+
+**Output Structure:**
+```yaml
+apiVersion: cns.nvidia.com/v1alpha1
+kind: ValidationResult
+metadata:
+  validationresult-timestamp: "2025-12-31T10:30:00Z"
+  validationresult-version: v0.14.0
+recipeSource: recipe.yaml
+snapshotSource: cm://gpu-operator/eidos-snapshot
+summary:
+  passed: 4
+  failed: 0
+  skipped: 0
+  total: 4
+  status: pass
+  duration: 9.5µs
+results:
+  - name: K8s.server.version
+    expected: '>= 1.30'
+    actual: v1.30.14-eks-3025e55
+    status: passed
+  - name: OS.release.ID
+    expected: ubuntu
+    actual: ubuntu
+    status: passed
+```
+
+**Validation Statuses:**
+| Status | Description |
+|--------|-------------|
+| `passed` | Constraint satisfied |
+| `failed` | Constraint not satisfied |
+| `skipped` | Constraint could not be evaluated (missing data, invalid path) |
+
+**Summary Status:**
+| Status | Description |
+|--------|-------------|
+| `pass` | All constraints passed |
+| `fail` | One or more constraints failed |
+| `partial` | Some constraints skipped, none failed |
+
+---
+
 ### eidos bundle
 
 Generate deployment-ready bundles from recipes containing Helm values, manifests, scripts, and documentation.
@@ -481,17 +608,22 @@ eidos recipe \
   --intent training \
   --output recipe.yaml
 
-# Step 3: Create deployment bundle
+# Step 3: Validate recipe constraints against snapshot
+eidos validate \
+  --recipe recipe.yaml \
+  --snapshot snapshot.yaml
+
+# Step 4: Create deployment bundle
 eidos bundle \
   --recipe recipe.yaml \
   --bundlers gpu-operator \
   --output ./deployment
 
-# Step 4: Deploy to cluster
+# Step 5: Deploy to cluster
 cd deployment/gpu-operator
 ./scripts/install.sh
 
-# Step 5: Verify deployment
+# Step 6: Verify deployment
 kubectl get pods -n gpu-operator
 kubectl logs -n gpu-operator -l app=nvidia-operator-validator
 ```
@@ -526,17 +658,28 @@ eidos recipe \
   --intent training \
   --output recipe.yaml
 
-# Step 3: Create bundle from recipe
+# Step 3: Validate recipe constraints against cluster snapshot
+eidos validate \
+  --recipe recipe.yaml \
+  --snapshot cm://gpu-operator/eidos-snapshot
+
+# For CI/CD pipelines: exit non-zero on validation failure
+eidos validate \
+  --recipe recipe.yaml \
+  --snapshot cm://gpu-operator/eidos-snapshot \
+  --fail-on-error
+
+# Step 4: Create bundle from recipe
 eidos bundle \
   --recipe recipe.yaml \
   --bundlers gpu-operator \
   --output ./deployment
 
-# Step 4: Deploy to cluster
+# Step 5: Deploy to cluster
 cd deployment/gpu-operator
 ./scripts/install.sh
 
-# Step 5: Verify deployment
+# Step 6: Verify deployment
 kubectl get pods -n gpu-operator
 kubectl logs -n gpu-operator -l app=nvidia-operator-validator
 ```

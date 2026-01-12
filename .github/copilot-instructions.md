@@ -30,15 +30,16 @@ Choose solutions based on: testability, readability, consistency, simplicity, re
 
 ## Project Context
 
-NVIDIA Cloud Native Stack (CNS/Eidos) provides validated GPU-accelerated Kubernetes configurations through a three-stage workflow:
+NVIDIA Cloud Native Stack (CNS/Eidos) provides validated GPU-accelerated Kubernetes configurations through a four-stage workflow:
 
 1. **Snapshot** → Capture system state (OS, kernel, K8s, GPU)
 2. **Recipe** → Generate optimized config from captured data or query parameters
-3. **Bundle** → Create deployment artifacts (Helm values, manifests, scripts)
+3. **Validate** → Check recipe constraints against actual cluster measurements
+4. **Bundle** → Create deployment artifacts (Helm values, manifests, scripts)
 
 **Core Components:**
-- **CLI (`eidos`)**: All three stages (snapshot/recipe/bundle)
-- **API Server**: Recipe generation via REST API (https://cns.dgxc.io)
+- **CLI (`eidos`)**: All four stages (snapshot/recipe/validate/bundle)
+- **API Server**: Recipe generation and bundle creation via REST API (https://cns.dgxc.io)
 - **Agent**: Kubernetes Job for automated cluster snapshots → ConfigMaps
 - **Bundlers**: Plugin-based artifact generators (GPU Operator, Network Operator, Cert-Manager, NVSentinel, Skyhook)
 

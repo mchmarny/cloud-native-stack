@@ -1,6 +1,6 @@
 # Eidos End-to-End Demo
 
-Three-stage workflow: **Snapshot → Recipe → Bundle**
+Four-stage workflow: **Snapshot → Recipe → Validate → Bundle**
 
 ![demo overview](images/e2e.png)
 
@@ -24,6 +24,7 @@ Deploy a Kubernetes Job to capture GPU node configuration:
 eidos snapshot \
     --deploy-agent \
     --namespace gpu-operator \
+    --image ghcr.io/mchmarny/eidos:latest \
     --node-selector nodeGroup=customer-gpu \
     --cleanup
 ```
@@ -67,7 +68,11 @@ yq eval '.measurements[]
 **Alternative**: Generate recipe directly from parameters (no snapshot needed):
 
 ```shell
-eidos recipe --service eks --accelerator h100 --intent training | yq
+eidos recipe \
+    --service eks \
+    --accelerator h100 \
+    --os ubuntu \
+    --intent training | yq
 ```
 
 Or query the [CNS API](https://cns.dgxc.io) directly:
@@ -78,7 +83,26 @@ curl -s "https://cns.dgxc.io/v1/recipe?service=eks&accelerator=h100&intent=train
 
 ![data flow](images/data.png)
 
-## 3. Bundle
+## 3. Validate 
+
+Validate a target cluster against the recipe: 
+
+```shell
+eidos validate \
+    --recipe recipe.yaml \
+    --snapshot cm://gpu-operator/eidos-snapshot
+```
+
+Save results to a file:
+
+```shell
+eidos validate \
+    --recipe recipe.yaml \
+    --snapshot cm://gpu-operator/eidos-snapshot \
+    --output validation-results.yaml
+```
+
+## 4. Bundle
 
 Generate deployment artifacts with node scheduling:
 

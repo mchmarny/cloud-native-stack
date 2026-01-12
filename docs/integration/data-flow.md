@@ -1,20 +1,21 @@
 # Data Flow Architecture
 
-This document describes data transformations in the three-stage workflow.
+This document describes data transformations in the four-stage workflow.
 
 ## Overview
 
-Data flows through three stages:
+Data flows through four stages:
 
 ```
-System Config → Snapshot → Recipe → Bundle → Deployment
-     (Raw)      (Capture)  (Optimize) (Package)  (Deploy)
+System Config → Snapshot → Recipe → Validate → Bundle → Deployment
+     (Raw)      (Capture)  (Optimize) (Check)  (Package)  (Deploy)
 ```
 
 Each stage transforms input data into a different format:
 
 - **Snapshot**: Captures raw system state (OS, GPU, Kubernetes, SystemD)
 - **Recipe**: Generates configuration recommendations by matching query parameters against overlay rules
+- **Validate**: Checks recipe constraints against actual system measurements
 - **Bundle**: Produces deployment artifacts (Helm values, manifests, scripts)
 
 ## Stage 1: Snapshot (Data Capture)
@@ -257,7 +258,133 @@ Result: MATCH (os wildcarded)
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Stage 3: Bundle (Data Packaging)
+## Stage 3: Validate (Constraint Checking)
+
+### Validation Process
+
+The validate stage compares recipe constraints against actual measurements from a cluster snapshot.
+
+```
+┌────────────────────────────────────────────────────────┐
+│ Validator                                              │
+├────────────────────────────────────────────────────────┤
+│                                                        │
+│  Recipe Constraints + Snapshot → Validation Results    │
+│                                                        │
+│  ┌─────────────────┐    ┌─────────────────┐            │
+│  │ Recipe          │    │ Snapshot        │            │
+│  │ constraints:    │    │ measurements:   │            │
+│  │   - K8s.version │    │   - K8s/server  │            │
+│  │   - OS.release  │    │   - OS/release  │            │
+│  └────────┬────────┘    └────────┬────────┘            │
+│           │                      │                     │
+│           └───────────┬──────────┘                     │
+│                       │                                │
+│              ┌────────▼────────┐                       │
+│              │ Constraint      │                       │
+│              │ Evaluation      │                       │
+│              │ ├─ Version cmp  │                       │
+│              │ ├─ Equality     │                       │
+│              │ └─ Exact match  │                       │
+│              └────────┬────────┘                       │
+│                       │                                │
+│              ┌────────▼────────┐                       │
+│              │ Results         │                       │
+│              │ ├─ Passed       │                       │
+│              │ ├─ Failed       │                       │
+│              │ └─ Skipped      │                       │
+│              └─────────────────┘                       │
+│                                                        │
+└────────────────────────────────────────────────────────┘
+```
+
+### Constraint Path Format
+
+Constraints use fully qualified paths: `{Type}.{Subtype}.{Key}`
+
+| Path | Description |
+|------|-------------|
+| `K8s.server.version` | Kubernetes server version |
+| `OS.release.ID` | Operating system family (ubuntu, rhel) |
+| `OS.release.VERSION_ID` | OS version (22.04, 24.04) |
+| `OS.sysctl./proc/sys/kernel/osrelease` | Kernel version |
+| `GPU.driver.version` | NVIDIA driver version |
+
+### Supported Operators
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `>=` | Greater than or equal | `K8s.server.version>=1.28` |
+| `<=` | Less than or equal | `K8s.server.version<=1.30` |
+| `>` | Greater than | `OS.release.VERSION_ID>22.04` |
+| `<` | Less than | `OS.release.VERSION_ID<25.00` |
+| `==` | Exactly equal | `OS.release.ID==ubuntu` |
+| `!=` | Not equal | `OS.release.ID!=rhel` |
+| (none) | Exact match | `GPU.driver.version` |
+
+### Input Sources
+
+**File-based:**
+```bash
+eidos validate --recipe recipe.yaml --snapshot snapshot.yaml
+```
+
+**ConfigMap-based:**
+```bash
+eidos validate \
+    --recipe recipe.yaml \
+    --snapshot cm://gpu-operator/eidos-snapshot
+```
+
+**HTTP/HTTPS:**
+```bash
+eidos validate \
+    --recipe https://example.com/recipe.yaml \
+    --snapshot https://example.com/snapshot.yaml
+```
+
+### Validation Output
+
+```yaml
+apiVersion: cns.nvidia.com/v1alpha1
+kind: ValidationResult
+metadata:
+  created: "2025-01-15T10:30:00Z"
+summary:
+  total: 5
+  passed: 4
+  failed: 1
+  skipped: 0
+results:
+  - constraint: "K8s.server.version>=1.28"
+    status: passed
+    expected: ">=1.28"
+    actual: "1.33.5"
+  - constraint: "OS.release.ID==ubuntu"
+    status: passed
+    expected: "ubuntu"
+    actual: "ubuntu"
+  - constraint: "GPU.driver.version>=570.00"
+    status: failed
+    expected: ">=570.00"
+    actual: "560.28.03"
+    message: "version 560.28.03 does not satisfy >=570.00"
+```
+
+### CI/CD Integration
+
+Use `--fail-on-error` flag to exit with non-zero status on validation failures:
+
+```bash
+eidos validate \
+    --recipe recipe.yaml \
+    --snapshot cm://gpu-operator/eidos-snapshot \
+    --fail-on-error
+
+# Exit code: 0 = all passed, 1 = failures detected
+```
+
+## Stage 4: Bundle (Data Packaging)
 
 ### Bundler Framework
 

@@ -4,14 +4,14 @@ The `eidos` CLI provides command-line access to Cloud Native Stack configuration
 
 ## Overview
 
-The CLI provides a three-step workflow for optimizing GPU infrastructure:
+The CLI provides a four-step workflow for optimizing GPU infrastructure:
 
 ```
-┌──────────────┐      ┌──────────────┐      ┌──────────────┐
-│   Snapshot   │─────▶│    Recipe    │─────▶│    Bundle    │
-└──────────────┘      └──────────────┘      └──────────────┘
-   Capture system      Generate optimized    Create deployment
-   configuration        recommendations       artifacts
+┌──────────────┐      ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│   Snapshot   │─────▶│    Recipe    │─────▶│   Validate   │─────▶│    Bundle    │
+└──────────────┘      └──────────────┘      └──────────────┘      └──────────────┘
+   Capture system      Generate optimized    Check cluster         Create deployment
+   configuration        recommendations       compatibility         artifacts
 ```
 
 ### Step 1: Snapshot Command
@@ -48,7 +48,48 @@ Generates optimized configuration recipes with two modes:
 - **Stdout**: Default behavior (pipe to bundle command)
 - **ConfigMap**: `--output cm://namespace/name` (store in Kubernetes)
 
-### Step 3: Bundle Command
+### Step 3: Validate Command
+
+Validates recipe constraints against actual system measurements from a snapshot.
+
+**Input sources:**
+
+- **Recipe file**: `--recipe recipe.yaml` (local filesystem)
+- **Recipe URL**: `--recipe https://example.com/recipe.yaml` (HTTP/HTTPS)
+- **Recipe ConfigMap**: `--recipe cm://namespace/name` (Kubernetes ConfigMap)
+- **Snapshot file**: `--snapshot snapshot.yaml` (local filesystem)
+- **Snapshot ConfigMap**: `--snapshot cm://namespace/name` (Kubernetes ConfigMap)
+
+**Constraint format:**
+
+Constraints use fully qualified measurement paths: `{Type}.{Subtype}.{Key}`
+- `K8s.server.version` - Kubernetes server version
+- `OS.release.ID` - Operating system identifier
+- `OS.release.VERSION_ID` - OS version
+- `OS.sysctl./proc/sys/kernel/osrelease` - Kernel version
+
+**Supported operators:**
+
+- `>= 1.30` - Greater than or equal (version comparison)
+- `<= 1.33` - Less than or equal (version comparison)
+- `> 1.30`, `< 2.0` - Strict comparison
+- `== ubuntu`, `!= rhel` - Equality operators
+- `ubuntu` - Exact string match (no operator)
+
+**Output:**
+
+- Validation result with summary (passed/failed/skipped counts)
+- Individual constraint results with expected vs actual values
+- Status: `pass`, `fail`, or `partial` (some skipped)
+
+**CI/CD integration:**
+
+Use `--fail-on-error` to exit with non-zero status when constraints fail:
+```shell
+eidos validate -f recipe.yaml -s cm://gpu-operator/eidos-snapshot --fail-on-error
+```
+
+### Step 4: Bundle Command
 
 Generates deployment artifacts from recipes:
 

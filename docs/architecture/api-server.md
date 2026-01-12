@@ -4,20 +4,20 @@ The `eidos-api-server` provides HTTP REST API access to Cloud Native Stack confi
 
 ## Overview
 
-The API server provides HTTP REST access to **Steps 2 and 3 of the Cloud Native Stack workflow** – recipe generation and bundle creation. It is a production-ready HTTP service built on Go's `net/http` with middleware for rate limiting, metrics, request tracking, and graceful shutdown.
+The API server provides HTTP REST access to **Steps 2 and 4 of the Cloud Native Stack workflow** – recipe generation and bundle creation. It is a production-ready HTTP service built on Go's `net/http` with middleware for rate limiting, metrics, request tracking, and graceful shutdown.
 
-### Three-Step Workflow Context
+### Four-Step Workflow Context
 
 ```
-┌──────────────┐      ┌──────────────┐      ┌──────────────┐
-│   Snapshot   │─────▶│    Recipe    │─────▶│    Bundle    │
-└──────────────┘      └──────────────┘      └──────────────┘
-   CLI/Agent only       API Server          API Server
+┌──────────────┐      ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│   Snapshot   │─────▶│    Recipe    │─────▶│   Validate   │─────▶│    Bundle    │
+└──────────────┘      └──────────────┘      └──────────────┘      └──────────────┘
+   CLI/Agent only       API Server           CLI only            API Server
 ```
 
 **API Server Capabilities:**
 - **Recipe generation** (Step 2) via `GET /v1/recipe` endpoint
-- **Bundle creation** (Step 3) via `POST /v1/bundle` endpoint
+- **Bundle creation** (Step 4) via `POST /v1/bundle` endpoint
 - **Query mode only** – generates recipes from environment parameters
 - Health and metrics endpoints for Kubernetes deployment
 - Production-ready HTTP server with middleware stack
@@ -26,11 +26,12 @@ The API server provides HTTP REST access to **Steps 2 and 3 of the Cloud Native 
 **API Server Limitations:**
 - **No snapshot capture** – Use CLI `eidos snapshot` or Kubernetes Agent
 - **No snapshot mode** – Cannot analyze captured snapshots (query mode only)
+- **No validation** – Use CLI `eidos validate` to check constraints against snapshots
 - **No ConfigMap integration** – API server doesn't read/write ConfigMaps
 - **No value overrides** – Use CLI for `--set` and node selector flags
 
 **For complete workflow**, use the CLI which supports:
-- All three steps: snapshot → recipe → bundle
+- All four steps: snapshot → recipe → validate → bundle
 - ConfigMap I/O: `cm://namespace/name` URIs
 - Agent deployment: Kubernetes Job with RBAC
 - E2E testing: `tools/e2e` validation script
