@@ -16,7 +16,7 @@ Quick test:
 eidos -v
 ```
 
-## 1. Snapshot 
+## 1. Snapshot
 
 Deploy a Kubernetes Job to capture GPU node configuration:
 
@@ -24,11 +24,14 @@ Deploy a Kubernetes Job to capture GPU node configuration:
 eidos snapshot \
     --deploy-agent \
     --namespace gpu-operator \
+    --image ghcr.io/nvidia/eidos:latest \
     --node-selector nodeGroup=customer-gpu \
     --cleanup
 ```
 
 > **Note**: By default, all taints are tolerated. Use `--toleration key=value:effect` to override.
+
+> **Fork Users**: If you are using a fork of this repository, specify the correct container image using the `--image` flag. The default image (`ghcr.io/nvidia/eidos:latest`) points to the upstream NVIDIA registry. For forks, use your own registry (e.g., `--image ghcr.io/YOUR-ORG/eidos:latest`).
 
 Output:
 
