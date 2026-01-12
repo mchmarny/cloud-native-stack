@@ -43,10 +43,10 @@ jobs:
         id: release
         uses: ./.github/actions/go-build-release
 
-      - name: Attest cns-api-server image
+      - name: Attest cnsd image
         uses: ./.github/actions/attest-image-from-tag
         with:
-          image_name: ghcr.io/${{ github.repository_owner }}/cns-api-server
+          image_name: ghcr.io/${{ github.repository_owner }}/cnsd
           tag: ${{ github.ref_name }}
           crane_version: ${{ env.CRANE_VERSION }}
 
@@ -67,4 +67,4 @@ jobs:
           service_account: "${{ env.SERVICE_ACCOUNT }}@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
           region: ${{ env.RUN_REGION }}
           service: ${{ env.RUN_SERVICE }}
-          image: "${{ env.RUN_IMAGE_REG }}/cns-api-server:${{ github.ref_name }}"
+          image: "${{ env.RUN_IMAGE_REG }}/cnsd:${{ github.ref_name }}"

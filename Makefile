@@ -86,7 +86,7 @@ qualify: test lint scan ## Qualifies the current codebase (test, lint, scan)
 server: ## Starts a local development server
 	@set -e; \
 	echo "Starting local development server"; \
-	LOG_LEVEL=debug go run cmd/cns-api-server/main.go
+	LOG_LEVEL=debug go run cmd/cnsd/main.go
 
 .PHONY: docs
 docs: ## Generates and serves Go documentation on http://localhost:6060

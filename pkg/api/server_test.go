@@ -37,8 +37,8 @@ import (
 
 // TestConstants verifies package constants are properly defined
 func TestConstants(t *testing.T) {
-	if name != "cns-api-server" {
-		t.Errorf("name = %q, want %q", name, "cns-api-server")
+	if name != "cnsd" {
+		t.Errorf("name = %q, want %q", name, "cnsd")
 	}
 
 	if versionDefault != "dev" {

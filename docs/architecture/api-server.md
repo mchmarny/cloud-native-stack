@@ -1,6 +1,6 @@
 # API Server Architecture
 
-The `cns-api-server` provides HTTP REST API access to Cloud Native Stack configuration recipe generation and bundle creation capabilities.
+The `cnsd` provides HTTP REST API access to Cloud Native Stack configuration recipe generation and bundle creation capabilities.
 
 ## Overview
 
@@ -40,7 +40,7 @@ The API server provides HTTP REST access to **Steps 2 and 4 of the Cloud Native 
 
 ```mermaid
 flowchart TD
-    A["cns-api-server<br/>cmd/cns-api-server/main.go"] --> B["pkg/api/server.go<br/>Serve()"]
+    A["cnsd<br/>cmd/cnsd/main.go"] --> B["pkg/api/server.go<br/>Serve()"]
     
     B --> B1["• Initialize logging<br/>• Create recipe.Builder<br/>• Create bundler.DefaultBundler<br/>• Setup routes: /v1/recipe, /v1/bundle<br/>• Create server with middleware<br/>• Graceful shutdown"]
     
@@ -91,7 +91,7 @@ flowchart TD
 
 ## Component Details
 
-### Entry Point: `cmd/cns-api-server/main.go`
+### Entry Point: `cmd/cnsd/main.go`
 
 Minimal entry point:
 
@@ -391,7 +391,7 @@ cns_panic_recoveries_total 0
 
 ```json
 {
-  "service": "cns-api-server",
+  "service": "cnsd",
   "version": "v1.0.0",
   "routes": [
     "/v1/recipe"
@@ -445,7 +445,7 @@ flowchart LR
     C --> D["Build Image<br/>(ko + goreleaser)"]
     D --> E["Generate SBOM<br/>(Syft)"]  
     E --> F["Sign Attestations<br/>(Cosign keyless)"]
-    F --> G["Push to GHCR<br/>ghcr.io/nvidia/cns-api-server"]
+    F --> G["Push to GHCR<br/>ghcr.io/nvidia/cnsd"]
     G --> H["Deploy to Cloud Run<br/>(WIF auth)"]
     H --> I["Health Check<br/>Verification"]
 ```
@@ -454,7 +454,7 @@ flowchart LR
 - **SLSA Build Level 3** compliance
 - **Signed SBOMs** in SPDX format
 - **Attestations** logged in Rekor transparency log  
-- **Verification**: `gh attestation verify oci://ghcr.io/nvidia/cns-api-server:TAG --owner nvidia`
+- **Verification**: `gh attestation verify oci://ghcr.io/nvidia/cnsd:TAG --owner nvidia`
 
 **Monitoring:**
 - Health endpoint: `/health`
@@ -541,21 +541,21 @@ print(f"Matched {len(recipe['matchedRuleId'])} rules")
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns-system
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: cns-api-server
+      app: cnsd
   template:
     metadata:
       labels:
-        app: cns-api-server
+        app: cnsd
     spec:
       containers:
       - name: server
-        image: ghcr.io/nvidia/cns-api-server:v1.0.0
+        image: ghcr.io/nvidia/cnsd:v1.0.0
         ports:
         - containerPort: 8080
           name: http
@@ -585,11 +585,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns-system
 spec:
   selector:
-    app: cns-api-server
+    app: cnsd
   ports:
   - port: 80
     targetPort: http
@@ -598,12 +598,12 @@ spec:
 apiVersion: v1
 kind: ServiceMonitor
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns-system
 spec:
   selector:
     matchLabels:
-      app: cns-api-server
+      app: cnsd
   endpoints:
   - port: http
     path: /metrics
@@ -616,7 +616,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns-system
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
@@ -633,7 +633,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: cns-api-server
+            name: cnsd
             port:
               number: 80
 ```
@@ -644,13 +644,13 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns-system
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: cns-api-server
+    name: cnsd
   minReplicas: 3
   maxReplicas: 10
   metrics:
@@ -805,19 +805,19 @@ rate(cns_rate_limit_rejects_total[5m])
 
 ```yaml
 groups:
-- name: cns-api-server
+- name: cnsd
   rules:
   - alert: HighErrorRate
     expr: rate(cns_http_requests_total{status=~"5.."}[5m]) > 0.05
     for: 5m
     annotations:
-      summary: High error rate on cns-api-server
+      summary: High error rate on cnsd
   
   - alert: HighLatency
     expr: histogram_quantile(0.99, rate(cns_http_request_duration_seconds_bucket[5m])) > 0.1
     for: 5m
     annotations:
-      summary: High latency on cns-api-server
+      summary: High latency on cnsd
   
   - alert: HighRateLimitRejects
     expr: rate(cns_rate_limit_rejects_total[5m]) > 10
@@ -928,7 +928,7 @@ func TestRecipeHandler(t *testing.T) {
 export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/releases/latest | jq -r '.tag_name')
 
 # Verify attestations
-gh attestation verify oci://ghcr.io/nvidia/cns-api-server:${TAG} --owner nvidia
+gh attestation verify oci://ghcr.io/nvidia/cnsd:${TAG} --owner nvidia
 ```
 
 For detailed CI/CD architecture, see [../CONTRIBUTING.md#github-actions--cicd](../../CONTRIBUTING.md#github-actions--cicd) and [README.md](README.md#cicd-architecture).
@@ -946,7 +946,7 @@ LDFLAGS := -X github.com/NVIDIA/cloud-native-stack/pkg/api.version=$(VERSION)
 LDFLAGS += -X github.com/NVIDIA/cloud-native-stack/pkg/api.commit=$(COMMIT)
 LDFLAGS += -X github.com/NVIDIA/cloud-native-stack/pkg/api.date=$(DATE)
 
-go build -ldflags="$(LDFLAGS)" -o bin/cns-api-server ./cmd/cns-api-server
+go build -ldflags="$(LDFLAGS)" -o bin/cnsd ./cmd/cnsd
 ```
 
 ### Container Image
@@ -958,13 +958,13 @@ FROM golang:1.25-alpine AS builder
 WORKDIR /app
 COPY . .
 RUN go build -ldflags="-X github.com/NVIDIA/cloud-native-stack/pkg/api.version=v1.0.0" \
-    -o /bin/cns-api-server ./cmd/cns-api-server
+    -o /bin/cnsd ./cmd/cnsd
 
 FROM alpine:3.19
 RUN apk --no-cache add ca-certificates
-COPY --from=builder /bin/cns-api-server /usr/local/bin/
+COPY --from=builder /bin/cnsd /usr/local/bin/
 EXPOSE 8080
-ENTRYPOINT ["cns-api-server"]
+ENTRYPOINT ["cnsd"]
 ```
 
 **Note**: Production images use distroless base (gcr.io/distroless/static) for minimal attack surface.
@@ -1235,30 +1235,30 @@ ENTRYPOINT ["cns-api-server"]
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
 spec:
   replicas: 3  # Initial replicas
   selector:
     matchLabels:
-      app: cns-api-server
+      app: cnsd
   template:
     metadata:
       labels:
-        app: cns-api-server
+        app: cnsd
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
     spec:
-      serviceAccountName: cns-api-server
+      serviceAccountName: cnsd
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
       containers:
       - name: api-server
-        image: ghcr.io/nvidia/cns-api-server:latest  # Or use specific tag like v0.8.12
+        image: ghcr.io/nvidia/cnsd:latest  # Or use specific tag like v0.8.12
         ports:
         - name: http
           containerPort: 8080
@@ -1318,7 +1318,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
 spec:
   type: ClusterIP
@@ -1328,18 +1328,18 @@ spec:
     targetPort: http
     protocol: TCP
   selector:
-    app: cns-api-server
+    app: cnsd
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: cns-api-server-hpa
+  name: cnsd-hpa
   namespace: cns
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: cns-api-server
+    name: cnsd
   minReplicas: 3
   maxReplicas: 20
   metrics:
@@ -1380,7 +1380,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
@@ -1401,7 +1401,7 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: cns-api-server
+            name: cnsd
             port:
               name: http
 ```
@@ -1415,11 +1415,11 @@ spec:
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
 spec:
   hosts:
-  - cns-api-server.cns.svc.cluster.local
+  - cnsd.cns.svc.cluster.local
   - api.cns.example.com
   gateways:
   - cns-gateway
@@ -1429,7 +1429,7 @@ spec:
         prefix: /v1/recipe
     route:
     - destination:
-        host: cns-api-server
+        host: cnsd
         port:
           number: 80
     timeout: 10s
@@ -1447,10 +1447,10 @@ spec:
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
 spec:
-  host: cns-api-server
+  host: cnsd
   trafficPolicy:
     tls:
       mode: ISTIO_MUTUAL  # mTLS between services
@@ -1470,24 +1470,24 @@ spec:
 apiVersion: security.istio.io/v1beta1
 kind: PeerAuthentication
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
 spec:
   selector:
     matchLabels:
-      app: cns-api-server
+      app: cnsd
   mtls:
     mode: STRICT  # Require mTLS
 ---
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
 spec:
   selector:
     matchLabels:
-      app: cns-api-server
+      app: cnsd
   action: ALLOW
   rules:
   - from:
@@ -1561,7 +1561,7 @@ backend cns_api_backend
 set -euo pipefail
 
 NAMESPACE=cns
-APP=cns-api-server
+APP=cnsd
 NEW_VERSION=$1
 
 # Deploy green version
@@ -2153,7 +2153,7 @@ import (
 
 func handleRecipe(w http.ResponseWriter, r *http.Request) {
     ctx := r.Context()
-    tracer := otel.Tracer("cns-api-server")
+    tracer := otel.Tracer("cnsd")
     
     ctx, span := tracer.Start(ctx, "handleRecipe",
         trace.WithAttributes(
@@ -2180,7 +2180,7 @@ func handleRecipe(w http.ResponseWriter, r *http.Request) {
 }
 
 func buildRecipeWithTrace(ctx context.Context, params Params) (*recipe.Recipe, error) {
-    tracer := otel.Tracer("cns-api-server")
+    tracer := otel.Tracer("cnsd")
     ctx, span := tracer.Start(ctx, "buildRecipe")
     defer span.End()
     

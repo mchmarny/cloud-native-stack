@@ -64,7 +64,7 @@ Service information and available routes.
 **Response:**
 ```json
 {
-  "service": "cns-api-server",
+  "service": "cnsd",
   "version": "v0.7.6",
   "routes": ["/v1/recipe", "/v1/bundle"]
 }
@@ -639,12 +639,12 @@ done
 
 ## OpenAPI Specification
 
-Full OpenAPI 3.1 specification: [api/cns/v1/api-server-v1.yaml](../../../api/cns/v1/api-server-v1.yaml)
+Full OpenAPI 3.1 specification: [api/cns/v1/server.yaml](../../../api/cns/v1/server.yaml)
 
 **Generate client SDKs:**
 ```shell
 # Download spec
-curl https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/api/cns/v1/api-server-v1.yaml -o spec.yaml
+curl https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/api/cns/v1/server.yaml -o spec.yaml
 
 # Generate Python client
 openapi-generator-cli generate -i spec.yaml -g python -o ./python-client

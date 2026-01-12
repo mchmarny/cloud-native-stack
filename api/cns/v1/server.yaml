@@ -41,7 +41,7 @@ paths:
                 properties:
                   service:
                     type: string
-                    example: cns-api-server
+                    example: cnsd
                   version:
                     type: string
                     example: v1.0.0

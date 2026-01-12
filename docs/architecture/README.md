@@ -230,7 +230,7 @@ flowchart TD
 ```mermaid
 flowchart LR
     subgraph MESH["Kubernetes Cluster (Service Mesh)"]
-        subgraph POD["cns-api-server Pod"]
+        subgraph POD["cnsd Pod"]
             PROXY["Envoy Proxy<br/>(mTLS/L7)"] <--> API["cnsctl<br/>API Server"]
         end
         
@@ -1030,7 +1030,7 @@ Checkout → Validate (Go CI) → Build & Release → Attest Images → Deploy
 - Install tools: ko (container images), syft (SBOMs), crane (digest resolution), goreleaser (binaries)
 - Execute `make release`:
   - Build multi-platform binaries (darwin/linux, amd64/arm64)
-  - Build container images (cnsctl, cns-api-server) with ko
+  - Build container images (cnsctl, cnsd) with ko
   - Generate binary SBOMs (SPDX v2.3 format)
   - Generate container SBOMs (SPDX JSON format)
 - Publish to GitHub Releases and ghcr.io
@@ -1044,7 +1044,7 @@ Checkout → Validate (Go CI) → Build & Release → Attest Images → Deploy
 
 **Deployment** (`cloud-run-deploy` action):
 - Authenticate with Workload Identity Federation (keyless)
-- Deploy cns-api-server to Google Cloud Run
+- Deploy cnsd to Google Cloud Run
 - Update service with new image version
 
 **Permissions**: `attestations: write`, `contents: write`, `id-token: write`, `packages: write`

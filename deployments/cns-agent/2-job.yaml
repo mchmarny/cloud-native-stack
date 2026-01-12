@@ -42,7 +42,7 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: cns
-          image: ghcr.io/nvidia/cns:latest
+          image: ghcr.io/mchmarny/cns:latest
           command: ["/bin/sh", "-c"]
           env:
             - name: NODE_NAME

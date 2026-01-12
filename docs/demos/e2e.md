@@ -24,7 +24,7 @@ Deploy a Kubernetes Job to capture GPU node configuration:
 cnsctl snapshot \
     --deploy-agent \
     --namespace gpu-operator \
-    --image ghcr.io/nvidia/cns:latest \
+    --image ghcr.io/mchmarny/cns:latest \
     --node-selector nodeGroup=customer-gpu \
     --cleanup
 ```

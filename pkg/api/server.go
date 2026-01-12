@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	name           = "cns-api-server"
+	name           = "cnsd"
 	versionDefault = "dev"
 )
 

@@ -19,7 +19,7 @@ Related: <!-- #123 -->
 
 ## Component(s) Affected
 - [ ] CLI (`cmd/cnsctl`, `pkg/cli`)
-- [ ] API server (`cmd/cns-api-server`, `pkg/api`, `pkg/server`)
+- [ ] API server (`cmd/cnsd`, `pkg/api`, `pkg/server`)
 - [ ] Recipe engine / data (`pkg/recipe`)
 - [ ] Bundlers (`pkg/bundler`)
 - [ ] Collectors / snapshotter (`pkg/collector`, `pkg/snapshotter`)

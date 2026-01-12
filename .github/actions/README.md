@@ -171,7 +171,7 @@ This directory contains a modular, reusable GitHub Actions architecture optimize
 1. Checkout
 2. Go CI (setup, test, lint)
 3. Build and release
-4. Attest images (cns-api-server, cnsctl)
+4. Attest images (cnsd, cnsctl)
 5. Deploy to Cloud Run
 
 ## Architecture Principles

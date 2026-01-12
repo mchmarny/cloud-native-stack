@@ -80,7 +80,7 @@
 // The LOG_LEVEL environment variable controls logging verbosity:
 //
 //	LOG_LEVEL=debug cnsctl snapshot
-//	LOG_LEVEL=error cns-api-server
+//	LOG_LEVEL=error cnsd
 //
 // If LOG_LEVEL is not set, defaults to INFO level.
 //

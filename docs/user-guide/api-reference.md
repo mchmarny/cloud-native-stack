@@ -519,13 +519,13 @@ main();
 ## OpenAPI Specification
 
 The full OpenAPI 3.1 specification is available at:
-[api/cns/v1/api-server-v1.yaml](../../api/cns/v1/api-server-v1.yaml)
+[api/cns/v1/server.yaml](../../api/cns/v1/server.yaml)
 
 Generate client SDKs:
 
 ```shell
 # Download spec
-curl https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/api/cns/v1/api-server-v1.yaml \
+curl https://raw.githubusercontent.com/NVIDIA/cloud-native-stack/main/api/cns/v1/server.yaml \
   -o openapi.yaml
 
 # Generate Python client

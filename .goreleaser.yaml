@@ -26,10 +26,10 @@ builds:
       - amd64
       - arm64
 
-  - id: cns-api-server
-    binary: cns-api-server
+  - id: cnsd
+    binary: cnsd
     mod_timestamp: &build-timestamp '{{ .CommitTimestamp }}'
-    dir: cmd/cns-api-server
+    dir: cmd/cnsd
     env:
       - CGO_ENABLED=0
       - GO111MODULE=on
@@ -80,7 +80,7 @@ kos:
   - id: cnsctl
     build: cnsctl
     repositories:
-      - ghcr.io/nvidia/cns
+      - ghcr.io/mchmarny/cns
     base_image: nvcr.io/nvidia/cuda:13.1.0-runtime-ubuntu24.04
     platforms:
       - linux/amd64
@@ -91,10 +91,10 @@ kos:
     preserve_import_paths: false
     bare: true
 
-  - id: cns-api-server
-    build: cns-api-server
+  - id: cnsd
+    build: cnsd
     repositories:
-      - ghcr.io/nvidia/cns-api-server
+      - ghcr.io/mchmarny/cnsd
     platforms:
       - linux/amd64
       - linux/arm64

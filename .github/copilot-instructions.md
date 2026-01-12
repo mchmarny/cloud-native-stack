@@ -109,7 +109,7 @@ make server   # Start API server locally
 
 2. Register route in `pkg/api/server.go`
 3. Add middleware (metrics → version → requestID → panic → rateLimit → logging)
-4. Update API spec in `api/cns/v1/api-server-v1.yaml`
+4. Update API spec in `api/cns/v1/server.yaml`
 5. Write integration tests
 
 → See Extended Reference: Adding a New API Endpoint for detailed steps
@@ -141,7 +141,7 @@ builder := recipe.NewBuilder(
     recipe.WithVersion(version),
 )
 server := server.New(
-    server.WithName("cns-api-server"),
+    server.WithName("cnsd"),
     server.WithVersion(version),
 )
 ```
@@ -445,7 +445,7 @@ cnsctl bundle -f recipe.yaml -b gpu-operator \
 
 - **Kubernetes**: Singleton client via `pkg/k8s/client.GetKubeClient()`
 - **NVIDIA Operators**: GPU Operator, Network Operator, NIM Operator, Nsight Operator
-- **Container Images**: ghcr.io/nvidia/cns, ghcr.io/nvidia/cns-api-server
+- **Container Images**: ghcr.io/nvidia/cns, ghcr.io/nvidia/cnsd
 - **Observability**: Prometheus metrics at `/metrics`, structured JSON logs to stderr
 
 ### Key Links
@@ -455,7 +455,7 @@ cnsctl bundle -f recipe.yaml -b gpu-operator \
 - **[Bundler Development](../docs/architecture/component.md)** – Create new bundlers
 - **[API Reference](../docs/integration/api-reference.md)** – REST API endpoints
 - **[GitHub Actions README](actions/README.md)** – CI/CD architecture
-- **[API Specification](../api/cns/v1/api-server-v1.yaml)** – OpenAPI spec
+- **[API Specification](../api/cns/v1/server.yaml)** – OpenAPI spec
 
 ### Version Information
 
@@ -806,7 +806,7 @@ handler = rateLimitMiddleware(handler, limiter)
 handler = loggingMiddleware(handler)
 ```
 
-**4. Update API spec in `api/cns/v1/api-server-v1.yaml`:**
+**4. Update API spec in `api/cns/v1/server.yaml`:**
 ```yaml
 paths:
   /v1/recipe:

@@ -922,5 +922,5 @@ cnsctl recipe --service eks --accelerator gb200 --format json | \
 
 - [CLI Architecture](cli.md) - How the CLI uses recipe data
 - [API Server Architecture](api-server.md) - How the API serves recipes
-- [OpenAPI Specification](../../api/cns/v1/api-server-v1.yaml) - Recipe API contract
+- [OpenAPI Specification](../../api/cns/v1/server.yaml) - Recipe API contract
 - [Recipe Package Documentation](../../pkg/recipe/) - Go implementation details

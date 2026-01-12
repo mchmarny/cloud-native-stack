@@ -138,8 +138,8 @@ docker run ghcr.io/nvidia/cns:latest --version
 
 ### API Server Image
 ```shell
-docker pull ghcr.io/nvidia/cns-api-server:latest
-docker run -p 8080:8080 ghcr.io/nvidia/cns-api-server:latest
+docker pull ghcr.io/nvidia/cnsd:latest
+docker run -p 8080:8080 ghcr.io/nvidia/cnsd:latest
 ```
 
 **Production API Server**: The API server is deployed at https://cns.dgxc.io with auto-scaling and SLSA Build Level 3 attestations.

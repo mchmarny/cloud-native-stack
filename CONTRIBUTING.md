@@ -102,7 +102,7 @@ goreleaser:     2.5.1
 cloud-native-stack/
 ├── cmd/                      # Entry points
 │   ├── cnsctl/               # CLI binary
-│   └── cns-api-server/    # API server binary
+│   └── cnsd/    # API server binary
 ├── pkg/                      # Core packages
 │   ├── api/                 # HTTP API layer and handlers
 │   ├── bundler/             # Bundle generation framework
@@ -150,7 +150,7 @@ cloud-native-stack/
 - **Output**: Supports JSON, YAML, and table formats
 
 #### API Server
-- **Location**: `cmd/cns-api-server/main.go` → `pkg/server/`, `pkg/api/`
+- **Location**: `cmd/cnsd/main.go` → `pkg/server/`, `pkg/api/`
 - **Endpoints**: 
   - `GET /v1/recipe` - Generate configuration recipes
   - `GET /health` - Liveness probe
@@ -600,8 +600,8 @@ ls -lh dist/
 # dist/
 #   cns_darwin_arm64/
 #     cnsctl
-#   cns-api-server_darwin_arm64/
-#     cns-api-server
+#   cnsd_darwin_arm64/
+#     cnsd
 ```
 
 ### Running the CLI
@@ -772,7 +772,7 @@ bundles/gpu-operator/
 make server
 
 # Custom configuration
-PORT=8080 LOG_LEVEL=debug go run cmd/cns-api-server/main.go
+PORT=8080 LOG_LEVEL=debug go run cmd/cnsd/main.go
 
 # Test endpoints
 curl http://localhost:8080/health
@@ -791,7 +791,7 @@ Build and deploy the agent locally:
 
 ```bash
 # Build container image with ko
-ko build --local ./cmd/cns-api-server
+ko build --local ./cmd/cnsd
 
 # Or build with Docker
 docker build -t cns:dev -f Dockerfile .
@@ -1538,7 +1538,7 @@ Cloud Native Stack uses a comprehensive CI/CD pipeline powered by GitHub Actions
    - Achieves **SLSA Build Level 3** compliance
 5. **Deploy to Cloud Run** - Uses `.github/actions/cloud-run-deploy` composite action:
    - Authenticate using Workload Identity Federation (keyless)
-   - Deploy cns-api-server to Google Cloud Run
+   - Deploy cnsd to Google Cloud Run
    - Update service with new image version
 
 **Permissions**:

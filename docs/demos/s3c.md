@@ -30,7 +30,7 @@ echo "Using tag: $TAG"
 Resolve tag to immutable digest:
 
 ```shell
-export IMAGE="ghcr.io/nvidia/cns"
+export IMAGE="ghcr.io/mchmarny/cns"
 export DIGEST=$(crane digest "${IMAGE}:${TAG}")
 echo "Resolved digest: $DIGEST"
 export IMAGE_DIGEST="${IMAGE}@${DIGEST}"
@@ -46,10 +46,10 @@ Verify using digest:
 gh attestation verify oci://${IMAGE_DIGEST} --owner nvidia
 ```
 
-Verify the cns-api-server image:
+Verify the cnsd image:
 
 ```shell
-export IMAGE_API="ghcr.io/nvidia/cns-api-server"
+export IMAGE_API="ghcr.io/mchmarny/cnsd"
 export DIGEST_API=$(crane digest "${IMAGE_API}:${TAG}")
 gh attestation verify oci://${IMAGE_API}@${DIGEST_API} --owner nvidia
 ```
@@ -112,7 +112,7 @@ Get latest release tag and resolve digest:
 
 ```shell
 export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/releases/latest | jq -r '.tag_name')
-export IMAGE="ghcr.io/nvidia/cns-api-server"
+export IMAGE="ghcr.io/mchmarny/cnsd"
 export DIGEST=$(crane digest "${IMAGE}:${TAG}")
 export IMAGE_DIGEST="${IMAGE}@${DIGEST}"
 ```
@@ -177,13 +177,13 @@ metadata:
   name: cns-images-require-attestation
 spec:
   images:
-  - glob: "ghcr.io/nvidia/cns*"
+  - glob: "ghcr.io/mchmarny/cns*"
   authorities:
   - keyless:
       url: https://fulcio.sigstore.dev
       identities:
       - issuerRegExp: ".*\.github\.com.*"
-        subjectRegExp: "https://github.com/NVIDIA/cloud-native-stack/.*"
+        subjectRegExp: "https://github.com/mchmarny/cloud-native-stack/.*"
     attestations:
     - name: build-provenance
       predicateType: https://slsa.dev/provenance/v1
@@ -212,14 +212,14 @@ spec:
           - Pod
     verifyImages:
     - imageReferences:
-      - "ghcr.io/nvidia/cns*"
+      - "ghcr.io/mchmarny/cns*"
       attestations:
       - predicateType: https://slsa.dev/provenance/v1
         attestors:
         - entries:
           - keyless:
               issuer: https://token.actions.githubusercontent.com
-              subject: https://github.com/NVIDIA/cloud-native-stack/.github/workflows/*
+              subject: https://github.com/mchmarny/cloud-native-stack/.github/workflows/*
 ```
 
 **Test Policy Enforcement:**
@@ -227,13 +227,13 @@ spec:
 Get latest release tag:
 
 ```shell
-export TAG=$(curl -s https://api.github.com/repos/NVIDIA/cloud-native-stack/releases/latest | jq -r '.tag_name')
+export TAG=$(curl -s https://api.github.com/repos/mchmarny/cloud-native-stack/releases/latest | jq -r '.tag_name')
 ```
 
 This should succeed (image with valid attestation):
 
 ```shell
-kubectl run test-valid --image=ghcr.io/nvidia/cns:${TAG}
+kubectl run test-valid --image=ghcr.io/mchmarny/cns:${TAG}
 ```
 This should fail (unsigned image):
 
@@ -274,7 +274,7 @@ gh run view 20642050863 --repo NVIDIA/cloud-native-stack --log
 Search Rekor for attestations:
 
 ```shell
-rekor-cli search --artifact ghcr.io/nvidia/cns:v0.8.12
+rekor-cli search --artifact ghcr.io/mchmarny/cns:v0.8.12
 ```
 
 Get entry details:

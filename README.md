@@ -95,7 +95,7 @@ You are integrating CNS into CI/CD pipelines, GitOps workflows, or a larger prod
 ## Project Structure
 
 - `api/` — OpenAPI specifications for the REST API
-- `cmd/` — Entry points for CLI (`cnsctl`) and API server (`cns-api-server`)
+- `cmd/` — Entry points for CLI (`cnsctl`) and API server (`cnsd`)
 - `deployments/` — Kubernetes manifests for agent deployment
 - `docs/` — User-facing documentation, guides, and architecture docs
 - `examples/` — Example snapshots, recipes, and comparisons

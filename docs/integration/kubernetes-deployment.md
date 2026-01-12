@@ -42,7 +42,7 @@ Deploy the CNS API Server in your Kubernetes cluster for self-hosted recipe gene
 kubectl create namespace cns
 
 # Deploy API server
-kubectl apply -k https://github.com/NVIDIA/cloud-native-stack/deployments/cns-api-server
+kubectl apply -k https://github.com/NVIDIA/cloud-native-stack/deployments/cnsd
 
 # Check deployment
 kubectl get pods -n cns
@@ -56,7 +56,7 @@ kubectl get svc -n cns
 <!-- Uncomment when Helm chart is published
 ```shell
 helm repo add cns https://nvidia.github.io/cloud-native-stack
-helm install cns-api-server cns/cns-api-server -n cns --create-namespace
+helm install cnsd cns/cnsd -n cns --create-namespace
 ```
 -->
 
@@ -71,7 +71,7 @@ kind: Namespace
 metadata:
   name: cns
   labels:
-    app: cns-api-server
+    app: cnsd
 ```
 
 ```shell
@@ -85,19 +85,19 @@ kubectl apply -f namespace.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
   labels:
-    app: cns-api-server
+    app: cnsd
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: cns-api-server
+      app: cnsd
   template:
     metadata:
       labels:
-        app: cns-api-server
+        app: cnsd
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
@@ -110,7 +110,7 @@ spec:
       
       containers:
         - name: api-server
-          image: ghcr.io/nvidia/cns-api-server:latest
+          image: ghcr.io/nvidia/cnsd:latest
           imagePullPolicy: IfNotPresent
           
           ports:
@@ -168,14 +168,14 @@ kubectl apply -f deployment.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
   labels:
-    app: cns-api-server
+    app: cnsd
 spec:
   type: ClusterIP
   selector:
-    app: cns-api-server
+    app: cnsd
   ports:
     - name: http
       port: 80
@@ -194,7 +194,7 @@ kubectl apply -f service.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
@@ -213,7 +213,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: cns-api-server
+                name: cnsd
                 port:
                   number: 80
 ```
@@ -453,13 +453,13 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: cns-api-server
+    name: cnsd
   minReplicas: 3
   maxReplicas: 10
   metrics:
@@ -501,13 +501,13 @@ kubectl apply -f hpa.yaml
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
 spec:
   minAvailable: 2
   selector:
     matchLabels:
-      app: cns-api-server
+      app: cnsd
 ```
 
 ```shell
@@ -523,14 +523,14 @@ kubectl apply -f pdb.yaml
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
   labels:
-    app: cns-api-server
+    app: cnsd
 spec:
   selector:
     matchLabels:
-      app: cns-api-server
+      app: cnsd
   endpoints:
     - port: http
       path: /metrics
@@ -562,12 +562,12 @@ Import dashboard JSON from `docs/monitoring/grafana-dashboard.json`:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
 spec:
   podSelector:
     matchLabels:
-      app: cns-api-server
+      app: cnsd
   policyTypes:
     - Ingress
     - Egress
@@ -613,7 +613,7 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
 
 ---
@@ -621,7 +621,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: cns-api-server
+  name: cnsd
 rules:
   - apiGroups: [""]
     resources: ["nodes", "pods"]
@@ -632,14 +632,14 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: cns-api-server
+  name: cnsd
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: cns-api-server
+  name: cnsd
 subjects:
   - kind: ServiceAccount
-    name: cns-api-server
+    name: cnsd
     namespace: cns
 ```
 
@@ -652,13 +652,13 @@ subjects:
 kubectl get pods -n cns
 
 # Describe pod
-kubectl describe pod -n cns -l app=cns-api-server
+kubectl describe pod -n cns -l app=cnsd
 
 # View logs
-kubectl logs -n cns -l app=cns-api-server
+kubectl logs -n cns -l app=cnsd
 
 # Follow logs
-kubectl logs -n cns -l app=cns-api-server -f
+kubectl logs -n cns -l app=cnsd -f
 ```
 
 ### Check Service
@@ -672,7 +672,7 @@ kubectl get endpoints -n cns
 
 # Test from within cluster
 kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- \
-  curl http://cns-api-server.cns.svc.cluster.local/health
+  curl http://cnsd.cns.svc.cluster.local/health
 ```
 
 ### Check Ingress
@@ -682,7 +682,7 @@ kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- \
 kubectl get ingress -n cns
 
 # Describe ingress
-kubectl describe ingress cns-api-server -n cns
+kubectl describe ingress cnsd -n cns
 
 # Check cert-manager certificate
 kubectl get certificate -n cns
@@ -698,7 +698,7 @@ kubectl top pods -n cns
 kubectl get hpa -n cns
 
 # Check metrics
-kubectl exec -n cns -it deploy/cns-api-server -- \
+kubectl exec -n cns -it deploy/cnsd -- \
   wget -qO- http://localhost:8080/metrics
 ```
 
@@ -713,7 +713,7 @@ kubectl exec -n cns -it deploy/cns-api-server -- \
 
 Check rate limit settings:
 ```shell
-kubectl exec -n cns deploy/cns-api-server -- env | grep RATE
+kubectl exec -n cns deploy/cnsd -- env | grep RATE
 ```
 
 Adjust via deployment:
@@ -731,15 +731,15 @@ env:
 
 ```shell
 # Update image
-kubectl set image deployment/cns-api-server \
-  api-server=ghcr.io/nvidia/cns-api-server:v0.8.0 \
+kubectl set image deployment/cnsd \
+  api-server=ghcr.io/nvidia/cnsd:v0.8.0 \
   -n cns
 
 # Watch rollout
-kubectl rollout status deployment/cns-api-server -n cns
+kubectl rollout status deployment/cnsd -n cns
 
 # Rollback if needed
-kubectl rollout undo deployment/cns-api-server -n cns
+kubectl rollout undo deployment/cnsd -n cns
 ```
 
 ### Blue-Green Deployment
@@ -749,11 +749,11 @@ kubectl rollout undo deployment/cns-api-server -n cns
 kubectl apply -f deployment-v2.yaml
 
 # Switch service
-kubectl patch service cns-api-server -n cns \
+kubectl patch service cnsd -n cns \
   -p '{"spec":{"selector":{"version":"v2"}}}'
 
 # Delete old deployment
-kubectl delete deployment cns-api-server-v1 -n cns
+kubectl delete deployment cnsd-v1 -n cns
 ```
 
 ## Backup and Disaster Recovery
@@ -799,13 +799,13 @@ Monitor and adjust based on usage.
 apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
-  name: cns-api-server
+  name: cnsd
   namespace: cns
 spec:
   targetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: cns-api-server
+    name: cnsd
   updatePolicy:
     updateMode: "Auto"
 ```

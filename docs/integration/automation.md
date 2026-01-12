@@ -473,9 +473,9 @@ func (r *ConfigReconciler) cleanupAgent(ctx context.Context) error {
 ```yaml
 # prometheus-config.yaml
 scrape_configs:
-  - job_name: 'cns-api-server'
+  - job_name: 'cnsd'
     static_configs:
-      - targets: ['cns-api-server.default.svc.cluster.local:8080']
+      - targets: ['cnsd.default.svc.cluster.local:8080']
     metrics_path: /metrics
 ```
 

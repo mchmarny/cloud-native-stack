@@ -19,7 +19,7 @@ vendor/
 # Binaries
 bin
 dist
-/cns-api-server
+/cnsd
 /cnsctl
 /cns-test
 
