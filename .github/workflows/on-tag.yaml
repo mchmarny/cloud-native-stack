@@ -20,11 +20,11 @@ jobs:
       GOLANGCI_LINT_VERSION: v2.6
       CRANE_VERSION: 'v0.20.6'
       IDENTITY_PROVIDER: 'projects/116689922666/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-      PROJECT_ID: 'cnsx'
+      PROJECT_ID: 'eidosx'
       SERVICE_ACCOUNT: 'github-actions-user'
       RUN_REGION: 'us-west1'
       RUN_SERVICE: 'api'
-      RUN_IMAGE_REG: 'us-docker.pkg.dev/cnsx/cns/mchmarny'
+      RUN_IMAGE_REG: 'us-docker.pkg.dev/eidosx/ghcr/mchmarny'
     steps:
 
       - name: Checkout Code
