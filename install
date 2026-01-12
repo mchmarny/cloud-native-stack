@@ -2,160 +2,186 @@
 
 set -euo pipefail
 
-# input variables
-INSTALL_DIR="${1:-/usr/local/bin}"
-
-# global variables
+# Configuration
 OWNER="mchmarny"  # NVIDIA
 PROJECT="cloud-native-stack"
 REPO="$OWNER/$PROJECT"
 BIN_NAME="cnsctl"
+CHECKSUMS_FILE="cns_checksums.txt"
 REQUIRED_TOOLS=(curl)
-COLOR_RED='\033[0;31m'
-COLOR_RESET='\033[0m' # No color
+INSTALL_DIR="${1:-/usr/local/bin}"
 
-# global functions
+# Colors
+COLOR_RED='\033[0;31m'
+COLOR_RESET='\033[0m'
+
+# ==============================================================================
+# Utility Functions
+# ==============================================================================
+
 usage() {
   cat <<EOF
 Install utility for $BIN_NAME
 
 Usage: $0 [-d install_dir]
+
+Environment Variables:
+  GITHUB_TOKEN    Optional GitHub token to avoid API rate limits
+
+Examples:
+  $0                    # Install to /usr/local/bin
+  $0 -d ~/bin           # Install to custom directory
+  GITHUB_TOKEN=xyz $0   # Install with authentication
 EOF
   exit 1
 }
 
 err() {
-  local message=$1
-  printf "${COLOR_RED}$message${COLOR_RESET}\n" >&2
+  printf "${COLOR_RED}%s${COLOR_RESET}\n" "$1" >&2
   exit 1
 }
 
 msg() {
-  local message=$1
-  printf "$message\n" >&2
+  printf "%s\n" "$1" >&2
 }
 
 has_tools() {
-  local tools=("$@")
-  for tool in "${tools[@]}"; do
-      if ! command -v $tool &> /dev/null
-      then
-          err "Required tool ($tool) is not installed."
-      fi
+  local missing=()
+  for tool in "$@"; do
+    command -v "$tool" &>/dev/null || missing+=("$tool")
   done
+  [[ ${#missing[@]} -eq 0 ]] || err "Required tools not installed: ${missing[*]}"
 }
 
-full_path() {
-    local rel_path="$1"
-    if [[ ! -f $rel_path ]]; then
-      err "Config file not found: $rel_path"
-    fi
-    
-    if command -v realpath &> /dev/null; then
-        realpath "$rel_path"
-    elif command -v readlink &> /dev/null; then
-        readlink -f "$rel_path"
-    else
-        echo "Neither realpath nor readlink is available on this system."
-        return 1
-    fi
+normalize_arch() {
+  local arch="$1"
+  [[ $arch == "x86_64" ]] && echo "amd64" || echo "$arch"
 }
 
-getOS() {
-    local os
-    case $(uname -s) in
-        Darwin)
-            os="darwin"
-            ;;
-        Linux)
-            os="linux"
-            ;;
-        *)
-            os="windows"
-            ;;
-    esac
-    echo $os
-}
-
-getBinaryName() {
-    local bin_name="$1"
-    local version="$2"
-    local os="$3"
-    local arch="$4"
-    echo "${bin_name}_${version}_${os}_${arch}"
-}
-
-# Parse the input arguments
-while getopts "d:" opt; do
-  case $opt in
-    d)
-      INSTALL_DIR=$OPTARG
-      ;;
-    \?)
-      usage
-      ;;
+get_os() {
+  case $(uname -s) in
+    Darwin) echo "darwin" ;;
+    Linux)  echo "linux" ;;
+    *)      echo "windows" ;;
   esac
-done
+}
 
-# derived variables
-OS=$(getOS)
-ARCH=$(uname -m)
-GITHUB_API="https://api.github.com"
-RELEASES_URL="${GITHUB_API}/repos/${REPO}/releases/latest"
+get_binary_name() {
+  echo "${BIN_NAME}_${1}_${2}_${3}"  # version, os, arch
+}
 
-# HACK: If $ARCH == "x86_64" replace it with "amd64"
-if [[ $ARCH == "x86_64" ]]; then
-    ARCH="amd64"
-fi
+# ==============================================================================
+# GitHub API Functions
+# ==============================================================================
 
-# Validate
-has_tools "${REQUIRED_TOOLS[@]}"
-[[ $OS != "linux" && $OS != "darwin" ]] && err "Unsupported OS: $OS"
-[[ $ARCH != "amd64" && $ARCH != "arm64" ]] && err "Unsupported architecture: $ARCH"
+github_curl() {
+  local url="$1"
+  local output_file="${2:-}"
+  local curl_opts=(-s -w "%{http_code}")
+  
+  [[ -n "${GITHUB_TOKEN:-}" ]] && curl_opts+=(-H "Authorization: token $GITHUB_TOKEN")
+  [[ -n "$output_file" ]] && curl_opts+=(-Lo "$output_file")
+  
+  curl "${curl_opts[@]}" "$url"
+}
 
-# Get the latest release version from GitHub
-msg "Fetching latest release from GitHub..."
-RELEASE_JSON=$(curl -s "$RELEASES_URL")
-if [[ -z "$RELEASE_JSON" ]]; then
-    err "Failed to fetch release information from GitHub API"
-fi
-VERSION=$(echo "$RELEASE_JSON" | grep -m 1 '"tag_name"' | sed -E 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')
-if [[ -z $VERSION || $VERSION == "null" ]]; then
-    err "Failed to extract version from GitHub API response"
-fi
+fetch_latest_release() {
+  local api_url="https://api.github.com/repos/${REPO}/releases/latest"
+  local response
+  
+  msg "Fetching latest release from GitHub..."
+  response=$(github_curl "$api_url")
+  
+  [[ -z "$response" ]] && err "Failed to fetch release information from GitHub API"
+  
+  if grep -q "API rate limit exceeded" <<< "$response"; then
+    err "GitHub API rate limit exceeded. Set GITHUB_TOKEN environment variable or try again later."
+  fi
+  
+  echo "$response"
+}
 
-# parse the binary name
-FULL_BIN_NAME=$(getBinaryName $BIN_NAME $VERSION $OS $ARCH)
+extract_version() {
+  local json="$1"
+  local version
+  
+  version=$(grep -m 1 '"tag_name"' <<< "$json" | sed -E 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')
+  
+  [[ -z "$version" || "$version" == "null" ]] && err "Failed to extract version from GitHub API response"
+  
+  echo "$version"
+}
 
-msg "OS: $OS"
-msg "ARCH: $ARCH"
-msg "VERSION: $VERSION"
+download_file() {
+  local url="$1"
+  local output="$2"
+  local desc="${3:-file}"
+  local http_code
+  
+  msg "Downloading $desc..."
+  http_code=$(github_curl "$url" "$output" | tail -c 3)
+  
+  [[ "$http_code" == "200" ]] || err "Failed to download $desc (HTTP $http_code): $url"
+}
 
-# Download the binary from GitHub releases
-msg "Downloading $FULL_BIN_NAME"
-TEMP_BIN_DIR=$(mktemp -d)
-ASSET_URL="https://github.com/${REPO}/releases/download/${VERSION}/${FULL_BIN_NAME}"
-HTTP_CODE=$(curl -w "%{http_code}" -Lo "${TEMP_BIN_DIR}/${FULL_BIN_NAME}" "$ASSET_URL")
-if [[ $HTTP_CODE != "200" ]]; then
-    err "Failed to download binary (HTTP $HTTP_CODE). Asset may not exist: $ASSET_URL"
-fi
 
-# Validate the binary
-msg "Validating the binary"
-chmod +x "${TEMP_BIN_DIR}/${FULL_BIN_NAME}"
-CHECKSUM_URL="https://github.com/${REPO}/releases/download/${VERSION}/cns_checksums.txt"
-msg "Downloading checksums: $CHECKSUM_URL"
-HTTP_CODE=$(curl -w "%{http_code}" -Lo ${TEMP_BIN_DIR}/checksums.txt $CHECKSUM_URL)
-if [[ $HTTP_CODE != "200" ]]; then
-    err "Failed to download checksums (HTTP $HTTP_CODE). File may not exist: $CHECKSUM_URL"
-fi
-(cd $TEMP_BIN_DIR && cat ${TEMP_BIN_DIR}/checksums.txt | grep $FULL_BIN_NAME | shasum -a 256 --check --strict)
+# ==============================================================================
+# Main Installation Logic
+# ==============================================================================
 
-# Install the binary
-msg "Installing $BIN_NAME to $INSTALL_DIR"
-msg "Use -d flag to change the installation directory"
-sudo mv "${TEMP_BIN_DIR}/${FULL_BIN_NAME}" "${INSTALL_DIR}/${BIN_NAME}"
+main() {
+  # Parse arguments
+  while getopts "d:h" opt; do
+    case $opt in
+      d) INSTALL_DIR="$OPTARG" ;;
+      h) usage ;;
+      *) usage ;;
+    esac
+  done
 
-msg "$BIN_NAME installed to ${INSTALL_DIR}/${BIN_NAME}"
-${BIN_NAME} --version
-msg "Done, enjoy!"
+  # Detect platform
+  local os arch version binary_name temp_dir
+  os=$(get_os)
+  arch=$(normalize_arch "$(uname -m)")
+  
+  # Validate platform
+  [[ $os == "linux" || $os == "darwin" ]] || err "Unsupported OS: $os"
+  [[ $arch == "amd64" || $arch == "arm64" ]] || err "Unsupported architecture: $arch"
+  has_tools "${REQUIRED_TOOLS[@]}"
+  
+  # Fetch release information
+  local release_json
+  release_json=$(fetch_latest_release)
+  version=$(extract_version "$release_json")
+  binary_name=$(get_binary_name "$version" "$os" "$arch")
+  
+  msg "Platform: $os/$arch"
+  msg "Version: $version"
+  
+  # Download and verify binary
+  temp_dir=$(mktemp -d)
+  trap "rm -rf $temp_dir" EXIT
+  
+  local binary_url="${REPO}/releases/download/${version}/${binary_name}"
+  local checksum_url="${REPO}/releases/download/${version}/${CHECKSUMS_FILE}"
+  
+  download_file "https://github.com/${binary_url}" "${temp_dir}/${binary_name}" "$binary_name"
+  download_file "https://github.com/${checksum_url}" "${temp_dir}/checksums.txt" "checksums"
+  
+  # Verify checksum
+  msg "Verifying checksum..."
+  (cd "$temp_dir" && grep "$binary_name" checksums.txt | shasum -a 256 --check --strict) \
+    || err "Checksum verification failed"
+  
+  # Install binary
+  chmod +x "${temp_dir}/${binary_name}"
+  msg "Installing $BIN_NAME to $INSTALL_DIR"
+  sudo mv "${temp_dir}/${binary_name}" "${INSTALL_DIR}/${BIN_NAME}"
+  
+  # Verify installation
+  msg "$BIN_NAME installed successfully!"
+  "${BIN_NAME}" --version
+}
+
+# Run main function
+main "$@"
