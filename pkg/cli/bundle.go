@@ -8,12 +8,14 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/registry"
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/result"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/types"
 	deployerRegistry "github.com/NVIDIA/cloud-native-stack/pkg/deployer/registry"
 	deployerTypes "github.com/NVIDIA/cloud-native-stack/pkg/deployer/types"
@@ -22,6 +24,12 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
 	"github.com/urfave/cli/v3"
+)
+
+// Output format constants.
+const (
+	outputFormatDir = "dir"
+	outputFormatOCI = "oci"
 )
 
 func bundleCmd() *cli.Command {
@@ -85,7 +93,14 @@ func bundleCmd() *cli.Command {
 			&cli.BoolFlag{
 				Name:  "push",
 				Usage: "Push generated bundle as OCI artifact to registry",
+			// Output format flags
+			&cli.StringFlag{
+				Name:    "output-format",
+				Aliases: []string{"F"},
+				Value:   outputFormatDir,
+				Usage:   "Output format: dir (local directory) or oci (push to OCI registry)",
 			},
+			// OCI registry flags (only used when output-format is oci)
 			&cli.StringFlag{
 				Name:  "registry",
 				Usage: "OCI registry host (e.g., ghcr.io, localhost:5000)",
@@ -96,11 +111,15 @@ func bundleCmd() *cli.Command {
 			},
 			&cli.StringFlag{
 				Name:  "tag",
-				Usage: "OCI image tag (default: auto-generated from recipe)",
+				Usage: "OCI image tag (default: latest)",
 			},
 			&cli.BoolFlag{
 				Name:  "insecure-tls",
 				Usage: "Skip TLS certificate verification for registry",
+			},
+			&cli.BoolFlag{
+				Name:  "plain-http",
+				Usage: "Use HTTP instead of HTTPS for registry connection (for local development)",
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -109,20 +128,26 @@ func bundleCmd() *cli.Command {
 			bundlerTypesStr := cmd.StringSlice("bundlers")
 			setFlags := cmd.StringSlice("set")
 
-			// OCI push options
-			pushEnabled := cmd.Bool("push")
+			// Output format and OCI options
+			outputFormat := cmd.String("output-format")
 			registryHost := cmd.String("registry")
 			repository := cmd.String("repository")
 			tag := cmd.String("tag")
 			insecureTLS := cmd.Bool("insecure-tls")
+			plainHTTP := cmd.Bool("plain-http")
 
-			// Validate push flags
-			if pushEnabled {
+			// Validate output-format
+			if outputFormat != outputFormatDir && outputFormat != outputFormatOCI {
+				return fmt.Errorf("--output-format must be '%s' or '%s', got '%s'", outputFormatDir, outputFormatOCI, outputFormat)
+			}
+
+			// Validate OCI flags when output-format is oci
+			if outputFormat == outputFormatOCI {
 				if registryHost == "" {
-					return fmt.Errorf("--registry is required when --push is enabled")
+					return fmt.Errorf("--registry is required when --output-format is 'oci'")
 				}
 				if repository == "" {
-					return fmt.Errorf("--repository is required when --push is enabled")
+					return fmt.Errorf("--repository is required when --output-format is 'oci'")
 				}
 			}
 
@@ -210,8 +235,27 @@ func bundleCmd() *cli.Command {
 				return err
 			}
 
-			out, err := b.Make(ctx, rec, outputDir)
+			// Determine output directory - use temp dir for OCI mode
+			var bundleOutputDir string
+			var cleanupTempDir func()
+
+			if outputFormat == outputFormatOCI {
+				// Create temp directory for OCI output
+				tempDir, tempErr := os.MkdirTemp("", "eidos-bundle-*")
+				if tempErr != nil {
+					return fmt.Errorf("failed to create temp directory: %w", tempErr)
+				}
+				bundleOutputDir = tempDir
+				cleanupTempDir = func() { os.RemoveAll(tempDir) }
+			} else {
+				bundleOutputDir = outputDir
+			}
+
+			out, err := b.Make(ctx, rec, bundleOutputDir)
 			if err != nil {
+				if cleanupTempDir != nil {
+					cleanupTempDir()
+				}
 				slog.Error("bundle generation failed", "error", err)
 				return err
 			}
@@ -225,6 +269,9 @@ func bundleCmd() *cli.Command {
 
 			// Return error if any bundlers failed
 			if out.HasErrors() {
+				if cleanupTempDir != nil {
+					cleanupTempDir()
+				}
 				// Log each bundler error for debugging
 				for _, bundleErr := range out.Errors {
 					slog.Error("bundler failed",
@@ -236,40 +283,26 @@ func bundleCmd() *cli.Command {
 					len(out.Errors), len(out.Results))
 			}
 
-			// Push to OCI registry if enabled
-			if pushEnabled {
-				absOutputDir, err := filepath.Abs(outputDir)
-				if err != nil {
-					return fmt.Errorf("failed to resolve output directory: %w", err)
+			// Push to OCI registry if output-format is oci
+			if outputFormat == outputFormatOCI {
+				if pushErr := pushToOCI(ctx, ociPushConfig{
+					sourceDir:   bundleOutputDir,
+					registry:    registryHost,
+					repository:  repository,
+					tag:         tag,
+					plainHTTP:   plainHTTP,
+					insecureTLS: insecureTLS,
+				}, out.Results); pushErr != nil {
+					if cleanupTempDir != nil {
+						cleanupTempDir()
+					}
+					return pushErr
 				}
+			}
 
-				// Generate tag if not provided
-				imageTag := tag
-				if imageTag == "" {
-					imageTag = "latest"
-				}
-
-				slog.Info("pushing bundle to OCI registry",
-					"registry", registryHost,
-					"repository", repository,
-					"tag", imageTag,
-				)
-
-				pushResult, err := oci.Push(ctx, oci.PushOptions{
-					SourceDir:   absOutputDir,
-					Registry:    registryHost,
-					Repository:  repository,
-					Tag:         imageTag,
-					InsecureTLS: insecureTLS,
-				})
-				if err != nil {
-					return fmt.Errorf("failed to push OCI artifact: %w", err)
-				}
-
-				slog.Info("OCI artifact pushed successfully",
-					"reference", pushResult.Reference,
-					"digest", pushResult.Digest,
-				)
+			// Cleanup temp dir if OCI mode
+			if cleanupTempDir != nil {
+				cleanupTempDir()
 			}
 
 			return nil
@@ -323,4 +356,58 @@ func deployerTypesToStrings(types []deployerTypes.DeployerType) []string {
 		result[i] = string(t)
 	}
 	return result
+// ociPushConfig holds configuration for OCI push operations.
+type ociPushConfig struct {
+	sourceDir   string
+	registry    string
+	repository  string
+	tag         string
+	plainHTTP   bool
+	insecureTLS bool
+}
+
+// pushToOCI pushes the bundle to an OCI registry and updates results with metadata.
+func pushToOCI(ctx context.Context, cfg ociPushConfig, results []*result.Result) error {
+	absOutputDir, err := filepath.Abs(cfg.sourceDir)
+	if err != nil {
+		return fmt.Errorf("failed to resolve output directory: %w", err)
+	}
+
+	// Default tag to "latest" if not provided
+	imageTag := cfg.tag
+	if imageTag == "" {
+		imageTag = "latest"
+	}
+
+	slog.Info("pushing bundle to OCI registry",
+		"registry", cfg.registry,
+		"repository", cfg.repository,
+		"tag", imageTag,
+	)
+
+	pushResult, err := oci.Push(ctx, oci.PushOptions{
+		SourceDir:   absOutputDir,
+		Registry:    cfg.registry,
+		Repository:  cfg.repository,
+		Tag:         imageTag,
+		PlainHTTP:   cfg.plainHTTP,
+		InsecureTLS: cfg.insecureTLS,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to push OCI artifact: %w", err)
+	}
+
+	// Update results with OCI metadata
+	for i := range results {
+		if results[i].Success {
+			results[i].SetOCIMetadata(pushResult.Digest, pushResult.Reference)
+		}
+	}
+
+	slog.Info("OCI artifact pushed successfully",
+		"reference", pushResult.Reference,
+		"digest", pushResult.Digest,
+	)
+
+	return nil
 }
