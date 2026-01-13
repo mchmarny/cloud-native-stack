@@ -276,7 +276,7 @@ run_bundle_tests() {
   local basic_dir="${OUTPUT_DIR}/bundles/basic"
   mkdir -p "$basic_dir"
   
-  if ! "${CNSCTL_BIN}" bundle -f "$recipe_file" -o "$basic_dir" 2>&1; then
+  if ! "${CNSCTL_BIN}" bundle -r "$recipe_file" -o "$basic_dir" 2>&1; then
     test_fail "bundle/basic/generation" "Bundle generation failed"
   else
     test_pass "bundle/basic/generation"
@@ -295,7 +295,7 @@ run_bundle_tests() {
   local sys_selector_dir="${OUTPUT_DIR}/bundles/system-selector"
   mkdir -p "$sys_selector_dir"
   
-  if ! "${CNSCTL_BIN}" bundle -f "$recipe_file" -o "$sys_selector_dir" \
+  if ! "${CNSCTL_BIN}" bundle -r "$recipe_file" -o "$sys_selector_dir" \
     --system-node-selector nodeGroup=system-pool \
     --system-node-selector workload=control-plane 2>&1; then
     test_fail "bundle/system-selector/generation" "Bundle generation failed"
@@ -318,7 +318,7 @@ run_bundle_tests() {
   local accel_selector_dir="${OUTPUT_DIR}/bundles/accel-selector"
   mkdir -p "$accel_selector_dir"
   
-  if ! "${CNSCTL_BIN}" bundle -f "$recipe_file" -o "$accel_selector_dir" \
+  if ! "${CNSCTL_BIN}" bundle -r "$recipe_file" -o "$accel_selector_dir" \
     --accelerated-node-selector accelerator=nvidia-gpu \
     --accelerated-node-selector gpu-type=gb200 2>&1; then
     test_fail "bundle/accel-selector/generation" "Bundle generation failed"
@@ -341,7 +341,7 @@ run_bundle_tests() {
   local sys_toleration_dir="${OUTPUT_DIR}/bundles/system-toleration"
   mkdir -p "$sys_toleration_dir"
   
-  if ! "${CNSCTL_BIN}" bundle -f "$recipe_file" -o "$sys_toleration_dir" \
+  if ! "${CNSCTL_BIN}" bundle -r "$recipe_file" -o "$sys_toleration_dir" \
     --system-node-toleration dedicated=system-workload:NoSchedule 2>&1; then
     test_fail "bundle/system-toleration/generation" "Bundle generation failed"
   else
@@ -363,7 +363,7 @@ run_bundle_tests() {
   local accel_toleration_dir="${OUTPUT_DIR}/bundles/accel-toleration"
   mkdir -p "$accel_toleration_dir"
   
-  if ! "${CNSCTL_BIN}" bundle -f "$recipe_file" -o "$accel_toleration_dir" \
+  if ! "${CNSCTL_BIN}" bundle -r "$recipe_file" -o "$accel_toleration_dir" \
     --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule 2>&1; then
     test_fail "bundle/accel-toleration/generation" "Bundle generation failed"
   else
@@ -389,7 +389,7 @@ run_bundle_tests() {
   
   # Note: Only test gpu-operator overrides. Skyhook validates customization names
   # and only accepts 'ubuntu' as a valid customization, not arbitrary test values.
-  if ! "${CNSCTL_BIN}" bundle -f "$recipe_file" -o "$override_dir" \
+  if ! "${CNSCTL_BIN}" bundle -r "$recipe_file" -o "$override_dir" \
     --set gpu-operator:driver.version=999.99.99 \
     --set gpu-operator:cdi.enabled=true \
     --set cert-manager:installCRDs=true 2>&1; then
@@ -413,7 +413,7 @@ run_bundle_tests() {
   local combined_dir="${OUTPUT_DIR}/bundles/combined"
   mkdir -p "$combined_dir"
   
-  if ! "${CNSCTL_BIN}" bundle -f "$recipe_file" -o "$combined_dir" \
+  if ! "${CNSCTL_BIN}" bundle -r "$recipe_file" -o "$combined_dir" \
     --system-node-selector nodeGroup=system-pool \
     --system-node-toleration dedicated=system:NoSchedule \
     --accelerated-node-selector accelerator=nvidia-gpu \

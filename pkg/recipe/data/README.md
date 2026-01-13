@@ -180,7 +180,7 @@ Test your recipes with inline overrides:
 
 ```bash
 # Generate bundle from recipe with overrides
-cnsctl bundle -f pkg/recipe/data/your-recipe.yaml -o ./test-bundles
+cnsctl bundle -r pkg/recipe/data/your-recipe.yaml -o ./test-bundles
 
 # Verify merged values
 cat test-bundles/gpu-operator/values.yaml | grep -A5 "driver:"

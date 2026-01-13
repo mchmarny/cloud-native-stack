@@ -557,7 +557,7 @@ kubectl get pods -n gpu-operator
     
 - name: Generate bundle
   run: |
-    cnsctl bundle -f recipe.yaml -b gpu-operator -o ./bundles
+    cnsctl bundle -r recipe.yaml -b gpu-operator -o ./bundles
     
 - name: Upload artifacts
   uses: actions/upload-artifact@v3
@@ -581,17 +581,17 @@ kubectl get pods -n gpu-operator
 - name: Generate recipe from ConfigMap
   run: |
     # Option 1: Use ConfigMap directly (no file needed)
-    cnsctl recipe -f cm://gpu-operator/cns-snapshot -i training -o recipe.yaml
+    cnsctl recipe -s cm://gpu-operator/cns-snapshot -i training -o recipe.yaml
     
     # Option 2: Write recipe to ConfigMap as well
-    cnsctl recipe -f cm://gpu-operator/cns-snapshot -i training -o cm://gpu-operator/cns-recipe
+    cnsctl recipe -s cm://gpu-operator/cns-snapshot -i training -o cm://gpu-operator/cns-recipe
     
     # Option 3: Export snapshot to file for archival
     kubectl get configmap cns-snapshot -n gpu-operator -o jsonpath='{.data.snapshot\.yaml}' > snapshot.yaml
     
 - name: Generate bundle
   run: |
-    cnsctl bundle -f recipe.yaml -b gpu-operator -o ./bundles
+    cnsctl bundle -r recipe.yaml -b gpu-operator -o ./bundles
     
 - name: Upload artifacts
   uses: actions/upload-artifact@v3

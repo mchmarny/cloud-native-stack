@@ -287,14 +287,14 @@ cnsctl recipe \
   --intent training
 
 # Output to ConfigMap
-cnsctl recipe -f system.yaml -o cm://gpu-operator/cns-recipe
+cnsctl recipe -s system.yaml -o cm://gpu-operator/cns-recipe
 
 # Chain snapshot → recipe with ConfigMaps
 cnsctl snapshot -o cm://default/snapshot
-cnsctl recipe -f cm://default/snapshot -o cm://default/recipe
+cnsctl recipe -s cm://default/snapshot -o cm://default/recipe
 
 # With custom output
-cnsctl recipe -f system.yaml -i inference -o recipe.yaml --format yaml
+cnsctl recipe -s system.yaml -i inference -o recipe.yaml --format yaml
 ```
 
 **Output structure:**
@@ -527,22 +527,22 @@ Override any value in the generated bundle files using dot notation:
 cnsctl bundle --recipe recipe.yaml --output ./bundles
 
 # Generate specific bundler only
-cnsctl bundle -f recipe.yaml -b gpu-operator -o ./deployment
+cnsctl bundle -r recipe.yaml -b gpu-operator -o ./deployment
 
 # Multiple specific bundlers
-cnsctl bundle -f recipe.yaml \
+cnsctl bundle -r recipe.yaml \
   -b gpu-operator \
   -b network-operator \
   -o ./bundles
 
 # Override values in GPU Operator bundle
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --set gpuoperator:gds.enabled=true \
   --set gpuoperator:driver.version=570.86.16 \
   -o ./bundles
 
 # Override multiple bundlers
-cnsctl bundle -f recipe.yaml \
+cnsctl bundle -r recipe.yaml \
   -b gpu-operator \
   -b network-operator \
   --set gpuoperator:mig.strategy=mixed \
@@ -551,31 +551,31 @@ cnsctl bundle -f recipe.yaml \
   -o ./bundles
 
 # Override cert-manager resources
-cnsctl bundle -f recipe.yaml -b certmanager \
+cnsctl bundle -r recipe.yaml -b certmanager \
   --set certmanager:controller.resources.memory.limit=512Mi \
   --set certmanager:webhook.resources.cpu.limit=200m \
   -o ./bundles
 
 # Override Skyhook manager resources
-cnsctl bundle -f recipe.yaml -b skyhook \
+cnsctl bundle -r recipe.yaml -b skyhook \
   --set skyhook:manager.resources.cpu.limit=500m \
   --set skyhook:manager.resources.memory.limit=256Mi \
   -o ./bundles
 
 # Schedule system components on specific node pool
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --system-node-selector nodeGroup=system-pool \
   --system-node-toleration dedicated=system:NoSchedule \
   -o ./bundles
 
 # Schedule GPU workloads on labeled GPU nodes
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --accelerated-node-selector nvidia.com/gpu.present=true \
   --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule \
   -o ./bundles
 
 # Combined: separate system and GPU scheduling
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --system-node-selector nodeGroup=system-pool \
   --system-node-toleration dedicated=system:NoSchedule \
   --accelerated-node-selector accelerator=nvidia-h100 \
@@ -583,13 +583,13 @@ cnsctl bundle -f recipe.yaml -b gpu-operator \
   -o ./bundles
 
 # Generate ArgoCD Application manifests for GitOps
-cnsctl bundle -f recipe.yaml --deployer argocd -o ./bundles
+cnsctl bundle -r recipe.yaml --deployer argocd -o ./bundles
 
 # Generate Flux HelmRelease resources for GitOps
-cnsctl bundle -f recipe.yaml --deployer flux -o ./bundles
+cnsctl bundle -r recipe.yaml --deployer flux -o ./bundles
 
 # Combine deployer with specific bundlers
-cnsctl bundle -f recipe.yaml \
+cnsctl bundle -r recipe.yaml \
   -b gpu-operator \
   -b network-operator \
   --deployer argocd \
@@ -834,8 +834,8 @@ cnsctl recipe --os ubuntu --accelerator h100 | jq '.componentRefs[]'
 ### Save All Steps
 ```shell
 cnsctl snapshot -o snapshot.yaml
-cnsctl recipe -f snapshot.yaml -i training -o recipe.yaml
-cnsctl bundle -f recipe.yaml -o ./bundles
+cnsctl recipe -s snapshot.yaml -i training -o recipe.yaml
+cnsctl bundle -r recipe.yaml -o ./bundles
 ```
 
 ### JSON Processing
@@ -888,7 +888,7 @@ cat recipe.yaml
 cnsctl bundle --help  # Shows available bundlers
 
 # Run with debug
-cnsctl --debug bundle -f recipe.yaml -b gpu-operator
+cnsctl --debug bundle -r recipe.yaml -b gpu-operator
 ```
 
 ## See Also

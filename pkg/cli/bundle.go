@@ -36,7 +36,7 @@ func bundleCmd() *cli.Command {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "recipe",
-				Aliases:  []string{"f"},
+				Aliases:  []string{"r"},
 				Required: true,
 				Usage: `Path/URI to previously generated recipe from which to build the bundle. 
 	Supports: file paths, HTTP/HTTPS URLs, or ConfigMap URIs (cm://namespace/name).`,

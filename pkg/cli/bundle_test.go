@@ -142,7 +142,7 @@ func TestBundleCmd(t *testing.T) {
 		}
 	}
 
-	requiredFlags := []string{"recipe", "f", "bundlers", "b", "output", "o", "set"}
+	requiredFlags := []string{"recipe", "r", "bundlers", "b", "output", "o", "set"}
 	for _, flag := range requiredFlags {
 		if !flagNames[flag] {
 			t.Errorf("expected flag %q to be defined", flag)

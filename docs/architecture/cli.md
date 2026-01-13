@@ -86,7 +86,7 @@ Constraints use fully qualified measurement paths: `{Type}.{Subtype}.{Key}`
 
 Use `--fail-on-error` to exit with non-zero status when constraints fail:
 ```shell
-cnsctl validate -f recipe.yaml -s cm://gpu-operator/cns-snapshot --fail-on-error
+cnsctl validate -r recipe.yaml -s cm://gpu-operator/cns-snapshot --fail-on-error
 ```
 
 ### Step 4: Bundle Command
@@ -119,7 +119,7 @@ Generates deployment artifacts from recipes:
 
 The `--set` flag allows runtime customization of generated bundle values:
 ```shell
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --set gpuoperator:gds.enabled=true \
   --set gpuoperator:driver.version=570.86.16
 ```
@@ -129,12 +129,12 @@ cnsctl bundle -f recipe.yaml -b gpu-operator \
 The bundle command supports node selector and toleration flags for controlling workload placement:
 ```shell
 # Schedule system components (operators, controllers) on specific nodes
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --system-node-selector nodeGroup=system-pool \
   --system-node-toleration dedicated=system:NoSchedule
 
 # Schedule GPU workloads (drivers, device plugins) on GPU nodes
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --accelerated-node-selector nvidia.com/gpu.present=true \
   --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule
 ```
@@ -186,11 +186,11 @@ The CLI supports Kubernetes-native ConfigMap storage using the `cm://namespace/n
 flowchart LR
     A["cnsctl snapshot<br/>-o cm://ns/snap"] -->|"Write"| CM1["ConfigMap<br/>cns-snapshot"]
     
-    CM1 -->|"Read"| B["cnsctl recipe<br/>-f cm://ns/snap<br/>-o cm://ns/recipe"]
+    CM1 -->|"Read"| B["cnsctl recipe<br/>-s cm://ns/snap<br/>-o cm://ns/recipe"]
     
     B -->|"Write"| CM2["ConfigMap<br/>cns-recipe"]
     
-    CM2 -->|"Read"| C["cnsctl bundle<br/>-f cm://ns/recipe<br/>-o ./bundles"]
+    CM2 -->|"Read"| C["cnsctl bundle<br/>-r cm://ns/recipe<br/>-o ./bundles"]
     
     C --> D["Local Bundle<br/>Directory"]
     
@@ -327,7 +327,7 @@ flowchart TD
     B -->|Yes| C["Write to ConfigMap<br/>cns-snapshot"]
     B -->|No| D["Error: Forbidden"]
     
-    C --> E["External CLI<br/>cnsctl recipe<br/>-f cm://ns/snap"]
+    C --> E["External CLI<br/>cnsctl recipe<br/>-s cm://ns/snap"]
     
     E --> F["Generate Recipe<br/>from ConfigMap"]
     
@@ -556,7 +556,7 @@ cnsctl recipe --os ubuntu --service eks --accelerator h100 --intent training
 cnsctl recipe --snapshot system.yaml --intent training
 
 # Snapshot mode with output file
-cnsctl recipe -f system.yaml -i inference -o recipe.yaml
+cnsctl recipe -s system.yaml -i inference -o recipe.yaml
 
 # Query mode with full specification
 cnsctl recipe \
@@ -788,16 +788,16 @@ cnsctl bundle \
   --output ./bundles
 
 # Use short flags
-cnsctl bundle -f recipe.yaml -b gpu-operator -o ./bundles
+cnsctl bundle -r recipe.yaml -b gpu-operator -o ./bundles
 
 # Override values at generation time
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --set gpuoperator:gds.enabled=true \
   --set gpuoperator:driver.version=570.86.16 \
   -o ./bundles
 
 # Multiple bundlers with overrides
-cnsctl bundle -f recipe.yaml \
+cnsctl bundle -r recipe.yaml \
   -b gpu-operator \
   -b network-operator \
   --set gpuoperator:mig.strategy=mixed \
@@ -805,13 +805,13 @@ cnsctl bundle -f recipe.yaml \
   -o ./bundles
 
 # Schedule system components on system node pool
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --system-node-selector nodeGroup=system-pool \
   --system-node-toleration dedicated=system:NoSchedule \
   -o ./bundles
 
 # Schedule GPU workloads on labeled GPU nodes
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --accelerated-node-selector nvidia.com/gpu.present=true \
   --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule \
   -o ./bundles
@@ -876,11 +876,11 @@ $ cnsctl bundle --output ./bundles
 Error: required flag "recipe" not set
 
 # Invalid bundler type
-$ cnsctl bundle -f recipe.yaml -b invalid-type
+$ cnsctl bundle -r recipe.yaml -b invalid-type
 Error: invalid bundler type 'invalid-type': unknown bundle type: invalid-type
 
 # Bundler failures (FailFast=false)
-$ cnsctl bundle -f recipe.yaml
+$ cnsctl bundle -r recipe.yaml
 Error: bundle generation completed with errors: 1/2 bundlers failed
 ```
 
@@ -2890,16 +2890,16 @@ sequenceDiagram
 
 ```bash
 # Generate bundle with ArgoCD Applications
-cnsctl bundle -f recipe.yaml --deployer argocd -o ./bundles
+cnsctl bundle -r recipe.yaml --deployer argocd -o ./bundles
 
 # Generate bundle with Flux HelmReleases
-cnsctl bundle -f recipe.yaml --deployer flux -o ./bundles
+cnsctl bundle -r recipe.yaml --deployer flux -o ./bundles
 
 # Default: script-based deployment
-cnsctl bundle -f recipe.yaml -o ./bundles
+cnsctl bundle -r recipe.yaml -o ./bundles
 
 # Combine with specific bundlers
-cnsctl bundle -f recipe.yaml \
+cnsctl bundle -r recipe.yaml \
   -b gpu-operator \
   -b network-operator \
   --deployer argocd \

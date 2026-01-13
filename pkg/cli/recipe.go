@@ -56,7 +56,7 @@ Output can be in JSON or YAML format.`,
 			},
 			&cli.StringFlag{
 				Name:    "snapshot",
-				Aliases: []string{"f"},
+				Aliases: []string{"s"},
 				Usage: `Path/URI to previously generated configuration snapshot.
 	Supports: file paths, HTTP/HTTPS URLs, or ConfigMap URIs (cm://namespace/name).
 	If provided, criteria are extracted from the snapshot.`,

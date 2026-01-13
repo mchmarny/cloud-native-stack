@@ -673,7 +673,7 @@ spec:
 │ Complete Bundle + Deploy Flow                                │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  cnsctl bundle -f recipe.yaml --deployer argocd -o ./out     │
+│  cnsctl bundle -r recipe.yaml --deployer argocd -o ./out     │
 │                                                              │
 │  1. Parse recipe                                             │
 │     └─ Extract componentRefs + deploymentOrder               │

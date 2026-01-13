@@ -30,10 +30,10 @@ The API server provides HTTP REST access to recipe generation and bundle creatio
 cnsctl snapshot -o cm://namespace/name
 
 # Generate recipe from ConfigMap
-cnsctl recipe -f cm://namespace/name -o recipe.yaml
+cnsctl recipe -s cm://namespace/name -o recipe.yaml
 
 # Create deployment bundle
-cnsctl bundle -f recipe.yaml -o ./bundles
+cnsctl bundle -r recipe.yaml -o ./bundles
 ```
 
 See [CLI Reference](../user-guide/cli-reference.md) and [Agent Deployment](../user-guide/agent-deployment.md).

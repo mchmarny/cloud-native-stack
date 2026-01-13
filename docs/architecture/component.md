@@ -696,13 +696,13 @@ The deployer is specified at bundle generation time:
 
 ```bash
 # Generate bundles with ArgoCD deployer
-cnsctl bundle -f recipe.yaml -o ./bundles --deployer argocd
+cnsctl bundle -r recipe.yaml -o ./bundles --deployer argocd
 
 # Generate bundles with Flux deployer
-cnsctl bundle -f recipe.yaml -o ./bundles --deployer flux
+cnsctl bundle -r recipe.yaml -o ./bundles --deployer flux
 
 # Generate bundles with Script deployer (default)
-cnsctl bundle -f recipe.yaml -o ./bundles --deployer script
+cnsctl bundle -r recipe.yaml -o ./bundles --deployer script
 ```
 
 See [CLI Architecture](cli.md#deployer-framework-gitops-integration) for detailed deployer documentation.

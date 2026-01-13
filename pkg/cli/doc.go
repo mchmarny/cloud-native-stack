@@ -22,7 +22,7 @@
 //
 //	cnsctl recipe --os ubuntu --osv 24.04 --service eks --gpu h100 --intent training
 //	cnsctl recipe --snapshot system.yaml --intent inference --output recipe.yaml
-//	cnsctl recipe -f cm://namespace/snapshot -o cm://namespace/recipe  # ConfigMap I/O
+//	cnsctl recipe -s cm://namespace/snapshot -o cm://namespace/recipe  # ConfigMap I/O
 //
 // Generates optimized configuration recipes based on either:
 //   - Specified environment parameters (OS, service, GPU, intent)
@@ -31,8 +31,8 @@
 // validate - Validate recipe constraints (Step 3):
 //
 //	cnsctl validate --recipe recipe.yaml --snapshot snapshot.yaml
-//	cnsctl validate -f recipe.yaml -s cm://gpu-operator/cns-snapshot
-//	cnsctl validate -f recipe.yaml -s cm://ns/snapshot --fail-on-error
+//	cnsctl validate -r recipe.yaml -s cm://gpu-operator/cns-snapshot
+//	cnsctl validate -r recipe.yaml -s cm://ns/snapshot --fail-on-error
 //
 // Validates recipe constraints against actual measurements from a snapshot.
 // Supports version comparisons (>=, <=, >, <), equality (==, !=), and exact match.
@@ -41,8 +41,8 @@
 // bundle - Create deployment bundles (Step 4):
 //
 //	cnsctl bundle --recipe recipe.yaml --output ./bundles
-//	cnsctl bundle -f recipe.yaml --bundlers gpu-operator,network-operator -o ./bundles
-//	cnsctl bundle -f recipe.yaml --set gpuoperator:driver.version=580.86.16
+//	cnsctl bundle -r recipe.yaml --bundlers gpu-operator,network-operator -o ./bundles
+//	cnsctl bundle -r recipe.yaml --set gpuoperator:driver.version=580.86.16
 //
 // Generates deployment artifacts (Helm values, manifests, scripts) from recipes.
 // Supports multiple bundlers: gpu-operator, network-operator, cert-manager,
@@ -83,9 +83,9 @@
 // ConfigMap-based workflow:
 //
 //	cnsctl snapshot -o cm://gpu-operator/cns-snapshot
-//	cnsctl recipe -f cm://gpu-operator/cns-snapshot -o cm://gpu-operator/cns-recipe
-//	cnsctl validate -f cm://gpu-operator/cns-recipe -s cm://gpu-operator/cns-snapshot
-//	cnsctl bundle -f cm://gpu-operator/cns-recipe -o ./bundles
+//	cnsctl recipe -s cm://gpu-operator/cns-snapshot -o cm://gpu-operator/cns-recipe
+//	cnsctl validate -r cm://gpu-operator/cns-recipe -s cm://gpu-operator/cns-snapshot
+//	cnsctl bundle -r cm://gpu-operator/cns-recipe -o ./bundles
 //
 // Generate recipe for Ubuntu 24.04 on EKS with H100 GPUs:
 //
@@ -93,7 +93,7 @@
 //
 // Override bundle values at generation time:
 //
-//	cnsctl bundle -f recipe.yaml --set gpuoperator:gds.enabled=true -o ./bundles
+//	cnsctl bundle -r recipe.yaml --set gpuoperator:gds.enabled=true -o ./bundles
 //
 // # Environment Variables
 //
