@@ -47,6 +47,7 @@ metadata:
   labels:
     app.kubernetes.io/name: cns
     app.kubernetes.io/component: snapshot
+    app.kubernetes.io/version: v0.17.0
 data:
   snapshot.yaml: |  # Complete snapshot YAML
     apiVersion: cns.nvidia.com/v1alpha1

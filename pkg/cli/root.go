@@ -51,6 +51,9 @@ var (
 // Execute starts the CLI application.
 // This is called by main.main().
 func Execute() {
+	// Set version for ConfigMap labels
+	serializer.SetVersion(version)
+
 	cmd := &cli.Command{
 		Name:                  name,
 		Usage:                 "Cloud Native Stack CLI",

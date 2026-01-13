@@ -13,6 +13,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// version is the application version used in ConfigMap labels.
+var version = "unknown"
+
+// SetVersion sets the version used in ConfigMap labels.
+func SetVersion(v string) {
+	version = v
+}
+
 // ConfigMapWriter writes serialized data to a Kubernetes ConfigMap.
 // The ConfigMap is created if it doesn't exist, or updated if it does.
 type ConfigMapWriter struct {
@@ -106,6 +114,7 @@ func (w *ConfigMapWriter) Serialize(ctx context.Context, snapshot any) error {
 			Labels: map[string]string{
 				"app.kubernetes.io/name":      "cns",
 				"app.kubernetes.io/component": "snapshot",
+				"app.kubernetes.io/version":   version,
 			},
 		},
 		Data: configMapData,
