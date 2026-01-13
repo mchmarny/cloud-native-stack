@@ -699,6 +699,151 @@ func TestContainsIgnoreCase(t *testing.T) {
 	}
 }
 
+func TestPrintDetection(t *testing.T) {
+	tests := []struct {
+		name      string
+		detection *CriteriaDetection
+		wantLines []string
+	}{
+		{
+			name:      "empty detection",
+			detection: &CriteriaDetection{},
+			wantLines: []string{
+				"Detected criteria from snapshot:",
+				"service:     (not detected)",
+				"accelerator: (not detected)",
+				"os:          (not detected)",
+				"intent:      (not detected)",
+				"nodes:       (not detected)",
+			},
+		},
+		{
+			name: "detected service from version string",
+			detection: &CriteriaDetection{
+				Service: &DetectionSource{
+					Value:    "eks",
+					Source:   "K8s version string",
+					RawValue: "v1.33.5-eks-3025e55",
+				},
+			},
+			wantLines: []string{
+				"service:     eks          (from K8s version string: v1.33.5-eks-3025e55)",
+			},
+		},
+		{
+			name: "detected accelerator",
+			detection: &CriteriaDetection{
+				Accelerator: &DetectionSource{
+					Value:    "h100",
+					Source:   "nvidia-smi gpu.model",
+					RawValue: "NVIDIA H100 80GB HBM3",
+				},
+			},
+			wantLines: []string{
+				"accelerator: h100         (from nvidia-smi gpu.model: NVIDIA H100 80GB HBM3)",
+			},
+		},
+		{
+			name: "overridden value",
+			detection: &CriteriaDetection{
+				Service: &DetectionSource{
+					Value:      "gke",
+					Source:     "--service flag",
+					Overridden: true,
+				},
+			},
+			wantLines: []string{
+				"service:     gke          (overridden by --service flag)",
+			},
+		},
+		{
+			name: "value equals raw value",
+			detection: &CriteriaDetection{
+				OS: &DetectionSource{
+					Value:    "ubuntu",
+					Source:   "/etc/os-release ID",
+					RawValue: "ubuntu",
+				},
+			},
+			wantLines: []string{
+				"os:          ubuntu       (from /etc/os-release ID)",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf strings.Builder
+			tt.detection.PrintDetection(&buf)
+			output := buf.String()
+
+			for _, line := range tt.wantLines {
+				if !strings.Contains(output, line) {
+					t.Errorf("output missing expected line %q\nGot:\n%s", line, output)
+				}
+			}
+		})
+	}
+}
+
+func TestPrintDetectionField(t *testing.T) {
+	tests := []struct {
+		name   string
+		field  string
+		source *DetectionSource
+		want   string
+	}{
+		{
+			name:   "nil source",
+			field:  "service",
+			source: nil,
+			want:   "service:     (not detected)",
+		},
+		{
+			name:  "simple detected value",
+			field: "os",
+			source: &DetectionSource{
+				Value:  "ubuntu",
+				Source: "/etc/os-release ID",
+			},
+			want: "os:          ubuntu       (from /etc/os-release ID)",
+		},
+		{
+			name:  "detected with different raw value",
+			field: "accelerator",
+			source: &DetectionSource{
+				Value:    "h100",
+				Source:   "nvidia-smi",
+				RawValue: "NVIDIA H100 80GB",
+			},
+			want: "accelerator: h100         (from nvidia-smi: NVIDIA H100 80GB)",
+		},
+		{
+			name:  "overridden value",
+			field: "intent",
+			source: &DetectionSource{
+				Value:      "training",
+				Source:     "--intent flag",
+				Overridden: true,
+			},
+			want: "intent:      training     (overridden by --intent flag)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf strings.Builder
+			printDetectionField(&buf, tt.field, tt.source)
+			got := strings.TrimSpace(buf.String())
+			want := strings.TrimSpace(tt.want)
+
+			if got != want {
+				t.Errorf("printDetectionField() =\n%q\nwant:\n%q", got, want)
+			}
+		})
+	}
+}
+
 func hasName(flag cli.Flag, name string) bool {
 	if flag == nil {
 		return false

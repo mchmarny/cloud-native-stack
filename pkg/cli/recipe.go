@@ -53,11 +53,12 @@ func printDetectionField(w io.Writer, name string, ds *DetectionSource) {
 		return
 	}
 
-	if ds.Overridden {
+	switch {
+	case ds.Overridden:
 		fmt.Fprintf(w, "  %-12s %-12s (overridden by --%s flag)\n", name+":", ds.Value, name)
-	} else if ds.RawValue != "" && ds.RawValue != ds.Value {
+	case ds.RawValue != "" && ds.RawValue != ds.Value:
 		fmt.Fprintf(w, "  %-12s %-12s (from %s: %s)\n", name+":", ds.Value, ds.Source, ds.RawValue)
-	} else {
+	default:
 		fmt.Fprintf(w, "  %-12s %-12s (from %s)\n", name+":", ds.Value, ds.Source)
 	}
 }
@@ -209,6 +210,22 @@ func buildCriteriaFromCmd(cmd *cli.Command) (*recipe.Criteria, error) {
 	return recipe.BuildCriteria(opts...)
 }
 
+// detectAcceleratorFromModel detects accelerator type from a model string.
+func detectAcceleratorFromModel(modelStr string) recipe.CriteriaAcceleratorType {
+	switch {
+	case containsIgnoreCase(modelStr, "gb200"):
+		return recipe.CriteriaAcceleratorGB200
+	case containsIgnoreCase(modelStr, "h100"):
+		return recipe.CriteriaAcceleratorH100
+	case containsIgnoreCase(modelStr, "a100"):
+		return recipe.CriteriaAcceleratorA100
+	case containsIgnoreCase(modelStr, "l40"):
+		return recipe.CriteriaAcceleratorL40
+	default:
+		return ""
+	}
+}
+
 // extractCriteriaFromSnapshot extracts criteria from a snapshot.
 // This maps snapshot measurements to criteria fields and returns detection sources.
 func extractCriteriaFromSnapshot(snap *snapshotter.Snapshot) (*recipe.Criteria, *CriteriaDetection) {
@@ -219,7 +236,6 @@ func extractCriteriaFromSnapshot(snap *snapshotter.Snapshot) (*recipe.Criteria, 
 		return criteria, detection
 	}
 
-	// Extract from K8s measurements
 	for _, m := range snap.Measurements {
 		if m == nil {
 			continue
@@ -227,126 +243,114 @@ func extractCriteriaFromSnapshot(snap *snapshotter.Snapshot) (*recipe.Criteria, 
 
 		switch m.Type {
 		case measurement.TypeK8s:
-			// Look for service type in server subtype
-			for _, st := range m.Subtypes {
-				if st.Name == "server" {
-					// Try direct "service" field first
-					if svcType, ok := st.Data["service"]; ok {
-						if parsed, err := recipe.ParseCriteriaServiceType(svcType.String()); err == nil {
-							criteria.Service = parsed
-							detection.Service = &DetectionSource{
-								Value:    string(parsed),
-								Source:   "K8s server.service field",
-								RawValue: svcType.String(),
-							}
-						}
-					}
-
-					// Extract service from K8s version string (e.g., "v1.33.5-eks-3025e55")
-					if version, ok := st.Data["version"]; ok {
-						versionStr := version.String()
-						var detectedService recipe.CriteriaServiceType
-						switch {
-						case strings.Contains(versionStr, "-eks-"):
-							detectedService = recipe.CriteriaServiceEKS
-						case strings.Contains(versionStr, "-gke"):
-							detectedService = recipe.CriteriaServiceGKE
-						case strings.Contains(versionStr, "-aks"):
-							detectedService = recipe.CriteriaServiceAKS
-						}
-						if detectedService != "" {
-							criteria.Service = detectedService
-							detection.Service = &DetectionSource{
-								Value:    string(detectedService),
-								Source:   "K8s version string",
-								RawValue: versionStr,
-							}
-						}
-					}
-				}
-			}
-
+			extractK8sCriteria(m, criteria, detection)
 		case measurement.TypeGPU:
-			// Look for GPU/accelerator type in smi or device subtype
-			for _, st := range m.Subtypes {
-				if st.Name == "smi" || st.Name == "device" {
-					// Try "gpu.model" field (from nvidia-smi)
-					if model, ok := st.Data["gpu.model"]; ok {
-						modelStr := model.String()
-						var detectedAccelerator recipe.CriteriaAcceleratorType
-						// Map model names to accelerator types
-						switch {
-						case containsIgnoreCase(modelStr, "gb200"):
-							detectedAccelerator = recipe.CriteriaAcceleratorGB200
-						case containsIgnoreCase(modelStr, "h100"):
-							detectedAccelerator = recipe.CriteriaAcceleratorH100
-						case containsIgnoreCase(modelStr, "a100"):
-							detectedAccelerator = recipe.CriteriaAcceleratorA100
-						case containsIgnoreCase(modelStr, "l40"):
-							detectedAccelerator = recipe.CriteriaAcceleratorL40
-						}
-						if detectedAccelerator != "" {
-							criteria.Accelerator = detectedAccelerator
-							detection.Accelerator = &DetectionSource{
-								Value:    string(detectedAccelerator),
-								Source:   "nvidia-smi gpu.model",
-								RawValue: modelStr,
-							}
-						}
-					}
-
-					// Also try plain "model" field (if not already detected)
-					if detection.Accelerator == nil {
-						if model, ok := st.Data["model"]; ok {
-							modelStr := model.String()
-							var detectedAccelerator recipe.CriteriaAcceleratorType
-							switch {
-							case containsIgnoreCase(modelStr, "gb200"):
-								detectedAccelerator = recipe.CriteriaAcceleratorGB200
-							case containsIgnoreCase(modelStr, "h100"):
-								detectedAccelerator = recipe.CriteriaAcceleratorH100
-							case containsIgnoreCase(modelStr, "a100"):
-								detectedAccelerator = recipe.CriteriaAcceleratorA100
-							case containsIgnoreCase(modelStr, "l40"):
-								detectedAccelerator = recipe.CriteriaAcceleratorL40
-							}
-							if detectedAccelerator != "" {
-								criteria.Accelerator = detectedAccelerator
-								detection.Accelerator = &DetectionSource{
-									Value:    string(detectedAccelerator),
-									Source:   "GPU model field",
-									RawValue: modelStr,
-								}
-							}
-						}
-					}
-				}
-			}
-
+			extractGPUCriteria(m, criteria, detection)
 		case measurement.TypeOS:
-			// Look for OS type in release subtype
-			for _, st := range m.Subtypes {
-				if st.Name == "release" {
-					if osID, ok := st.Data["ID"]; ok {
-						if parsed, err := recipe.ParseCriteriaOSType(osID.String()); err == nil {
-							criteria.OS = parsed
-							detection.OS = &DetectionSource{
-								Value:    string(parsed),
-								Source:   "/etc/os-release ID",
-								RawValue: osID.String(),
-							}
-						}
-					}
-				}
-			}
-
+			extractOSCriteria(m, criteria, detection)
 		case measurement.TypeSystemD:
-			// SystemD measurements not used for criteria extraction
 			continue
 		}
 	}
 
 	return criteria, detection
+}
+
+// extractK8sCriteria extracts Kubernetes service type from measurements.
+func extractK8sCriteria(m *measurement.Measurement, criteria *recipe.Criteria, detection *CriteriaDetection) {
+	for _, st := range m.Subtypes {
+		if st.Name != "server" {
+			continue
+		}
+		// Try direct "service" field first
+		if svcType, ok := st.Data["service"]; ok {
+			if parsed, err := recipe.ParseCriteriaServiceType(svcType.String()); err == nil {
+				criteria.Service = parsed
+				detection.Service = &DetectionSource{
+					Value:    string(parsed),
+					Source:   "K8s server.service field",
+					RawValue: svcType.String(),
+				}
+			}
+		}
+
+		// Extract service from K8s version string (only if not already detected)
+		if detection.Service == nil {
+			if version, ok := st.Data["version"]; ok {
+				versionStr := version.String()
+				var detectedService recipe.CriteriaServiceType
+				switch {
+				case strings.Contains(versionStr, "-eks-"):
+					detectedService = recipe.CriteriaServiceEKS
+				case strings.Contains(versionStr, "-gke"):
+					detectedService = recipe.CriteriaServiceGKE
+				case strings.Contains(versionStr, "-aks"):
+					detectedService = recipe.CriteriaServiceAKS
+				}
+				if detectedService != "" {
+					criteria.Service = detectedService
+					detection.Service = &DetectionSource{
+						Value:    string(detectedService),
+						Source:   "K8s version string",
+						RawValue: versionStr,
+					}
+				}
+			}
+		}
+	}
+}
+
+// extractGPUCriteria extracts GPU/accelerator type from measurements.
+func extractGPUCriteria(m *measurement.Measurement, criteria *recipe.Criteria, detection *CriteriaDetection) {
+	for _, st := range m.Subtypes {
+		if st.Name != "smi" && st.Name != "device" {
+			continue
+		}
+		// Try "gpu.model" field (from nvidia-smi)
+		if model, ok := st.Data["gpu.model"]; ok {
+			if acc := detectAcceleratorFromModel(model.String()); acc != "" {
+				criteria.Accelerator = acc
+				detection.Accelerator = &DetectionSource{
+					Value:    string(acc),
+					Source:   "nvidia-smi gpu.model",
+					RawValue: model.String(),
+				}
+			}
+		}
+
+		// Try plain "model" field (if not already detected)
+		if detection.Accelerator == nil {
+			if model, ok := st.Data["model"]; ok {
+				if acc := detectAcceleratorFromModel(model.String()); acc != "" {
+					criteria.Accelerator = acc
+					detection.Accelerator = &DetectionSource{
+						Value:    string(acc),
+						Source:   "GPU model field",
+						RawValue: model.String(),
+					}
+				}
+			}
+		}
+	}
+}
+
+// extractOSCriteria extracts OS type from measurements.
+func extractOSCriteria(m *measurement.Measurement, criteria *recipe.Criteria, detection *CriteriaDetection) {
+	for _, st := range m.Subtypes {
+		if st.Name != "release" {
+			continue
+		}
+		if osID, ok := st.Data["ID"]; ok {
+			if parsed, err := recipe.ParseCriteriaOSType(osID.String()); err == nil {
+				criteria.OS = parsed
+				detection.OS = &DetectionSource{
+					Value:    string(parsed),
+					Source:   "/etc/os-release ID",
+					RawValue: osID.String(),
+				}
+			}
+		}
+	}
 }
 
 // applyCriteriaOverrides applies CLI flag overrides to criteria and tracks them in detection.
