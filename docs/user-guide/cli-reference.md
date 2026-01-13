@@ -85,7 +85,7 @@ cnsctl snapshot [flags]
 | `--node-selector` | | string[] | | Node selector for agent scheduling (key=value, repeatable) |
 | `--toleration` | | string[] | all taints | Tolerations for agent scheduling (key=value:effect, repeatable). **Default: all taints tolerated** (uses `operator: Exists`). Only specify to restrict which taints are tolerated. |
 | `--timeout` | | duration | 5m | Timeout for agent Job completion |
-| `--cleanup` | | bool | false | Delete Job and RBAC on completion. **Default: keeps resources for debugging**. Cleanup runs regardless of success/failure when enabled. |
+| `--cleanup` | | bool | true | Delete Job and RBAC resources on completion. Use `--cleanup=false` to keep resources for debugging. |
 
 **Output Destinations:**
 - **stdout**: Default when no `-o` flag specified
@@ -156,7 +156,7 @@ When `--deploy-agent` is specified, CNS deploys a Kubernetes Job to capture the 
 3. **Waits for completion**: Monitors Job status with configurable timeout
 4. **Retrieves snapshot**: Reads snapshot from ConfigMap after Job completes
 5. **Writes output**: Saves snapshot to specified output destination
-6. **Cleanup**: Optionally deletes Job and RBAC (default: keeps for debugging)
+6. **Cleanup**: Deletes Job and RBAC resources (use `--cleanup=false` to keep for debugging)
 
 **Benefits of agent deployment:**
 - Capture configuration from actual cluster nodes (not local machine)
