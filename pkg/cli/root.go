@@ -55,11 +55,12 @@ func Execute() {
 	serializer.SetVersion(version)
 
 	cmd := &cli.Command{
-		Name:                  name,
-		Usage:                 "Cloud Native Stack CLI",
-		Version:               fmt.Sprintf("%s (commit: %s, date: %s)", version, commit, date),
-		EnableShellCompletion: true,
-		HideHelpCommand:       true,
+		Name:                            name,
+		Usage:                           "Cloud Native Stack CLI",
+		Version:                         fmt.Sprintf("%s (commit: %s, date: %s)", version, commit, date),
+		EnableShellCompletion:           true,
+		HideHelpCommand:                 true,
+		ConfigureShellCompletionCommand: func(cmd *cli.Command) { cmd.Hidden = false },
 		Metadata: map[string]interface{}{
 			"git-commit": commit,
 			"build-date": date,

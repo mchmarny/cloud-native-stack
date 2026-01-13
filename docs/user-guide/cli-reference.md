@@ -784,7 +784,7 @@ cnsctl completion zsh
 cnsctl completion fish
 
 # PowerShell
-cnsctl completion powershell
+cnsctl completion pwsh
 ```
 
 **Installation:**
