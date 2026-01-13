@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"strings"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler"
@@ -16,6 +17,7 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/types"
 	deployerRegistry "github.com/NVIDIA/cloud-native-stack/pkg/deployer/registry"
 	deployerTypes "github.com/NVIDIA/cloud-native-stack/pkg/deployer/types"
+	"github.com/NVIDIA/cloud-native-stack/pkg/oci"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
@@ -79,6 +81,26 @@ func bundleCmd() *cli.Command {
 				Value: string(deployerTypes.DeployerTypeScript),
 				Usage: fmt.Sprintf("Deployment method for generated components (supported: %s)",
 					strings.Join(deployerTypesToStrings(deployerTypes.AllDeployerTypes()), ", ")),
+			// OCI push flags
+			&cli.BoolFlag{
+				Name:  "push",
+				Usage: "Push generated bundle as OCI artifact to registry",
+			},
+			&cli.StringFlag{
+				Name:  "registry",
+				Usage: "OCI registry host (e.g., ghcr.io, localhost:5000)",
+			},
+			&cli.StringFlag{
+				Name:  "repository",
+				Usage: "OCI repository path (e.g., nvidia/eidos)",
+			},
+			&cli.StringFlag{
+				Name:  "tag",
+				Usage: "OCI image tag (default: auto-generated from recipe)",
+			},
+			&cli.BoolFlag{
+				Name:  "insecure-tls",
+				Usage: "Skip TLS certificate verification for registry",
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -86,6 +108,23 @@ func bundleCmd() *cli.Command {
 			outputDir := cmd.String("output")
 			bundlerTypesStr := cmd.StringSlice("bundlers")
 			setFlags := cmd.StringSlice("set")
+
+			// OCI push options
+			pushEnabled := cmd.Bool("push")
+			registryHost := cmd.String("registry")
+			repository := cmd.String("repository")
+			tag := cmd.String("tag")
+			insecureTLS := cmd.Bool("insecure-tls")
+
+			// Validate push flags
+			if pushEnabled {
+				if registryHost == "" {
+					return fmt.Errorf("--registry is required when --push is enabled")
+				}
+				if repository == "" {
+					return fmt.Errorf("--repository is required when --push is enabled")
+				}
+			}
 
 			// Parse value overrides from --set flags
 			valueOverrides, err := parseSetFlags(setFlags)
@@ -195,6 +234,42 @@ func bundleCmd() *cli.Command {
 				}
 				return fmt.Errorf("bundle generation completed with errors: %d/%d bundlers failed",
 					len(out.Errors), len(out.Results))
+			}
+
+			// Push to OCI registry if enabled
+			if pushEnabled {
+				absOutputDir, err := filepath.Abs(outputDir)
+				if err != nil {
+					return fmt.Errorf("failed to resolve output directory: %w", err)
+				}
+
+				// Generate tag if not provided
+				imageTag := tag
+				if imageTag == "" {
+					imageTag = "latest"
+				}
+
+				slog.Info("pushing bundle to OCI registry",
+					"registry", registryHost,
+					"repository", repository,
+					"tag", imageTag,
+				)
+
+				pushResult, err := oci.Push(ctx, oci.PushOptions{
+					SourceDir:   absOutputDir,
+					Registry:    registryHost,
+					Repository:  repository,
+					Tag:         imageTag,
+					InsecureTLS: insecureTLS,
+				})
+				if err != nil {
+					return fmt.Errorf("failed to push OCI artifact: %w", err)
+				}
+
+				slog.Info("OCI artifact pushed successfully",
+					"reference", pushResult.Reference,
+					"digest", pushResult.Digest,
+				)
 			}
 
 			return nil

@@ -28,6 +28,17 @@ type Result struct {
 
 	// Success indicates whether the bundler completed successfully.
 	Success bool `json:"success" yaml:"success"`
+
+	// OCI metadata (populated when --push is used)
+
+	// OCIDigest is the SHA256 digest of the pushed OCI artifact.
+	OCIDigest string `json:"oci_digest,omitempty" yaml:"oci_digest,omitempty"`
+
+	// OCIReference is the full image reference (registry/repository:tag).
+	OCIReference string `json:"oci_reference,omitempty" yaml:"oci_reference,omitempty"`
+
+	// Pushed indicates whether the bundle was pushed to an OCI registry.
+	Pushed bool `json:"pushed,omitempty" yaml:"pushed,omitempty"`
 }
 
 // New creates a new Result with the given type.
@@ -61,4 +72,11 @@ func (r *Result) MarkSuccess() {
 // GeneratedAt returns a formatted timestamp string.
 func (r *Result) GeneratedAt() string {
 	return time.Now().UTC().Format(time.RFC3339)
+}
+
+// SetOCIMetadata sets the OCI push metadata on the result.
+func (r *Result) SetOCIMetadata(digest, reference string) {
+	r.OCIDigest = digest
+	r.OCIReference = reference
+	r.Pushed = true
 }
