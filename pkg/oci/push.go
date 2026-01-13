@@ -56,6 +56,8 @@ type PushResult struct {
 }
 
 // Push pushes an OCI artifact to a registry using ORAS.
+//
+//nolint:unparam // PushResult is used by callers (pkg/cli/bundle.go:pushToOCI)
 func Push(ctx context.Context, opts PushOptions) (*PushResult, error) {
 	if opts.Tag == "" {
 		return nil, fmt.Errorf("tag is required to push OCI image")
@@ -81,8 +83,8 @@ func Push(ctx context.Context, opts PushOptions) (*PushResult, error) {
 
 	// Build and validate the image reference
 	refString := fmt.Sprintf("%s/%s:%s", registryHost, opts.Repository, opts.Tag)
-	if _, err := reference.ParseNormalizedNamed(refString); err != nil {
-		return nil, fmt.Errorf("invalid image reference '%s': %w", refString, err)
+	if _, parseErr := reference.ParseNormalizedNamed(refString); parseErr != nil {
+		return nil, fmt.Errorf("invalid image reference '%s': %w", refString, parseErr)
 	}
 
 	// Create a file store rooted at the directory we want to push
@@ -119,8 +121,8 @@ func Push(ctx context.Context, opts PushOptions) (*PushResult, error) {
 	}
 
 	// Tag the local manifest so we can copy by tag
-	if err := fs.Tag(ctx, manifestDesc, opts.Tag); err != nil {
-		return nil, fmt.Errorf("failed to tag manifest in local store: %w", err)
+	if tagErr := fs.Tag(ctx, manifestDesc, opts.Tag); tagErr != nil {
+		return nil, fmt.Errorf("failed to tag manifest in local store: %w", tagErr)
 	}
 
 	// Prepare remote repository
@@ -207,8 +209,8 @@ func hardLinkDir(src, dst string) error {
 		return fmt.Errorf("failed to stat source directory: %w", err)
 	}
 
-	if err := os.MkdirAll(dst, srcInfo.Mode()); err != nil {
-		return fmt.Errorf("failed to create destination directory: %w", err)
+	if mkdirErr := os.MkdirAll(dst, srcInfo.Mode()); mkdirErr != nil {
+		return fmt.Errorf("failed to create destination directory: %w", mkdirErr)
 	}
 
 	entries, err := os.ReadDir(src)
