@@ -29,6 +29,8 @@ type Collector struct {
 
 // Collect gathers configuration data from specified systemd services.
 // It implements the Collector interface.
+// If D-Bus is not available (e.g., on macOS, Windows, or minimal containers),
+// it returns an empty measurement instead of failing.
 func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
 	slog.Info("collecting SystemD service configurations")
 
@@ -40,7 +42,10 @@ func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 
 	conn, err := dbus.NewSystemdConnectionContext(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to systemd: %w", err)
+		slog.Warn("D-Bus not available - no systemd data will be collected",
+			slog.String("error", err.Error()),
+			slog.String("hint", "systemd/D-Bus is required for service status collection"))
+		return noSystemDMeasurement(), nil
 	}
 	defer conn.Close()
 
@@ -67,4 +72,13 @@ func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 	}
 
 	return res, nil
+}
+
+// noSystemDMeasurement returns a valid measurement indicating no systemd data
+// is available. This is used for graceful degradation when D-Bus is not accessible.
+func noSystemDMeasurement() *measurement.Measurement {
+	return &measurement.Measurement{
+		Type:     measurement.TypeSystemD,
+		Subtypes: []measurement.Subtype{},
+	}
 }
