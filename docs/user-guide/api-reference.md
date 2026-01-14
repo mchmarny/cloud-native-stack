@@ -8,12 +8,12 @@ The CNS API Server provides HTTP REST access to recipe generation and bundle cre
 
 ```
 ┌──────────────┐      ┌──────────────┐
-│ GET /recipe  │─────▶│    Recipe    │
+│ GET /recipe  │─────▶│   Recipe     │
 └──────────────┘      └──────────────┘
         │
         ▼
 ┌──────────────┐      ┌──────────────┐
-│ POST /bundle │─────▶│   bundles.zip│
+│ POST /bundle │─────▶│  bundles.zip │
 └──────────────┘      └──────────────┘
 ```
 

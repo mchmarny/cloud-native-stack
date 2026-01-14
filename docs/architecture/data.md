@@ -12,6 +12,7 @@ This document describes the data system used by the cnsctl CLI and API to genera
 - [Recipe Generation Process](#recipe-generation-process)
 - [Usage Examples](#usage-examples)
 - [Maintenance Guide](#maintenance-guide)
+- [Automated Validation](#automated-validation)
 
 ## Overview
 
@@ -707,219 +708,156 @@ curl "https://cns.dgxc.io/v1/recipe?os=ubuntu&service=eks&accelerator=gb200&inte
 }
 ```
 
-## Maintenance Guide
+## Recipe Development
 
-### Adding New Base Measurements
+For detailed guidance on adding or modifying recipe data, see the **[Recipe Development Guide](../integration/recipe-development.md)**, which covers:
 
-**When to add:**
-- Universal settings applicable to all environments
-- Core requirements for GPU operations
-- Broadly adopted best practices
+- **Component Value Configuration** – Three patterns (ValuesFile, Overrides, Hybrid) with examples
+- **Value Merge Precedence** – How Base → ValuesFile → Overrides → CLI flags combine
+- **Adding New Recipes** – Step-by-step workflow with checklist
+- **Modifying Existing Recipes** – Updating criteria, constraints, and versions
+- **Best Practices** – File naming, documentation, testing guidelines
+- **Troubleshooting** – Common issues and debugging techniques
 
-**Steps:**
-1. Identify the measurement type (OS, SystemD, K8s, GPU)
-2. Add to the appropriate subtype in the `base` section
-3. Include data values and context explanations
-4. Test with various query combinations
+---
 
-**Example - Adding new sysctl parameter:**
-```yaml
-base:
-  - type: OS
-    subtypes:
-      - subtype: sysctl
-        data:
-          /proc/sys/net/core/rmem_max: "134217728"  # New parameter
-        context:
-          /proc/sys/net/core/rmem_max: Maximum socket receive buffer for GPU data transfers
+## Automated Validation
+
+The recipe data system includes comprehensive automated tests to ensure data integrity. These tests run automatically as part of `make test` and validate all recipe metadata files and component values.
+
+### Test Suite Overview
+
+The test suite is located in [`pkg/recipe/data_test.go`](../../pkg/recipe/data_test.go) and covers:
+
+| Test Category | What It Validates |
+|---------------|-------------------|
+| Schema Conformance | All YAML files parse correctly with expected structure |
+| Criteria Validation | Valid enum values for service, accelerator, intent, OS |
+| Reference Validation | valuesFile paths exist, dependencyRefs resolve, component names valid |
+| Constraint Syntax | Measurement paths use valid types, operators are valid |
+| Uniqueness | No duplicate criteria combinations across overlays |
+| Merge Consistency | Base + overlay merges without data loss |
+| Dependency Cycles | No circular dependencies in componentRefs |
+| Component Types | All bundler types are registered and available |
+| Values Files | Component values files parse as valid YAML |
+
+### Running Tests
+
+```bash
+# Run all recipe data tests
+make test
+
+# Run only recipe package tests
+go test -v ./pkg/recipe/... -count=1
+
+# Run specific test
+go test -v ./pkg/recipe/... -run TestAllMetadataFilesConformToSchema
 ```
 
-### Adding New Overlays
+### Test Descriptions
 
-**When to add:**
-- Platform-specific configurations (new cloud provider)
-- Hardware-specific settings (new GPU model)
-- Version-specific features (new Kubernetes version)
-- Workload-specific optimizations
+#### Schema Tests
 
-**Steps:**
-1. Determine the query key (which fields need to match)
-2. Define the measurements to add/override
-3. Add context explanations for all changes
-4. Place overlay in logical order (more specific overlays after general ones)
-5. Test matching with relevant queries
+**`TestAllMetadataFilesConformToSchema`**  
+Verifies all YAML files in `pkg/recipe/data/` parse correctly and contain valid `RecipeMetadata` structures with required fields (apiVersion, kind, metadata, spec).
 
-**Example - Adding GKE support:**
+**`TestAllComponentValuesFilesAreValidYAML`**  
+Ensures all component values files in `pkg/recipe/data/components/` are valid YAML syntax.
+
+#### Criteria Tests
+
+**`TestCriteriaContainValidEnumValues`**  
+Validates that all criteria fields use only allowed enum values:
+- Service: `eks`, `gke`, `aks`, `oke`
+- Accelerator: `h100`, `gb200`, `a100`, `l40`
+- Intent: `training`, `inference`
+- OS: `ubuntu`, `rhel`, `cos`, `amazonlinux`
+
+#### Reference Tests
+
+**`TestValuesFileReferencesExist`**  
+Checks that all `valuesFile` paths in componentRefs point to existing files.
+
+**`TestDependencyRefsResolve`**  
+Verifies that all `dependencyRefs` in componentRefs reference valid component names within the same recipe.
+
+**`TestComponentNamesMatchRegisteredBundlers`**  
+Ensures component names correspond to registered bundler types (gpu-operator, network-operator, cert-manager, nvsentinel, skyhook).
+
+#### Constraint Tests
+
+**`TestConstraintPathsUseValidMeasurementTypes`**  
+Validates constraint paths use valid measurement type prefixes (`K8s.`, `OS.`, `GPU.`, `SystemD.`).
+
+**`TestConstraintValuesHaveValidOperators`**  
+Checks that constraint values use valid comparison operators (`>=`, `<=`, `>`, `<`, `==`, `!=`) or exact match format.
+
+#### Integrity Tests
+
+**`TestNoDuplicateCriteriaAcrossOverlays`**  
+Ensures no two overlay files have identical criteria combinations (prevents ambiguous matching).
+
+**`TestBaseAndOverlaysMergeWithoutConflict`**  
+Verifies that merging base.yaml with each overlay produces valid merged results without data corruption.
+
+**`TestMergedRecipesHaveNoCycles`**  
+Detects circular dependencies in componentRefs that would cause deployment ordering issues.
+
+### CI/CD Integration
+
+Tests run automatically on:
+- **Pull Requests**: All tests must pass before merge
+- **Push to main**: Validates no regressions
+- **Release builds**: Ensures data integrity in released binaries
+
 ```yaml
-overlays:
-  - key:
-      service: gke
-    types:
-      - type: K8s
-        subtypes:
-          - subtype: image
-            data:
-              gke-metadata-server: v0.1.5
-            context:
-              gke-metadata-server: GKE metadata service for workload identity
+# GitHub Actions workflow snippet
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/go-ci
+        with:
+          go_version: '1.25'
+          golangci_lint_version: 'v2.6'
 ```
 
-**Example - Adding A100 GPU support:**
-```yaml
-overlays:
-  - key:
-      gpu: a100
-    types:
-      - type: GPU
-        subtypes:
-          - subtype: smi
-            data:
-              driver-version: "535.183.01"
-              cuda-version: "12.2"
-            context:
-              driver-version: Recommended driver for A100 GPUs
-              cuda-version: Optimal CUDA version for A100 architecture
-      - type: K8s
-        subtypes:
-          - subtype: config
-            data:
-              mig: true
-            context:
-              mig: Enable Multi-Instance GPU for A100 partitioning
-```
+### Adding New Tests
 
-### Modifying Existing Values
+When adding new recipe metadata or component configurations:
 
-**When to modify:**
-- Version updates (new driver, Kubernetes, CUDA versions)
-- Performance improvements discovered
-- Security patches or configuration changes
-- Deprecation of old settings
-
-**Steps:**
-1. Locate the value in base or overlay
-2. Update the value
-3. **Always update the context** to explain the change
-4. Test the change doesn't break existing queries
-5. Document breaking changes in release notes
-
-**Example - Updating driver version:**
-```yaml
-# Before
-- subtype: smi
-  data:
-    driver-version: "535.183.01"
-  context:
-    driver-version: Recommended NVIDIA driver for GPU operations
-
-# After
-- subtype: smi
-  data:
-    driver-version: "570.158.01"
-  context:
-    driver-version: Updated driver with improved memory management and H100 support
-```
-
-### Best Practices
-
-1. **Overlay Ordering**
-   - Place more general overlays first
-   - Specific overlays (multiple key fields) later
-   - Order doesn't affect matching, but aids readability
-
-2. **Key Field Selection**
-   - Use minimum fields needed for matching
-   - Avoid over-specification (too many fields = fewer matches)
-   - Combine related conditions in single overlay when possible
-
-3. **Context Documentation**
-   - Always explain **why** a setting exists
-   - Describe **impact** on GPU workloads
-   - Keep explanations concise (1-2 sentences)
-   - Update context when values change
-
-4. **Value Formats**
-   - Use consistent formatting (lowercase for enums)
-   - Include units where applicable (2M, 8192)
-   - Use semantic versions (v1.33.5)
-   - Boolean values as strings: "true"/"false"
-
-5. **Testing Changes**
+1. **Create the new file** in `pkg/recipe/data/`
+2. **Run tests** to verify the file is valid:
    ```bash
-   # Test base only (broad query)
-   cnsctl recipe --os any --gpu any
-   
-   # Test specific overlay
-   cnsctl recipe --service eks --gpu gb200
-   
-   # Test multiple matches
-   cnsctl recipe --os ubuntu --service eks --gpu gb200 --intent training
-   
-   # Verify context inclusion
-   cnsctl recipe --os ubuntu --gpu h100 --context | grep -A5 context
+   go test -v ./pkg/recipe/... -run TestAllMetadataFilesConformToSchema
+   ```
+3. **Check for conflicts** with existing overlays:
+   ```bash
+   go test -v ./pkg/recipe/... -run TestNoDuplicateCriteriaAcrossOverlays
+   ```
+4. **Verify references** if using valuesFile or dependencyRefs:
+   ```bash
+   go test -v ./pkg/recipe/... -run TestValuesFileReferencesExist
+   go test -v ./pkg/recipe/... -run TestDependencyRefsResolve
    ```
 
-6. **Validation**
-   - Ensure YAML is valid (`yamllint pkg/recipe/data/data-v1.yaml`)
-   - Test recipe generation doesn't fail
-   - Verify matched rules are expected
-   - Check for unintended side effects on other queries
+### Test File Structure
 
-### Common Pitfalls
+The test file uses Go's `embed` directive to load recipe data at compile time:
 
-❌ **Don't:**
-- Add environment-specific settings to base
-- Create overlays with no matching queries
-- Forget to update context when changing values
-- Use inconsistent naming conventions
-- Over-specify overlay keys (too narrow)
-
-✅ **Do:**
-- Keep base universal and conservative
-- Test overlays match expected queries
-- Always provide context explanations
-- Follow existing naming patterns
-- Use wildcard fields in overlay keys
-
-### Debugging Overlay Matching
-
-**See which overlays matched:**
-```bash
-cnsctl recipe --os ubuntu --service eks --accelerator gb200 --format json | jq '.metadata.appliedOverlays'
+```go
+//go:embed data/base.yaml data/*.yaml data/components/**/*.yaml
+var testDataFS embed.FS
 ```
 
-**Output:**
-```json
-[
-  "service=eks, accelerator=gb200, intent=training"
-]
-```
-
-**Extract component versions:**
-```bash
-# Check GPU Operator version for EKS + GB200
-cnsctl recipe --service eks --accelerator gb200 --format json | \
-  jq '.componentRefs[] | select(.name=="gpu-operator") | .version'
-```
-
-### Version History
-
-- **v1** (Current) - Initial recipe data format
-  - Base measurements for OS, SystemD, K8s, GPU
-  - Overlay system with query matching
-  - Context metadata support
-
-**Future Enhancements:**
-- Support for additional cloud providers (Azure AKS, Oracle OKE)
-- More GPU models (L40, A100, V100)
-- Intent-specific optimizations (training vs inference)
-- Version constraints (minimum/maximum versions)
-- Validation rules and health checks
+This ensures tests validate the same embedded data that ships in the CLI and API binaries.
 
 ---
 
 ## See Also
 
+- [Recipe Development Guide](../integration/recipe-development.md) - Adding and modifying recipe data
 - [CLI Architecture](cli.md) - How the CLI uses recipe data
 - [API Server Architecture](api-server.md) - How the API serves recipes
 - [OpenAPI Specification](../../api/cns/v1/server.yaml) - Recipe API contract

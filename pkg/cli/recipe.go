@@ -106,6 +106,11 @@ Output can be in JSON or YAML format.`,
 					return fmt.Errorf("error parsing criteria: %w", buildErr)
 				}
 
+				// Validate that at least some criteria was provided
+				if criteria.Specificity() == 0 {
+					return fmt.Errorf("no criteria provided: specify at least one of --service, --accelerator, --intent, --os, --nodes, or use --snapshot to load from a snapshot file")
+				}
+
 				slog.Info("building recipe from criteria", "criteria", criteria.String())
 				result, err = builder.BuildFromCriteria(ctx, criteria)
 			}

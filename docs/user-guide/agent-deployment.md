@@ -129,8 +129,8 @@ cnsctl snapshot --deploy-agent \
 - `--kubeconfig`: Custom kubeconfig path (default: `~/.kube/config` or `$KUBECONFIG`)
 - `--namespace`: Deployment namespace (default: `gpu-operator`)
 - `--image`: Container image (default: `ghcr.io/nvidia/cns:latest`)
-- `--job-name`: Job name (default: `cnsctl`)
-- `--service-account-name`: ServiceAccount name (default: `cnsctl`)
+- `--job-name`: Job name (default: `cns`)
+- `--service-account-name`: ServiceAccount name (default: `cns`)
 - `--node-selector`: Node selector (format: `key=value`, repeatable)
 - `--toleration`: Toleration (format: `key=value:effect`, repeatable). **Default: all taints are tolerated** (uses `operator: Exists` without key). Only specify this flag if you want to restrict which taints the Job can tolerate.
 - `--timeout`: Wait timeout (default: `5m`)
@@ -165,11 +165,11 @@ kubectl apply -f https://raw.githubusercontent.com/nvidia/cloud-native-stack/mai
 
 **What this creates:**
 - **Namespace**: `gpu-operator` (if not exists)
-- **ServiceAccount**: `cnsctl` in `gpu-operator` namespace
-- **Role**: Permissions to create/update ConfigMaps in `gpu-operator` namespace
-- **RoleBinding**: Binds Role to ServiceAccount in `gpu-operator` namespace
-- **ClusterRole**: Permissions to read nodes, pods, ClusterPolicy
-- **ClusterRoleBinding**: Binds ClusterRole to ServiceAccount
+- **ServiceAccount**: `cns` in `gpu-operator` namespace
+- **Role**: `cns` - Permissions to create/update ConfigMaps and list pods in `gpu-operator` namespace
+- **RoleBinding**: `cns` - Binds Role to ServiceAccount in `gpu-operator` namespace
+- **ClusterRole**: `cns-node-reader` - Permissions to read nodes, pods, services, and ClusterPolicy (nvidia.com)
+- **ClusterRoleBinding**: `cns-node-reader` - Binds ClusterRole to ServiceAccount
 
 ### 2. Deploy the Agent Job
 
@@ -291,7 +291,7 @@ spec:
 
 ### Resource Limits
 
-Adjust CPU and memory limits:
+The agent uses the following default resource allocations:
 
 ```yaml
 spec:
@@ -301,12 +301,16 @@ spec:
         - name: cns
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
+              cpu: "1"
+              memory: "4Gi"
+              ephemeral-storage: "2Gi"
             limits:
-              cpu: 500m
-              memory: 512Mi
+              cpu: "2"
+              memory: "8Gi"
+              ephemeral-storage: "4Gi"
 ```
+
+You can adjust these values in a custom Job manifest if needed.
 
 ### Custom Output Format
 
@@ -334,22 +338,44 @@ kind: Job
 metadata:
   name: cns
   namespace: gpu-operator
+  labels:
+    app.kubernetes.io/name: cns
 spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
   template:
     spec:
       serviceAccountName: cns
       restartPolicy: Never
+      hostPID: true
+      hostNetwork: true
+      hostIPC: true
       nodeSelector:
         nodeGroup: gpu-nodes  # Your EKS node group
       tolerations:
         - key: nvidia.com/gpu
           operator: Exists
           effect: NoSchedule
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
       containers:
         - name: cns
           image: ghcr.io/nvidia/cns:latest
-          command: ["cns"]
-          args: ["snapshot", "--output", "cm://gpu-operator/cns-snapshot"]
+          command: ["/bin/sh", "-c"]
+          args: ["/ko-app/cnsctl snapshot -o cm://gpu-operator/cns-snapshot"]
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: run-systemd
+              mountPath: /run/systemd
+              readOnly: true
+      volumes:
+        - name: run-systemd
+          hostPath:
+            path: /run/systemd
+            type: Directory
 ```
 
 ### Example 2: GKE with H100 GPUs
@@ -360,18 +386,40 @@ kind: Job
 metadata:
   name: cns
   namespace: gpu-operator
+  labels:
+    app.kubernetes.io/name: cns
 spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
   template:
     spec:
       serviceAccountName: cns
       restartPolicy: Never
+      hostPID: true
+      hostNetwork: true
+      hostIPC: true
       nodeSelector:
         cloud.google.com/gke-accelerator: nvidia-tesla-h100
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
       containers:
         - name: cns
           image: ghcr.io/nvidia/cns:latest
-          command: ["cns"]
-          args: ["snapshot", "--output", "cm://gpu-operator/cns-snapshot"]
+          command: ["/bin/sh", "-c"]
+          args: ["/ko-app/cnsctl snapshot -o cm://gpu-operator/cns-snapshot"]
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: run-systemd
+              mountPath: /run/systemd
+              readOnly: true
+      volumes:
+        - name: run-systemd
+          hostPath:
+            path: /run/systemd
+            type: Directory
 ```
 
 ### Example 3: Periodic Snapshots (CronJob)
@@ -387,18 +435,41 @@ metadata:
 spec:
   schedule: "0 */6 * * *"  # Every 6 hours
   jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cns
     spec:
+      backoffLimit: 0
+      ttlSecondsAfterFinished: 3600
       template:
         spec:
           serviceAccountName: cns
           restartPolicy: Never
+          hostPID: true
+          hostNetwork: true
+          hostIPC: true
           nodeSelector:
             nvidia.com/gpu.present: "true"
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            fsGroup: 0
           containers:
             - name: cns
               image: ghcr.io/nvidia/cns:latest
-              command: ["cns"]
-              args: ["snapshot", "--output", "cm://gpu-operator/cns-snapshot"]
+              command: ["/bin/sh", "-c"]
+              args: ["/ko-app/cnsctl snapshot -o cm://gpu-operator/cns-snapshot"]
+              securityContext:
+                privileged: true
+              volumeMounts:
+                - name: run-systemd
+                  mountPath: /run/systemd
+                  readOnly: true
+          volumes:
+            - name: run-systemd
+              hostPath:
+                path: /run/systemd
+                type: Directory
 ```
 
 Retrieve historical snapshots:
@@ -667,8 +738,6 @@ cnsctl snapshot --deploy-agent --output current.yaml
 
 # Compare
 diff baseline.yaml current.yaml || echo "Configuration drift detected!"
-```# Compare
-diff baseline.yaml current.yaml || echo "Configuration drift detected!"
 ```
 
 ## Troubleshooting
@@ -717,10 +786,14 @@ kubectl logs -n gpu-operator -l job-name=cns --previous
 Ensure RBAC is correctly deployed:
 ```shell
 # Verify ClusterRole
-kubectl get clusterrole cns
+kubectl get clusterrole cns-node-reader
 
 # Verify ClusterRoleBinding
-kubectl get clusterrolebinding cns
+kubectl get clusterrolebinding cns-node-reader
+
+# Verify Role and RoleBinding
+kubectl get role cns -n gpu-operator
+kubectl get rolebinding cns -n gpu-operator
 
 # Verify ServiceAccount
 kubectl get serviceaccount cns -n gpu-operator
@@ -747,12 +820,11 @@ kubectl create secret docker-registry regcred \
 
 ## Security Considerations
 
-### Least Privilege
+### RBAC Permissions
 
-The agent only requires read permissions:
-- Nodes
-- Pods
-- ClusterPolicy CRDs
+The agent requires these permissions:
+- **ClusterRole** (`cns-node-reader`): Read access to nodes, pods, services, and ClusterPolicy CRDs (nvidia.com)
+- **Role** (`cns`): Create/update ConfigMaps and list pods in the deployment namespace
 
 ### Network Policies
 
@@ -778,26 +850,45 @@ spec:
           port: 443  # Kubernetes API only
 ```
 
-### Pod Security Standards
+### Pod Security Context
 
-The agent runs as non-root:
+The agent requires elevated privileges to collect system configuration from the host:
 
 ```yaml
 spec:
   template:
     spec:
+      hostPID: true       # Access host process namespace
+      hostNetwork: true   # Access host network namespace
+      hostIPC: true       # Access host IPC namespace
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 65532
-        fsGroup: 65532
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
       containers:
         - name: cns
           securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
+            privileged: true
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: true
             capabilities:
-              drop: ["ALL"]
+              add: ["SYS_ADMIN", "SYS_CHROOT"]
+          volumeMounts:
+            - name: run-systemd
+              mountPath: /run/systemd
+              readOnly: true
+      volumes:
+        - name: run-systemd
+          hostPath:
+            path: /run/systemd
+            type: Directory
 ```
+
+**Why elevated privileges are needed:**
+- `hostPID`, `hostNetwork`, `hostIPC`: Required to read host system configuration
+- `privileged` + `SYS_ADMIN`: Required to access GPU configuration and kernel parameters
+- `/run/systemd` mount: Required to query systemd service states
 
 ## See Also
 

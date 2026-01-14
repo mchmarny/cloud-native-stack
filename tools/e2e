@@ -6,6 +6,9 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "${DIR}/common"
 ROOT=$(dirname "${DIR}")
 
+# Check required tools
+has_tools awk find grep make sed uname
+
 # Default values
 OUTPUT_DIR=""
 CNSCTL_BIN=""
@@ -25,9 +28,16 @@ usage() {
   echo ""
   echo "This script:"
   echo "  1. Builds the cnsctl binary using 'make build'"
-  echo "  2. Generates a recipe for service=eks, accelerator=gb200, os=ubuntu, intent=training"
-  echo "  3. Generates bundles from that recipe with various CLI flag combinations"
-  echo "  4. Validates the generated bundles"
+  echo "  2. Tests all recipe metadata files in pkg/recipe/data/ can generate bundles"
+  echo "  3. Generates a recipe via query mode (service=eks, accelerator=gb200, os=ubuntu, intent=training)"
+  echo "  4. Tests bundle generation with various CLI flag combinations:"
+  echo "     - Basic generation (no overrides)"
+  echo "     - System node selectors (--system-node-selector)"
+  echo "     - Accelerated node selectors (--accelerated-node-selector)"
+  echo "     - System tolerations (--system-node-toleration)"
+  echo "     - Accelerated tolerations (--accelerated-node-toleration)"
+  echo "     - Value overrides (--set)"
+  echo "     - Combined flags"
   echo ""
   echo "Examples:"
   echo "  $0                        # Run all tests with temp output"
@@ -200,7 +210,133 @@ build_binary() {
 }
 
 # ============================================================================
-# RECIPE GENERATION
+# RECIPE DATA FILE TESTS
+# ============================================================================
+
+# Test all recipe metadata files in pkg/recipe/data/ can be used to generate recipes and bundles
+# The workflow is: metadata file -> cnsctl recipe -> RecipeResult -> cnsctl bundle
+test_all_recipe_data_files() {
+  msg ""
+  msg "=========================================="
+  msg "Testing All Recipe Data Files"
+  msg "=========================================="
+  
+  local recipe_data_dir="${ROOT}/pkg/recipe/data"
+  local all_recipes_dir="${OUTPUT_DIR}/bundles/all-recipes"
+  mkdir -p "$all_recipes_dir"
+  
+  # Find all overlay recipe files (exclude base.yaml and README.md)
+  local recipe_files
+  recipe_files=$(find "$recipe_data_dir" -maxdepth 1 -name "*.yaml" ! -name "base.yaml" -type f | sort)
+  
+  if [ -z "$recipe_files" ]; then
+    test_fail "recipe-data/find-files" "No recipe files found in ${recipe_data_dir}"
+    return 1
+  fi
+  test_pass "recipe-data/find-files"
+  
+  local file_count=0
+  for recipe_file in $recipe_files; do
+    local basename
+    basename=$(basename "$recipe_file" .yaml)
+    file_count=$((file_count + 1))
+    
+    msg ""
+    msg "--- Testing recipe: ${basename} ---"
+    
+    local test_dir="${all_recipes_dir}/${basename}"
+    mkdir -p "$test_dir"
+    
+    # Extract criteria from the recipe metadata file to use with cnsctl recipe
+    # Parse service, accelerator, os, intent from criteria section
+    local service accelerator os_val intent
+    service=$(awk '/^  criteria:/{in_crit=1;next} in_crit && /^  [a-z]/{exit} in_crit && /service:/{gsub(/.*service: /,""); print}' "$recipe_file")
+    accelerator=$(awk '/^  criteria:/{in_crit=1;next} in_crit && /^  [a-z]/{exit} in_crit && /accelerator:/{gsub(/.*accelerator: /,""); print}' "$recipe_file")
+    os_val=$(awk '/^  criteria:/{in_crit=1;next} in_crit && /^  [a-z]/{exit} in_crit && /os:/{gsub(/.*os: /,""); print}' "$recipe_file")
+    intent=$(awk '/^  criteria:/{in_crit=1;next} in_crit && /^  [a-z]/{exit} in_crit && /intent:/{gsub(/.*intent: /,""); print}' "$recipe_file")
+    
+    # At minimum we need accelerator, os, and intent
+    if [ -z "$accelerator" ] || [ -z "$os_val" ] || [ -z "$intent" ]; then
+      test_fail "recipe-data/${basename}/parse-criteria" "Could not extract required criteria from ${basename} (need accelerator, os, intent)"
+      continue
+    fi
+    
+    # Build criteria summary for logging
+    local criteria_summary="accelerator=${accelerator}, os=${os_val}, intent=${intent}"
+    if [ -n "$service" ]; then
+      criteria_summary="service=${service}, ${criteria_summary}"
+    fi
+    test_pass "recipe-data/${basename}/parse-criteria (${criteria_summary})"
+    
+    # Step 1: Generate RecipeResult using cnsctl recipe with the extracted criteria
+    # Build the command with optional service flag
+    local recipe_result="${test_dir}/recipe.yaml"
+    local recipe_cmd="${CNSCTL_BIN} recipe --accelerator $accelerator --os $os_val --intent $intent"
+    if [ -n "$service" ]; then
+      recipe_cmd="$recipe_cmd --service $service"
+    fi
+    recipe_cmd="$recipe_cmd -o $recipe_result"
+    
+    if ! eval "$recipe_cmd" 2>&1; then
+      test_fail "recipe-data/${basename}/recipe-generation" "Failed to generate recipe from criteria"
+      continue
+    fi
+    test_pass "recipe-data/${basename}/recipe-generation"
+    
+    # Verify recipe file was created
+    if [ ! -f "$recipe_result" ]; then
+      test_fail "recipe-data/${basename}/recipe-file-exists" "Recipe file not created"
+      continue
+    fi
+    test_pass "recipe-data/${basename}/recipe-file-exists"
+    
+    # Step 2: Generate bundle from RecipeResult
+    local bundle_dir="${test_dir}/bundles"
+    if ! "${CNSCTL_BIN}" bundle -f "$recipe_result" -o "$bundle_dir" 2>&1; then
+      test_fail "recipe-data/${basename}/bundle-generation" "Failed to generate bundle from recipe"
+      continue
+    fi
+    test_pass "recipe-data/${basename}/bundle-generation"
+    
+    # Verify at least one component was generated
+    local component_count
+    component_count=$(find "$bundle_dir" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+    
+    if [ "$component_count" -eq 0 ]; then
+      test_fail "recipe-data/${basename}/has-components" "No components generated for ${basename}"
+      continue
+    fi
+    test_pass "recipe-data/${basename}/has-components (${component_count} components)"
+    
+    # Verify each generated component has required files
+    for component_dir in "${bundle_dir}"/*/; do
+      if [ -d "$component_dir" ]; then
+        local component_name
+        component_name=$(basename "$component_dir")
+        
+        # Check for values.yaml
+        if [ ! -f "${component_dir}values.yaml" ]; then
+          test_fail "recipe-data/${basename}/${component_name}/values.yaml" "Missing values.yaml"
+        else
+          test_pass "recipe-data/${basename}/${component_name}/values.yaml"
+        fi
+        
+        # Check for checksums.txt
+        if [ ! -f "${component_dir}checksums.txt" ]; then
+          test_fail "recipe-data/${basename}/${component_name}/checksums.txt" "Missing checksums.txt"
+        else
+          test_pass "recipe-data/${basename}/${component_name}/checksums.txt"
+        fi
+      fi
+    done
+  done
+  
+  msg ""
+  msg "Tested ${file_count} recipe data files"
+}
+
+# ============================================================================
+# RECIPE GENERATION (Query Mode)
 # ============================================================================
 
 RECIPE_FILE=""
@@ -208,7 +344,7 @@ RECIPE_FILE=""
 generate_recipe() {
   msg ""
   msg "=========================================="
-  msg "Generating Recipe"
+  msg "Generating Recipe (Query Mode)"
   msg "=========================================="
   msg "Parameters: service=eks, accelerator=gb200, os=ubuntu, intent=training"
   
@@ -462,10 +598,13 @@ msg ""
 # Step 1: Build the binary
 build_binary
 
-# Step 2: Generate recipe
+# Step 2: Test all recipe data files in pkg/recipe/data/
+test_all_recipe_data_files
+
+# Step 3: Generate recipe via query mode (for detailed bundle flag tests)
 generate_recipe
 
-# Step 3: Run bundle tests
+# Step 4: Run bundle tests with various CLI flags (using generated recipe)
 if [ -n "$RECIPE_FILE" ] && [ -f "$RECIPE_FILE" ]; then
   run_bundle_tests "$RECIPE_FILE"
 else
