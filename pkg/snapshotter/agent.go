@@ -27,6 +27,9 @@ type AgentConfig struct {
 	// Image for agent container
 	Image string
 
+	// ImagePullSecrets for pulling the agent image from private registries
+	ImagePullSecrets []string
+
 	// JobName for the agent Job
 	JobName string
 
@@ -151,6 +154,7 @@ func (n *NodeSnapshotter) measureWithAgent(ctx context.Context) error {
 		ServiceAccountName: n.AgentConfig.ServiceAccountName,
 		JobName:            n.AgentConfig.JobName,
 		Image:              n.AgentConfig.Image,
+		ImagePullSecrets:   n.AgentConfig.ImagePullSecrets,
 		NodeSelector:       n.AgentConfig.NodeSelector,
 		Tolerations:        n.AgentConfig.Tolerations,
 		Output:             output,

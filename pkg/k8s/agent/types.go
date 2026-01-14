@@ -11,6 +11,7 @@ type Config struct {
 	ServiceAccountName string
 	JobName            string
 	Image              string
+	ImagePullSecrets   []string
 	NodeSelector       map[string]string
 	Tolerations        []corev1.Toleration
 	Output             string

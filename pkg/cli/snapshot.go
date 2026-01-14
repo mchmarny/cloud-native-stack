@@ -80,6 +80,10 @@ Combined node selector and custom tolerations:
 				Sources: cli.EnvVars("CNS_IMAGE"),
 				Value:   "ghcr.io/nvidia/cns:latest",
 			},
+			&cli.StringSliceFlag{
+				Name:  "image-pull-secret",
+				Usage: "Secret name for pulling images from private registries (can be repeated)",
+			},
 			&cli.StringFlag{
 				Name:  "job-name",
 				Usage: "Override default Job name",
@@ -151,6 +155,7 @@ Combined node selector and custom tolerations:
 					Kubeconfig:         cmd.String("kubeconfig"),
 					Namespace:          cmd.String("namespace"),
 					Image:              cmd.String("image"),
+					ImagePullSecrets:   cmd.StringSlice("image-pull-secret"),
 					JobName:            cmd.String("job-name"),
 					ServiceAccountName: cmd.String("service-account-name"),
 					NodeSelector:       nodeSelector,

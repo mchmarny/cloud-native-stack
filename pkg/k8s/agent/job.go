@@ -85,6 +85,7 @@ func (d *Deployer) buildJob() *batchv1.Job {
 					HostIPC:            true,
 					NodeSelector:       d.config.NodeSelector,
 					Tolerations:        d.config.Tolerations,
+					ImagePullSecrets:   toLocalObjectReferences(d.config.ImagePullSecrets),
 					SecurityContext: &corev1.PodSecurityContext{
 						RunAsUser:           ptr.To(int64(0)),
 						RunAsGroup:          ptr.To(int64(0)),
@@ -199,4 +200,16 @@ func (d *Deployer) waitForJobDeletion(ctx context.Context) error {
 func mustParseQuantity(s string) resource.Quantity {
 	q := resource.MustParse(s)
 	return q
+}
+
+// toLocalObjectReferences converts a slice of secret names to LocalObjectReferences.
+func toLocalObjectReferences(names []string) []corev1.LocalObjectReference {
+	if len(names) == 0 {
+		return nil
+	}
+	refs := make([]corev1.LocalObjectReference, len(names))
+	for i, name := range names {
+		refs[i] = corev1.LocalObjectReference{Name: name}
+	}
+	return refs
 }
