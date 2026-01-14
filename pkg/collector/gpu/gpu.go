@@ -20,6 +20,8 @@ type Collector struct {
 // Collect retrieves the NVIDIA SMI information by executing nvidia-smi command and
 // parses the XML output into NVSMIDevice structures
 func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+	slog.Info("collecting GPU information via nvidia-smi")
+
 	// Use parent context deadline if it's sooner than our default 10s timeout
 	deadline, ok := ctx.Deadline()
 	timeout := 10 * time.Second

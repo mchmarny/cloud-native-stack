@@ -3,6 +3,7 @@ package systemd
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/coreos/go-systemd/v22/dbus"
@@ -29,6 +30,8 @@ type Collector struct {
 // Collect gathers configuration data from specified systemd services.
 // It implements the Collector interface.
 func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+	slog.Info("collecting SystemD service configurations")
+
 	services := s.Services
 	if len(services) == 0 {
 		services = []string{"containerd.service"}

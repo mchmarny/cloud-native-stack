@@ -2,6 +2,7 @@ package os
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 )
@@ -16,6 +17,8 @@ type Collector struct {
 // Collect gathers all OS-level configurations and returns them as a single measurement
 // with three subtypes: grub, kmod, and sysctl.
 func (c *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+	slog.Info("collecting OS configuration")
+
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err
