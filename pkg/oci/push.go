@@ -3,22 +3,25 @@ Copyright © 2025 NVIDIA Corporation
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package oci provides utilities for pushing artifacts to OCI registries.
+// Package oci provides utilities for packaging and pushing OCI artifacts.
 package oci
 
 import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/distribution/reference"
 	ociv1 "github.com/opencontainers/image-spec/specs-go/v1"
 	oras "oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content/file"
+	"oras.land/oras-go/v2/content/oci"
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/auth"
 	"oras.land/oras-go/v2/registry/remote/credentials"
@@ -26,6 +29,40 @@ import (
 
 // ArtifactType is the media type for eidos OCI artifacts.
 const ArtifactType = "application/vnd.nvidia.eidos.artifact"
+
+// registryHostPattern validates registry host format (host:port or host).
+var registryHostPattern = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:[0-9]+)?$`)
+
+// repositoryPattern validates repository path format.
+var repositoryPattern = regexp.MustCompile(`^[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*$`)
+
+// PackageOptions configures local OCI packaging.
+type PackageOptions struct {
+	// SourceDir is the directory containing artifacts to package.
+	SourceDir string
+	// OutputDir is where the OCI Image Layout will be created.
+	OutputDir string
+	// Registry is the OCI registry host for the reference (e.g., "ghcr.io").
+	Registry string
+	// Repository is the image repository path (e.g., "nvidia/eidos").
+	Repository string
+	// Tag is the image tag (e.g., "v1.0.0", "latest").
+	Tag string
+	// SubDir optionally limits packaging to a subdirectory within SourceDir.
+	SubDir string
+	// ReproducibleTimestamp sets a fixed timestamp for reproducible builds.
+	ReproducibleTimestamp string
+}
+
+// PackageResult contains the result of local OCI packaging.
+type PackageResult struct {
+	// Digest is the SHA256 digest of the packaged artifact.
+	Digest string
+	// Reference is the full image reference (registry/repository:tag).
+	Reference string
+	// StorePath is the path to the OCI Image Layout directory.
+	StorePath string
+}
 
 // PushOptions configures the OCI push operation.
 type PushOptions struct {
@@ -55,16 +92,43 @@ type PushResult struct {
 	Reference string
 }
 
-// Push pushes an OCI artifact to a registry using ORAS.
-//
-//nolint:unparam // PushResult is used by callers (pkg/cli/bundle.go:pushToOCI)
-func Push(ctx context.Context, opts PushOptions) (*PushResult, error) {
-	if opts.Tag == "" {
-		return nil, fmt.Errorf("tag is required to push OCI image")
+// ValidateRegistryReference validates the registry and repository format.
+func ValidateRegistryReference(registry, repository string) error {
+	registryHost := stripProtocol(registry)
+
+	if !registryHostPattern.MatchString(registryHost) {
+		return fmt.Errorf("invalid registry host format '%s': must be a valid hostname with optional port", registryHost)
 	}
 
-	// Determine the directory to push from
-	pushFromDir, cleanup, err := preparePushDir(opts.SourceDir, opts.SubDir)
+	if !repositoryPattern.MatchString(repository) {
+		return fmt.Errorf("invalid repository format '%s': must be lowercase alphanumeric with optional separators (., _, -) and path segments", repository)
+	}
+
+	return nil
+}
+
+// Package creates a local OCI artifact in OCI Image Layout format.
+// This stores the artifact locally without pushing to a remote registry.
+func Package(ctx context.Context, opts PackageOptions) (*PackageResult, error) {
+	if opts.Tag == "" {
+		return nil, fmt.Errorf("tag is required for OCI packaging")
+	}
+
+	if opts.Registry == "" {
+		return nil, fmt.Errorf("registry is required for OCI packaging")
+	}
+
+	if opts.Repository == "" {
+		return nil, fmt.Errorf("repository is required for OCI packaging")
+	}
+
+	// Validate registry and repository format
+	if err := ValidateRegistryReference(opts.Registry, opts.Repository); err != nil {
+		return nil, err
+	}
+
+	// Determine the directory to package from
+	packageFromDir, cleanup, err := preparePushDir(opts.SourceDir, opts.SubDir)
 	if err != nil {
 		return nil, err
 	}
@@ -72,10 +136,10 @@ func Push(ctx context.Context, opts PushOptions) (*PushResult, error) {
 		defer cleanup()
 	}
 
-	// Convert to absolute path to avoid ORAS working directory issues
-	absPushDir, err := filepath.Abs(pushFromDir)
+	// Convert to absolute path
+	absSourceDir, err := filepath.Abs(packageFromDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path for push dir: %w", err)
+		return nil, fmt.Errorf("failed to get absolute path for source dir: %w", err)
 	}
 
 	// Strip protocol from registry for docker reference compatibility
@@ -87,8 +151,20 @@ func Push(ctx context.Context, opts PushOptions) (*PushResult, error) {
 		return nil, fmt.Errorf("invalid image reference '%s': %w", refString, parseErr)
 	}
 
-	// Create a file store rooted at the directory we want to push
-	fs, err := file.New(absPushDir)
+	// Create OCI Image Layout store at output directory
+	ociStorePath := filepath.Join(opts.OutputDir, "oci-layout")
+	if err := os.MkdirAll(ociStorePath, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create OCI store directory: %w", err)
+	}
+
+	ociStore, err := oci.New(ociStorePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create OCI store: %w", err)
+	}
+	// Note: oci.Store doesn't require explicit closing
+
+	// Create a file store to read from source directory
+	fs, err := file.New(absSourceDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file store: %w", err)
 	}
@@ -98,7 +174,7 @@ func Push(ctx context.Context, opts PushOptions) (*PushResult, error) {
 	fs.TarReproducible = true
 
 	// Add all contents from the file store root
-	layerDesc, err := fs.Add(ctx, ".", ociv1.MediaTypeImageLayerGzip, absPushDir)
+	layerDesc, err := fs.Add(ctx, ".", ociv1.MediaTypeImageLayerGzip, absSourceDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add source directory to store: %w", err)
 	}
@@ -120,10 +196,47 @@ func Push(ctx context.Context, opts PushOptions) (*PushResult, error) {
 		return nil, fmt.Errorf("failed to pack manifest: %w", err)
 	}
 
-	// Tag the local manifest so we can copy by tag
+	// Tag the manifest in file store
 	if tagErr := fs.Tag(ctx, manifestDesc, opts.Tag); tagErr != nil {
-		return nil, fmt.Errorf("failed to tag manifest in local store: %w", tagErr)
+		return nil, fmt.Errorf("failed to tag manifest: %w", tagErr)
 	}
+
+	// Copy from file store to OCI layout store
+	desc, err := oras.Copy(ctx, fs, opts.Tag, ociStore, opts.Tag, oras.DefaultCopyOptions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to copy to OCI store: %w", err)
+	}
+
+	return &PackageResult{
+		Digest:    desc.Digest.String(),
+		Reference: refString,
+		StorePath: ociStorePath,
+	}, nil
+}
+
+// PushFromStore pushes an already-packaged OCI artifact from a local OCI store to a remote registry.
+func PushFromStore(ctx context.Context, storePath string, opts PushOptions) (*PushResult, error) {
+	if opts.Tag == "" {
+		return nil, fmt.Errorf("tag is required to push OCI image")
+	}
+
+	// Validate registry and repository format
+	if err := ValidateRegistryReference(opts.Registry, opts.Repository); err != nil {
+		return nil, err
+	}
+
+	// Strip protocol from registry for docker reference compatibility
+	registryHost := stripProtocol(opts.Registry)
+
+	// Build the reference string
+	refString := fmt.Sprintf("%s/%s:%s", registryHost, opts.Repository, opts.Tag)
+
+	// Open existing OCI store
+	ociStore, err := oci.New(storePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open OCI store: %w", err)
+	}
+	// Note: oci.Store doesn't require explicit closing
 
 	// Prepare remote repository
 	repo, err := remote.NewRepository(fmt.Sprintf("%s/%s", registryHost, opts.Repository))
@@ -133,10 +246,15 @@ func Push(ctx context.Context, opts PushOptions) (*PushResult, error) {
 	repo.PlainHTTP = opts.PlainHTTP
 
 	// Configure auth client using Docker credentials if available
-	repo.Client = createAuthClient(opts.PlainHTTP, opts.InsecureTLS)
+	authClient, err := createAuthClient(opts.PlainHTTP, opts.InsecureTLS)
+	if err != nil {
+		slog.Warn("failed to initialize Docker credential store, continuing without authentication",
+			"error", err)
+	}
+	repo.Client = authClient
 
-	// Copy from the local file store to the remote repository
-	desc, err := oras.Copy(ctx, fs, opts.Tag, repo, opts.Tag, oras.DefaultCopyOptions)
+	// Copy from OCI store to remote repository
+	desc, err := oras.Copy(ctx, ociStore, opts.Tag, repo, opts.Tag, oras.DefaultCopyOptions)
 	if err != nil {
 		return nil, fmt.Errorf("failed to push artifact to registry: %w", err)
 	}
@@ -165,11 +283,21 @@ func preparePushDir(sourceDir, subDir string) (string, func(), error) {
 	srcPath := filepath.Join(sourceDir, subDir)
 	dstPath := filepath.Join(tempDir, subDir)
 	if err := hardLinkDir(srcPath, dstPath); err != nil {
-		os.RemoveAll(tempDir)
+		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
+			slog.Warn("failed to cleanup temp directory after error",
+				"path", tempDir,
+				"error", removeErr)
+		}
 		return "", nil, fmt.Errorf("failed to create hard links: %w", err)
 	}
 
-	cleanup := func() { os.RemoveAll(tempDir) }
+	cleanup := func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			slog.Warn("failed to cleanup temp directory",
+				"path", tempDir,
+				"error", err)
+		}
+	}
 	return tempDir, cleanup, nil
 }
 
@@ -181,9 +309,10 @@ func stripProtocol(registry string) string {
 }
 
 // createAuthClient creates an HTTP client with optional TLS configuration
-// and Docker credential support.
-func createAuthClient(plainHTTP, insecureTLS bool) *auth.Client {
-	credStore, _ := credentials.NewStoreFromDocker(credentials.StoreOptions{})
+// and Docker credential support. Returns an error if credential store
+// initialization fails, but the client is still usable without credentials.
+func createAuthClient(plainHTTP, insecureTLS bool) (*auth.Client, error) {
+	credStore, credErr := credentials.NewStoreFromDocker(credentials.StoreOptions{})
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	if !plainHTTP && insecureTLS {
@@ -194,11 +323,17 @@ func createAuthClient(plainHTTP, insecureTLS bool) *auth.Client {
 		}
 	}
 
-	return &auth.Client{
-		Client:     &http.Client{Transport: transport},
-		Cache:      auth.NewCache(),
-		Credential: credentials.Credential(credStore),
+	client := &auth.Client{
+		Client: &http.Client{Transport: transport},
+		Cache:  auth.NewCache(),
 	}
+
+	// Only set credential function if store was created successfully
+	if credErr == nil && credStore != nil {
+		client.Credential = credentials.Credential(credStore)
+	}
+
+	return client, credErr
 }
 
 // hardLinkDir recursively creates hard links from src to dst.

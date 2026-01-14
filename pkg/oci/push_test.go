@@ -22,8 +22,8 @@ import (
 	"oras.land/oras-go/v2/content/file"
 	"oras.land/oras-go/v2/content/oci"
 
-	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/certmanager"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
+	"github.com/NVIDIA/cloud-native-stack/pkg/component/certmanager"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/header"
@@ -72,36 +72,34 @@ func TestStripProtocol(t *testing.T) {
 	}
 }
 
-func TestPush_EmptyTag(t *testing.T) {
-	// Push should fail when tag is empty
-	_, err := Push(context.Background(), PushOptions{
-		SourceDir:  ".",
+func TestPushFromStore_EmptyTag(t *testing.T) {
+	// PushFromStore should fail when tag is empty
+	_, err := PushFromStore(context.Background(), "/nonexistent", PushOptions{
 		Registry:   "localhost:5000",
 		Repository: "test/repo",
 		Tag:        "", // Empty tag should fail
 	})
 
 	if err == nil {
-		t.Error("Push() expected error for empty tag, got nil")
+		t.Error("PushFromStore() expected error for empty tag, got nil")
 	}
 
 	expectedErr := "tag is required to push OCI image"
 	if err.Error() != expectedErr {
-		t.Errorf("Push() error = %q, want %q", err.Error(), expectedErr)
+		t.Errorf("PushFromStore() error = %q, want %q", err.Error(), expectedErr)
 	}
 }
 
-func TestPush_InvalidReference(t *testing.T) {
-	// Push should fail for invalid image references
-	_, err := Push(context.Background(), PushOptions{
-		SourceDir:  ".",
+func TestPushFromStore_InvalidReference(t *testing.T) {
+	// PushFromStore should fail for invalid registry references
+	_, err := PushFromStore(context.Background(), "/nonexistent", PushOptions{
 		Registry:   "invalid registry with spaces",
 		Repository: "test/repo",
 		Tag:        "v1.0.0",
 	})
 
 	if err == nil {
-		t.Error("Push() expected error for invalid registry, got nil")
+		t.Error("PushFromStore() expected error for invalid registry, got nil")
 	}
 }
 
@@ -139,10 +137,159 @@ func TestPushResult_Fields(t *testing.T) {
 	}
 }
 
-// TestOCIArtifactWithRealBundler is an integration test that uses the REAL cert-manager
+func TestValidateRegistryReference(t *testing.T) {
+	tests := []struct {
+		name       string
+		registry   string
+		repository string
+		wantErr    bool
+	}{
+		{
+			name:       "valid ghcr.io",
+			registry:   "ghcr.io",
+			repository: "nvidia/eidos",
+			wantErr:    false,
+		},
+		{
+			name:       "valid localhost with port",
+			registry:   "localhost:5000",
+			repository: "test/repo",
+			wantErr:    false,
+		},
+		{
+			name:       "valid with https prefix",
+			registry:   "https://ghcr.io",
+			repository: "nvidia/eidos",
+			wantErr:    false,
+		},
+		{
+			name:       "invalid registry with spaces",
+			registry:   "invalid registry",
+			repository: "test/repo",
+			wantErr:    true,
+		},
+		{
+			name:       "invalid repository with uppercase",
+			registry:   "ghcr.io",
+			repository: "NVIDIA/Eidos",
+			wantErr:    true,
+		},
+		{
+			name:       "invalid repository with special chars",
+			registry:   "ghcr.io",
+			repository: "test/repo@latest",
+			wantErr:    true,
+		},
+		{
+			name:       "valid complex repository",
+			registry:   "registry.example.com:5000",
+			repository: "org/team/project",
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateRegistryReference(tt.registry, tt.repository)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateRegistryReference() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestPackage_Validation(t *testing.T) {
+	ctx := context.Background()
+
+	// Test missing tag
+	_, err := Package(ctx, PackageOptions{
+		SourceDir:  ".",
+		OutputDir:  t.TempDir(),
+		Registry:   "ghcr.io",
+		Repository: "test/repo",
+		Tag:        "",
+	})
+	if err == nil || err.Error() != "tag is required for OCI packaging" {
+		t.Errorf("Package() expected tag error, got: %v", err)
+	}
+
+	// Test missing registry
+	_, err = Package(ctx, PackageOptions{
+		SourceDir:  ".",
+		OutputDir:  t.TempDir(),
+		Registry:   "",
+		Repository: "test/repo",
+		Tag:        "v1.0.0",
+	})
+	if err == nil || err.Error() != "registry is required for OCI packaging" {
+		t.Errorf("Package() expected registry error, got: %v", err)
+	}
+
+	// Test missing repository
+	_, err = Package(ctx, PackageOptions{
+		SourceDir:  ".",
+		OutputDir:  t.TempDir(),
+		Registry:   "ghcr.io",
+		Repository: "",
+		Tag:        "v1.0.0",
+	})
+	if err == nil || err.Error() != "repository is required for OCI packaging" {
+		t.Errorf("Package() expected repository error, got: %v", err)
+	}
+}
+
+func TestPackage_CreatesOCILayout(t *testing.T) {
+	ctx := context.Background()
+
+	// Create source directory with test files
+	sourceDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(sourceDir, "test.yaml"), []byte("content: test"), 0o644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	outputDir := t.TempDir()
+
+	result, err := Package(ctx, PackageOptions{
+		SourceDir:  sourceDir,
+		OutputDir:  outputDir,
+		Registry:   "ghcr.io",
+		Repository: "test/repo",
+		Tag:        "v1.0.0",
+	})
+	if err != nil {
+		t.Fatalf("Package() error = %v", err)
+	}
+
+	// Verify result fields
+	if result.Digest == "" {
+		t.Error("Package() result has empty digest")
+	}
+	if result.Reference != "ghcr.io/test/repo:v1.0.0" {
+		t.Errorf("Package() reference = %q, want %q", result.Reference, "ghcr.io/test/repo:v1.0.0")
+	}
+	if result.StorePath == "" {
+		t.Error("Package() result has empty store path")
+	}
+
+	// Verify OCI layout was created
+	ociLayoutFile := filepath.Join(result.StorePath, "oci-layout")
+	if _, err := os.Stat(ociLayoutFile); os.IsNotExist(err) {
+		t.Errorf("Package() did not create oci-layout file at %s", ociLayoutFile)
+	}
+
+	// Verify index.json exists
+	indexFile := filepath.Join(result.StorePath, "index.json")
+	if _, err := os.Stat(indexFile); os.IsNotExist(err) {
+		t.Errorf("Package() did not create index.json at %s", indexFile)
+	}
+
+	t.Logf("Package() created OCI layout at %s with digest %s", result.StorePath, result.Digest)
+}
+
+// TestOCIPackagingIntegration is an integration test that uses the REAL cert-manager
 // bundler to generate bundle output and the REAL OCI packaging code to create an artifact.
 // This verifies the entire pipeline from recipe → bundler → OCI artifact.
-func TestOCIArtifactWithRealBundler(t *testing.T) {
+func TestOCIPackagingIntegration(t *testing.T) {
 	ctx := context.Background()
 
 	// Create output directory for bundler
@@ -172,7 +319,7 @@ func TestOCIArtifactWithRealBundler(t *testing.T) {
 			},
 		},
 	}
-	rec.Init(header.KindRecipe, "v1")
+	rec.Init(header.KindRecipe, "v1", "1.0.0")
 
 	// Use the REAL cert-manager bundler to generate output
 	bundler := certmanager.NewBundler(config.NewConfig())
@@ -262,7 +409,7 @@ func TestOCIArtifactWithRealBundler(t *testing.T) {
 		t.Fatalf("Failed to unmarshal manifest: %v", unmarshalErr)
 	}
 
-	// Verify artifact type matches what Push() uses
+	// Verify artifact type matches what Package() uses
 	if manifest.ArtifactType != ArtifactType {
 		t.Errorf("Manifest ArtifactType = %q, want %q", manifest.ArtifactType, ArtifactType)
 	}
