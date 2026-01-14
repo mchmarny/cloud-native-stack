@@ -163,13 +163,13 @@ Output:
 bundle generation completed: success=4 errors=0 summary=Generated 24 files (33.2 KB)
 ```
 
-Similarly, bundles using API: 
+Similarly, bundles using API with full options: 
 
 ```shell
 # Query recipe API and pipe response to bundle API
-curl -s "https://cns.dgxc.io/v1/recipe?service=eks&accelerator=gb200&intent=training&os=ubuntu" | \
-  curl -X POST "https://cns.dgxc.io/v1/bundle" -H "Content-Type: application/json" -d @- \
-    -o bundles.zip
+curl -s "https://cns.dgxc.io/v1/recipe?service=eks&accelerator=h100&intent=training" | \
+  curl -X POST "https://cns.dgxc.io/v1/bundle?deployer=argocd" \
+    -H "Content-Type: application/json" -d @- -o bundles.zip
 
 # List generated bundles
 unzip bundles.zip -d ./bundles

@@ -214,6 +214,12 @@ This design enables a simple workflow: pipe the output from GET /v1/recipe direc
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `bundlers` | string | No | Comma-delimited list of bundler types to execute. If empty, all bundlers run. |
+| `set` | string[] | No | Value overrides (format: `bundler:path.to.field=value`). Can be repeated for multiple overrides. |
+| `system-node-selector` | string[] | No | Node selectors for system components (format: `key=value`). Can be repeated. |
+| `system-node-toleration` | string[] | No | Tolerations for system components (format: `key=value:effect` or `key:effect`). Can be repeated. |
+| `accelerated-node-selector` | string[] | No | Node selectors for GPU nodes (format: `key=value`). Can be repeated. |
+| `accelerated-node-toleration` | string[] | No | Tolerations for GPU nodes (format: `key=value:effect` or `key:effect`). Can be repeated. |
+| `deployer` | string | No | Deployment method: `script` (default), `argocd`, `flux`. |
 
 **Request Body:**
 

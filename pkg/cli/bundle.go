@@ -85,10 +85,9 @@ func bundleCmd() *cli.Command {
 			recipeFilePath := cmd.String("recipe")
 			outputDir := cmd.String("output")
 			bundlerTypesStr := cmd.StringSlice("bundlers")
-			setFlags := cmd.StringSlice("set")
 
 			// Parse value overrides from --set flags
-			valueOverrides, err := parseSetFlags(setFlags)
+			valueOverrides, err := config.ParseValueOverrides(cmd.StringSlice("set"))
 			if err != nil {
 				return fmt.Errorf("invalid --set flag: %w", err)
 			}
@@ -200,45 +199,6 @@ func bundleCmd() *cli.Command {
 			return nil
 		},
 	}
-}
-
-// parseSetFlags parses --set flags in format "bundler:path.to.field=value"
-// Returns a map of bundler -> (path -> value)
-func parseSetFlags(setFlags []string) (map[string]map[string]string, error) {
-	overrides := make(map[string]map[string]string)
-
-	for _, setFlag := range setFlags {
-		// Split on first ':' to get bundler and path=value
-		parts := strings.SplitN(setFlag, ":", 2)
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid format '%s': expected 'bundler:path=value'", setFlag)
-		}
-
-		bundlerName := parts[0]
-		pathValue := parts[1]
-
-		// Split on first '=' to get path and value
-		kvParts := strings.SplitN(pathValue, "=", 2)
-		if len(kvParts) != 2 {
-			return nil, fmt.Errorf("invalid format '%s': expected 'bundler:path=value'", setFlag)
-		}
-
-		path := kvParts[0]
-		value := kvParts[1]
-
-		if path == "" || value == "" {
-			return nil, fmt.Errorf("invalid format '%s': path and value cannot be empty", setFlag)
-		}
-
-		// Initialize bundler map if needed
-		if overrides[bundlerName] == nil {
-			overrides[bundlerName] = make(map[string]string)
-		}
-
-		overrides[bundlerName][path] = value
-	}
-
-	return overrides, nil
 }
 
 // deployerTypesToStrings converts deployer types to string slice for help text

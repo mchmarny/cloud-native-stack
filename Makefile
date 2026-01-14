@@ -79,7 +79,7 @@ scan: ## Scans for source vulnerabilities
 	grype dir:. --config .grype.yaml --fail-on high --quiet	
 
 .PHONY: qualify
-qualify: test lint scan ## Qualifies the current codebase (test, lint, scan)
+qualify: test lint e2e scan ## Qualifies the current codebase (test, lint, e2e, scan)
 	@echo "Codebase qualification completed"
 
 .PHONY: server

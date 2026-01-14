@@ -7,6 +7,8 @@ package cli
 import (
 	"reflect"
 	"testing"
+
+	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 )
 
 func TestParseSetFlags(t *testing.T) {
@@ -111,15 +113,15 @@ func TestParseSetFlags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseSetFlags(tt.setFlags)
+			got, err := config.ParseValueOverrides(tt.setFlags)
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("parseSetFlags() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ParseValueOverrides() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			if !tt.wantErr && !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parseSetFlags() = %v, want %v", got, tt.want)
+				t.Errorf("ParseValueOverrides() = %v, want %v", got, tt.want)
 			}
 		})
 	}
