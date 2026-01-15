@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -174,7 +175,7 @@ func (s *MetadataStore) BuildRecipeResult(ctx context.Context, criteria *Criteri
 			cnserrors.ErrCodeTimeout,
 			"build recipe result context cancelled during initialization",
 			ctx.Err(),
-			map[string]interface{}{
+			map[string]any{
 				"stage": "initialization",
 			},
 		)
@@ -196,6 +197,13 @@ func (s *MetadataStore) BuildRecipeResult(ctx context.Context, criteria *Criteri
 	for _, overlay := range overlays {
 		mergedSpec.Merge(&overlay.Spec)
 		appliedOverlays = append(appliedOverlays, overlay.Metadata.Name)
+	}
+
+	// Warn if no overlays matched - user is getting base-only configuration
+	if len(appliedOverlays) == 0 {
+		slog.Warn("no environment-specific overlays matched, using base configuration only",
+			"criteria", criteria.String(),
+			"hint", "recipe may not be optimized for your environment")
 	}
 
 	// Validate merged dependencies
