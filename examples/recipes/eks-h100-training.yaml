@@ -29,7 +29,7 @@ componentRefs:
     type: Helm
     source: ""
     version: v25.3.4
-    valuesFile: components/gpu-operator/eks-training.yaml
+    valuesFile: components/gpu-operator/values-eks-training.yaml
     overrides:
       gdrcopy:
         enabled: false
