@@ -271,11 +271,18 @@ func extractCriteriaFromSnapshot(snap *snapshotter.Snapshot) *recipe.Criteria {
 }
 
 // applyCriteriaOverrides applies CLI flag overrides to criteria.
+// Logs a warning when a flag overrides a value detected from the snapshot.
 func applyCriteriaOverrides(cmd *cli.Command, criteria *recipe.Criteria) error {
 	if s := cmd.String("service"); s != "" {
 		parsed, err := recipe.ParseCriteriaServiceType(s)
 		if err != nil {
 			return err
+		}
+		if criteria.Service != "" && criteria.Service != parsed {
+			slog.Info("CLI flag overriding snapshot-detected value",
+				"field", "service",
+				"detected", criteria.Service,
+				"override", parsed)
 		}
 		criteria.Service = parsed
 	}
@@ -284,12 +291,24 @@ func applyCriteriaOverrides(cmd *cli.Command, criteria *recipe.Criteria) error {
 		if err != nil {
 			return err
 		}
+		if criteria.Accelerator != "" && criteria.Accelerator != parsed {
+			slog.Info("CLI flag overriding snapshot-detected value",
+				"field", "accelerator",
+				"detected", criteria.Accelerator,
+				"override", parsed)
+		}
 		criteria.Accelerator = parsed
 	}
 	if s := cmd.String("intent"); s != "" {
 		parsed, err := recipe.ParseCriteriaIntentType(s)
 		if err != nil {
 			return err
+		}
+		if criteria.Intent != "" && criteria.Intent != parsed {
+			slog.Info("CLI flag overriding snapshot-detected value",
+				"field", "intent",
+				"detected", criteria.Intent,
+				"override", parsed)
 		}
 		criteria.Intent = parsed
 	}
@@ -298,9 +317,21 @@ func applyCriteriaOverrides(cmd *cli.Command, criteria *recipe.Criteria) error {
 		if err != nil {
 			return err
 		}
+		if criteria.OS != "" && criteria.OS != parsed {
+			slog.Info("CLI flag overriding snapshot-detected value",
+				"field", "os",
+				"detected", criteria.OS,
+				"override", parsed)
+		}
 		criteria.OS = parsed
 	}
 	if n := cmd.Int("nodes"); n > 0 {
+		if criteria.Nodes > 0 && criteria.Nodes != n {
+			slog.Info("CLI flag overriding snapshot-detected value",
+				"field", "nodes",
+				"detected", criteria.Nodes,
+				"override", n)
+		}
 		criteria.Nodes = n
 	}
 	return nil
