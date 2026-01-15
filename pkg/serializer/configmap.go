@@ -8,9 +8,8 @@ import (
 	"time"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/k8s/client"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	accorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 )
 
 // version is the application version used in ConfigMap labels.
@@ -107,49 +106,29 @@ func (w *ConfigMapWriter) Serialize(ctx context.Context, snapshot any) error {
 		"timestamp": timestamp,
 	}
 
-	configMap := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      w.name,
-			Namespace: w.namespace,
-			Labels: map[string]string{
-				"app.kubernetes.io/name":      "cns",
-				"app.kubernetes.io/component": "snapshot",
-				"app.kubernetes.io/version":   version,
-			},
-		},
-		Data: configMapData,
-	}
+	// Build ConfigMap apply configuration for Server-Side Apply
+	configMap := accorev1.ConfigMap(w.name, w.namespace).
+		WithLabels(map[string]string{
+			"app.kubernetes.io/name":      "cns",
+			"app.kubernetes.io/component": "snapshot",
+			"app.kubernetes.io/version":   version,
+		}).
+		WithData(configMapData)
 
-	cmClient := client.CoreV1().ConfigMaps(w.namespace)
-
-	// Try to get existing ConfigMap
-	existing, err := cmClient.Get(writeCtx, w.name, metav1.GetOptions{})
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			// Create new ConfigMap
-			slog.Info("creating ConfigMap",
-				"namespace", w.namespace,
-				"name", w.name,
-				"format", w.format)
-			_, err = cmClient.Create(writeCtx, configMap, metav1.CreateOptions{})
-			if err != nil {
-				return fmt.Errorf("failed to create ConfigMap: %w", err)
-			}
-			return nil
-		}
-		return fmt.Errorf("failed to get ConfigMap: %w", err)
-	}
-
-	// Update existing ConfigMap
-	existing.Data = configMapData
-	existing.Labels = configMap.Labels
-	slog.Info("updating ConfigMap",
+	// Use Server-Side Apply for atomic create-or-update operation
+	// This eliminates race conditions from the previous Get-then-Update pattern
+	slog.Info("applying ConfigMap",
 		"namespace", w.namespace,
 		"name", w.name,
 		"format", w.format)
-	_, err = cmClient.Update(writeCtx, existing, metav1.UpdateOptions{})
+
+	_, err = client.CoreV1().ConfigMaps(w.namespace).Apply(
+		writeCtx,
+		configMap,
+		metav1.ApplyOptions{FieldManager: "cnsctl"},
+	)
 	if err != nil {
-		return fmt.Errorf("failed to update ConfigMap: %w", err)
+		return fmt.Errorf("failed to apply ConfigMap: %w", err)
 	}
 
 	return nil
