@@ -3,6 +3,7 @@ module github.com/NVIDIA/cloud-native-stack
 go 1.25.0
 
 require (
+	github.com/agnivade/levenshtein v1.2.1
 	github.com/coreos/go-systemd/v22 v22.6.0
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.23.2
@@ -19,7 +20,6 @@ require (
 )
 
 require (
-	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
