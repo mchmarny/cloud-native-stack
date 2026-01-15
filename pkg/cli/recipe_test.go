@@ -502,6 +502,23 @@ func TestRecipeCmd_CommandStructure(t *testing.T) {
 	}
 }
 
+func TestRecipeCmd_NoCriteriaValidation(t *testing.T) {
+	cmd := recipeCmd()
+
+	// Run the recipe command with no criteria flags and no snapshot
+	err := cmd.Run(context.Background(), []string{"recipe"})
+
+	if err == nil {
+		t.Error("expected error when no criteria provided, got nil")
+		return
+	}
+
+	expectedMsg := "no criteria provided"
+	if !strings.Contains(err.Error(), expectedMsg) {
+		t.Errorf("error = %v, want error containing %q", err, expectedMsg)
+	}
+}
+
 func TestSnapshotCmd_CommandStructure(t *testing.T) {
 	cmd := snapshotCmd()
 

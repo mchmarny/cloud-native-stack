@@ -9,15 +9,25 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: '{{ .Source }}'
-    targetRevision: '{{ .Version }}'
-    chart: {{ .Name }}
-    helm:
-      releaseName: {{ .Name }}
-      values: |
-        # Values are loaded from the component's values.yaml in the bundle
-        # Edit {{ .Name }}/values.yaml and commit to your GitOps repository
+  sources:
+    # Helm chart source with values from bundle
+    - repoURL: '{{ .Source }}'
+      targetRevision: '{{ .Version }}'
+      chart: {{ .Name }}
+      helm:
+        releaseName: {{ .Name }}
+        valueFiles:
+          - $values/{{ .ValuesFile }}
+    # Reference to Git repository for values.yaml file
+    - repoURL: <YOUR_GIT_REPO>  # TODO: Replace with your GitOps repository URL
+      targetRevision: main      # TODO: Adjust branch/tag as needed
+      ref: values
+{{- if .HasManifests }}
+    # Additional manifests from the component's manifests directory
+    - repoURL: <YOUR_GIT_REPO>  # TODO: Replace with your GitOps repository URL
+      targetRevision: main      # TODO: Adjust branch/tag as needed
+      path: {{ .ManifestsDir }}
+{{- end }}
   destination:
     server: https://kubernetes.default.svc
     namespace: {{ .Namespace }}

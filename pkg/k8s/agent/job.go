@@ -50,10 +50,10 @@ func (d *Deployer) ensureJob(ctx context.Context) error {
 
 // buildJob constructs the Job specification.
 func (d *Deployer) buildJob() *batchv1.Job {
-	// Build command arguments
-	args := fmt.Sprintf("/ko-app/cnsctl snapshot -o %s", d.config.Output)
+	// Build command arguments (directly invoke binary without shell)
+	args := []string{"snapshot", "-o", d.config.Output}
 	if d.config.Debug {
-		args = fmt.Sprintf("/ko-app/cnsctl --debug --log-json snapshot -o %s", d.config.Output)
+		args = []string{"--debug", "--log-json", "snapshot", "-o", d.config.Output}
 	}
 
 	return &batchv1.Job{
@@ -85,6 +85,7 @@ func (d *Deployer) buildJob() *batchv1.Job {
 					HostIPC:            true,
 					NodeSelector:       d.config.NodeSelector,
 					Tolerations:        d.config.Tolerations,
+					ImagePullSecrets:   toLocalObjectReferences(d.config.ImagePullSecrets),
 					SecurityContext: &corev1.PodSecurityContext{
 						RunAsUser:           ptr.To(int64(0)),
 						RunAsGroup:          ptr.To(int64(0)),
@@ -95,8 +96,8 @@ func (d *Deployer) buildJob() *batchv1.Job {
 						{
 							Name:    "cns",
 							Image:   d.config.Image,
-							Command: []string{"/bin/sh", "-c"},
-							Args:    []string{args},
+							Command: []string{"/ko-app/cnsctl"},
+							Args:    args,
 							Env: []corev1.EnvVar{
 								{
 									Name: "NODE_NAME",
@@ -199,4 +200,16 @@ func (d *Deployer) waitForJobDeletion(ctx context.Context) error {
 func mustParseQuantity(s string) resource.Quantity {
 	q := resource.MustParse(s)
 	return q
+}
+
+// toLocalObjectReferences converts a slice of secret names to LocalObjectReferences.
+func toLocalObjectReferences(names []string) []corev1.LocalObjectReference {
+	if len(names) == 0 {
+		return nil
+	}
+	refs := make([]corev1.LocalObjectReference, len(names))
+	for i, name := range names {
+		refs[i] = corev1.LocalObjectReference{Name: name}
+	}
+	return refs
 }

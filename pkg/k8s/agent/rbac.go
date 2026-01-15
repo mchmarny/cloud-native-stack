@@ -79,7 +79,7 @@ func (d *Deployer) ensureRoleBinding(ctx context.Context) error {
 func (d *Deployer) ensureClusterRole(ctx context.Context) error {
 	cr := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "cns-node-reader",
+			Name: clusterRoleName,
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -114,7 +114,7 @@ func (d *Deployer) ensureClusterRole(ctx context.Context) error {
 func (d *Deployer) ensureClusterRoleBinding(ctx context.Context) error {
 	crb := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "cns-node-reader",
+			Name: clusterRoleName,
 		},
 		Subjects: []rbacv1.Subject{
 			{

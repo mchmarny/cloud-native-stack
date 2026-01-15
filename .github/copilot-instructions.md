@@ -428,13 +428,13 @@ cnsctl recipe --snapshot snapshot.yaml --intent training
 cnsctl bundle --recipe recipe.yaml --output ./bundles
 
 # Override bundle values at generation time
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --set gpuoperator:gds.enabled=true \
   --set gpuoperator:driver.version=570.86.16 \
   -o ./bundles
 
 # Node scheduling with selectors and tolerations
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --system-node-selector nodeGroup=system-pool \
   --system-node-toleration dedicated=system:NoSchedule \
   --accelerated-node-selector nvidia.com/gpu.present=true \
@@ -442,12 +442,12 @@ cnsctl bundle -f recipe.yaml -b gpu-operator \
   -o ./bundles
 
 # GitOps deployment with ArgoCD (sync-wave ordering)
-cnsctl bundle -f recipe.yaml -b gpu-operator,network-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator,network-operator \
   --deployer argocd \
   -o ./bundles
 
 # GitOps deployment with Flux (dependsOn ordering)
-cnsctl bundle -f recipe.yaml -b gpu-operator,network-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator,network-operator \
   --deployer flux \
   -o ./bundles
 ```
@@ -943,12 +943,12 @@ chmod +x scripts/install.sh
 cnsctl snapshot -o cm://gpu-operator/cns-snapshot
 
 # 2. Generate recipe from ConfigMap snapshot
-cnsctl recipe -f cm://gpu-operator/cns-snapshot \
+cnsctl recipe -s cm://gpu-operator/cns-snapshot \
   --intent training \
   -o cm://gpu-operator/cns-recipe
 
 # 3. Create bundle from ConfigMap recipe
-cnsctl bundle -f cm://gpu-operator/cns-recipe \
+cnsctl bundle -r cm://gpu-operator/cns-recipe \
   -b gpu-operator \
   -o ./bundles
 

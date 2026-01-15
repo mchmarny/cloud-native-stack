@@ -3,6 +3,8 @@ package agent
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -60,36 +62,62 @@ func (d *Deployer) GetSnapshot(ctx context.Context) ([]byte, error) {
 
 // Cleanup removes the agent Job and RBAC resources.
 // If opts.Enabled is false, no cleanup is performed (resources are kept for debugging).
+// All resources are attempted for deletion even if some fail, and a combined error is returned.
 func (d *Deployer) Cleanup(ctx context.Context, opts CleanupOptions) error {
 	// Skip cleanup if not enabled (keep resources for debugging)
 	if !opts.Enabled {
 		return nil
 	}
 
+	var errs []string
+	var deleted []string
+
 	// Delete the Job
 	if err := d.deleteJob(ctx); err != nil {
-		return fmt.Errorf("failed to delete Job: %w", err)
+		errs = append(errs, fmt.Sprintf("Job %q: %v", d.config.JobName, err))
+	} else {
+		deleted = append(deleted, fmt.Sprintf("Job %q", d.config.JobName))
 	}
 
-	// Delete RBAC resources
+	// Delete RBAC resources - attempt all even if some fail
 	if err := d.deleteServiceAccount(ctx); err != nil {
-		return fmt.Errorf("failed to delete ServiceAccount: %w", err)
+		errs = append(errs, fmt.Sprintf("ServiceAccount %q: %v", d.config.ServiceAccountName, err))
+	} else {
+		deleted = append(deleted, fmt.Sprintf("ServiceAccount %q", d.config.ServiceAccountName))
 	}
 
 	if err := d.deleteRole(ctx); err != nil {
-		return fmt.Errorf("failed to delete Role: %w", err)
+		errs = append(errs, fmt.Sprintf("Role %q: %v", d.config.ServiceAccountName, err))
+	} else {
+		deleted = append(deleted, fmt.Sprintf("Role %q", d.config.ServiceAccountName))
 	}
 
 	if err := d.deleteRoleBinding(ctx); err != nil {
-		return fmt.Errorf("failed to delete RoleBinding: %w", err)
+		errs = append(errs, fmt.Sprintf("RoleBinding %q: %v", d.config.ServiceAccountName, err))
+	} else {
+		deleted = append(deleted, fmt.Sprintf("RoleBinding %q", d.config.ServiceAccountName))
 	}
 
 	if err := d.deleteClusterRole(ctx); err != nil {
-		return fmt.Errorf("failed to delete ClusterRole: %w", err)
+		errs = append(errs, fmt.Sprintf("ClusterRole %q: %v", clusterRoleName, err))
+	} else {
+		deleted = append(deleted, fmt.Sprintf("ClusterRole %q", clusterRoleName))
 	}
 
 	if err := d.deleteClusterRoleBinding(ctx); err != nil {
-		return fmt.Errorf("failed to delete ClusterRoleBinding: %w", err)
+		errs = append(errs, fmt.Sprintf("ClusterRoleBinding %q: %v", clusterRoleName, err))
+	} else {
+		deleted = append(deleted, fmt.Sprintf("ClusterRoleBinding %q", clusterRoleName))
+	}
+
+	// Log successful deletions
+	if len(deleted) > 0 {
+		slog.Debug("cleanup completed", slog.Int("deleted", len(deleted)), slog.Any("resources", deleted))
+	}
+
+	// Return combined error if any deletions failed
+	if len(errs) > 0 {
+		return fmt.Errorf("failed to delete %d resource(s):\n  - %s", len(errs), strings.Join(errs, "\n  - "))
 	}
 
 	return nil

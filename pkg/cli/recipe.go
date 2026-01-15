@@ -56,7 +56,7 @@ Output can be in JSON or YAML format.`,
 			},
 			&cli.StringFlag{
 				Name:    "snapshot",
-				Aliases: []string{"f"},
+				Aliases: []string{"s"},
 				Usage: `Path/URI to previously generated configuration snapshot.
 	Supports: file paths, HTTP/HTTPS URLs, or ConfigMap URIs (cm://namespace/name).
 	If provided, criteria are extracted from the snapshot.`,
@@ -104,6 +104,11 @@ Output can be in JSON or YAML format.`,
 				criteria, buildErr := buildCriteriaFromCmd(cmd)
 				if buildErr != nil {
 					return fmt.Errorf("error parsing criteria: %w", buildErr)
+				}
+
+				// Validate that at least some criteria was provided
+				if criteria.Specificity() == 0 {
+					return fmt.Errorf("no criteria provided: specify at least one of --service, --accelerator, --intent, --os, --nodes, or use --snapshot to load from a snapshot file")
 				}
 
 				slog.Info("building recipe from criteria", "criteria", criteria.String())

@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/k8s/client"
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
@@ -19,6 +20,8 @@ type Collector struct {
 // Collect retrieves Kubernetes cluster version information from the API server.
 // This provides cluster version details for comparison across environments.
 func (k *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+	slog.Info("collecting Kubernetes cluster information")
+
 	// Check if context is canceled
 	if err := ctx.Err(); err != nil {
 		return nil, err

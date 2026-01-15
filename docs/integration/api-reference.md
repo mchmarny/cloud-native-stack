@@ -30,10 +30,10 @@ The API server provides HTTP REST access to recipe generation and bundle creatio
 cnsctl snapshot -o cm://namespace/name
 
 # Generate recipe from ConfigMap
-cnsctl recipe -f cm://namespace/name -o recipe.yaml
+cnsctl recipe -s cm://namespace/name -o recipe.yaml
 
 # Create deployment bundle
-cnsctl bundle -f recipe.yaml -o ./bundles
+cnsctl bundle -r recipe.yaml -o ./bundles
 ```
 
 See [CLI Reference](../user-guide/cli-reference.md) and [Agent Deployment](../user-guide/agent-deployment.md).
@@ -214,6 +214,12 @@ This design enables a simple workflow: pipe the output from GET /v1/recipe direc
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `bundlers` | string | No | Comma-delimited list of bundler types to execute. If empty, all bundlers run. |
+| `set` | string[] | No | Value overrides (format: `bundler:path.to.field=value`). Can be repeated for multiple overrides. |
+| `system-node-selector` | string[] | No | Node selectors for system components (format: `key=value`). Can be repeated. |
+| `system-node-toleration` | string[] | No | Tolerations for system components (format: `key=value:effect` or `key:effect`). Can be repeated. |
+| `accelerated-node-selector` | string[] | No | Node selectors for GPU nodes (format: `key=value`). Can be repeated. |
+| `accelerated-node-toleration` | string[] | No | Tolerations for GPU nodes (format: `key=value:effect` or `key:effect`). Can be repeated. |
+| `deployer` | string | No | Deployment method: `script` (default), `argocd`, `flux`. |
 
 **Request Body:**
 

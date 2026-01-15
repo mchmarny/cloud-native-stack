@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -102,10 +103,54 @@ func (d *Deployer) deleteConfigMap(ctx context.Context) error {
 	return ignoreNotFound(err)
 }
 
-// getJobLogs retrieves logs from the Job's Pod.
-//
-//nolint:unused // Kept for future debugging purposes
-func (d *Deployer) getJobLogs(ctx context.Context) (string, error) {
+// StreamLogs streams logs from the Job's Pod to the provided writer.
+// It will follow the logs until the context is canceled.
+// Returns when the context is canceled or an error occurs.
+func (d *Deployer) StreamLogs(ctx context.Context, w io.Writer, prefix string) error {
+	// Find Pod for this Job
+	pods, err := d.clientset.CoreV1().Pods(d.config.Namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=cns",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to list Pods: %w", err)
+	}
+
+	if len(pods.Items) == 0 {
+		return fmt.Errorf("no Pods found for Job %s", d.config.JobName)
+	}
+
+	// Get logs from first Pod with Follow=true
+	pod := pods.Items[0]
+	req := d.clientset.CoreV1().Pods(d.config.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+		Follow: true,
+	})
+
+	logs, err := req.Stream(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to stream logs: %w", err)
+	}
+	defer logs.Close()
+
+	// Stream logs line by line with prefix
+	scanner := bufio.NewScanner(logs)
+	for scanner.Scan() {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			if prefix != "" {
+				fmt.Fprintf(w, "%s %s\n", prefix, scanner.Text())
+			} else {
+				fmt.Fprintln(w, scanner.Text())
+			}
+		}
+	}
+
+	return scanner.Err()
+}
+
+// GetPodLogs retrieves logs from the Job's Pod.
+func (d *Deployer) GetPodLogs(ctx context.Context) (string, error) {
 	// Find Pod for this Job
 	pods, err := d.clientset.CoreV1().Pods(d.config.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: "app.kubernetes.io/name=cns",

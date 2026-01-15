@@ -138,6 +138,9 @@ func (v *Validator) evaluateConstraint(constraint recipe.Constraint, snap *snaps
 	}
 	cv.Actual = actual
 
+	// Print detected criteria based on the path and value found
+	printDetectedCriteria(path.String(), actual)
+
 	// Parse the constraint expression
 	parsed, err := ParseConstraintExpression(constraint.Value)
 	if err != nil {
@@ -179,4 +182,18 @@ func (v *Validator) evaluateConstraint(constraint recipe.Constraint, snap *snaps
 	}
 
 	return cv
+}
+
+// printDetectedCriteria prints detected criteria based on the constraint path and value.
+func printDetectedCriteria(path, value string) {
+	switch path {
+	case "K8s.server.version":
+		slog.Info("detected criteria", "service", value)
+	case "GPU.smi.gpu.model":
+		slog.Info("detected criteria", "accelerator", value)
+	case "OS.release.ID":
+		slog.Info("detected criteria", "os", value)
+	case "OS.release.VERSION_ID":
+		slog.Info("detected criteria", "os_version", value)
+	}
 }

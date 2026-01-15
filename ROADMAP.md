@@ -69,7 +69,61 @@ Validate existing bundlers against known-good deployments to ensure they reliabl
 
 ## Launch Blockers
 
-TBD
+### P0. CNCF AI Conformance
+
+**User Story**  
+As a platform operator, I want to validate that my cluster meets CNCF AI conformance requirements so I can ensure compatibility with AI/ML workloads and demonstrate compliance to stakeholders.
+
+**Scope**  
+Integrate CNCF AI conformance testing into the CNS workflow, enabling both recipe validation (pre-deployment) and cluster validation (post-deployment).
+
+**Acceptance Criteria**
+- [ ] Recipe validation against CNCF AI conformance requirements
+- [ ] Cluster validation via snapshot comparison to conformance baseline
+- [ ] `cnsctl validate --conformance ai` command
+- [ ] Conformance report generation (pass/fail with details)
+- [ ] Integration with existing `validate` command workflow
+- [ ] Documentation of conformance requirements and remediation steps
+
+### P0. Recipe Generation from Cluster Measurements
+
+**User Story**  
+As a platform engineer, I want to generate a new recipe based on actual cluster measurements so that validated configurations can be captured, versioned, and shared across environments.
+
+**Scope**  
+Enable a workflow where cluster snapshots feed into recipe generation, with recipes published through the CNS repository and release process.
+
+**Workflow**  
+```
+Cluster Snapshot → API Processing → CNS Repository PR → Review → Release
+```
+
+**Acceptance Criteria**
+- [ ] API endpoint to submit cluster measurements for recipe generation
+- [ ] Automatic recipe derivation from snapshot data
+- [ ] PR generation to CNS repository with proposed recipe
+- [ ] Review workflow for recipe validation before merge
+- [ ] Versioned recipe release tied to CNS releases
+- [ ] Provenance tracking (source cluster, snapshot timestamp, submitter)
+- [ ] Documentation of contribution workflow
+
+### P0. Recipe Performance Validation
+
+**User Story**  
+As a platform operator, I want to validate that a recipe produces expected performance characteristics so I can ensure deployments meet workload requirements before production rollout.
+
+**Scope**  
+Associate recipes with synthetic workloads and expected performance baselines, enabling automated validation of deployment quality.
+
+**Acceptance Criteria**
+- [ ] Synthetic workload definitions per recipe/platform combination
+- [ ] Expected performance characteristics (throughput, latency, utilization)
+- [ ] `cnsctl validate --performance` command
+- [ ] Performance baseline comparison with tolerance thresholds
+- [ ] Pass/fail reporting with metric details
+- [ ] Support for GPU-specific benchmarks (NCCL, cuBLAS, inference latency)
+- [ ] Integration with CI/CD for automated performance gates
+- [ ] Documentation of benchmark methodology and baseline derivation
 
 ## Backlog
 

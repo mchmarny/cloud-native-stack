@@ -2,6 +2,9 @@ package types
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/agnivade/levenshtein"
 )
 
 // BundleType represents the type of a bundler.
@@ -22,9 +25,11 @@ func (bt BundleType) String() string {
 }
 
 // ParseType converts a string to a BundleType.
-// Returns an error if the string is not a valid bundle type.
+// Matching is case-insensitive. Returns an error with a suggestion if the
+// string is not a valid bundle type but is close to one.
 func ParseType(s string) (BundleType, error) {
-	switch s {
+	lower := strings.ToLower(s)
+	switch lower {
 	case string(BundleTypeGpuOperator):
 		return BundleTypeGpuOperator, nil
 	case string(BundleTypeNetworkOperator):
@@ -36,8 +41,33 @@ func ParseType(s string) (BundleType, error) {
 	case string(BundleTypeCertManager):
 		return BundleTypeCertManager, nil
 	default:
-		return "", fmt.Errorf("unsupported bundle type: %s", s)
+		if suggestion := findClosestBundleType(lower); suggestion != "" {
+			return "", fmt.Errorf("unsupported bundle type %q (did you mean %q?)", s, suggestion)
+		}
+		return "", fmt.Errorf("unsupported bundle type %q", s)
 	}
+}
+
+// findClosestBundleType finds the closest matching bundle type using Levenshtein distance.
+// Returns empty string if no close match is found (distance > maxDistance).
+func findClosestBundleType(input string) string {
+	const maxDistance = 5 // Maximum edit distance to consider a suggestion
+
+	var closest string
+	minDist := maxDistance + 1
+
+	for _, bt := range SupportedTypes() {
+		dist := levenshtein.ComputeDistance(input, string(bt))
+		if dist < minDist {
+			minDist = dist
+			closest = string(bt)
+		}
+	}
+
+	if minDist <= maxDistance {
+		return closest
+	}
+	return ""
 }
 
 // SupportedTypes returns all supported bundle types.

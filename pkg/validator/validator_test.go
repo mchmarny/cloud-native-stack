@@ -6,7 +6,9 @@ SPDX-License-Identifier: Apache-2.0
 package validator
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
@@ -303,4 +305,77 @@ func TestNew(t *testing.T) {
 			t.Errorf("Version = %q, want %q", v.Version, "v1.2.3")
 		}
 	})
+}
+
+func TestPrintDetectedCriteria(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     string
+		value    string
+		wantLog  string
+		wantSkip bool
+	}{
+		{
+			name:    "K8s version logs service",
+			path:    "K8s.server.version",
+			value:   "v1.33.5-eks-3025e55",
+			wantLog: "service",
+		},
+		{
+			name:    "GPU model logs accelerator",
+			path:    "GPU.smi.gpu.model",
+			value:   "NVIDIA H100 80GB HBM3",
+			wantLog: "accelerator",
+		},
+		{
+			name:    "OS release logs os",
+			path:    "OS.release.ID",
+			value:   "ubuntu",
+			wantLog: "os",
+		},
+		{
+			name:    "OS version logs os_version",
+			path:    "OS.release.VERSION_ID",
+			value:   "24.04",
+			wantLog: "os_version",
+		},
+		{
+			name:     "unrecognized path does not log",
+			path:     "Other.subtype.key",
+			value:    "somevalue",
+			wantSkip: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			handler := slog.NewTextHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo})
+			oldLogger := slog.Default()
+			slog.SetDefault(slog.New(handler))
+			defer slog.SetDefault(oldLogger)
+
+			printDetectedCriteria(tt.path, tt.value)
+
+			output := buf.String()
+			if tt.wantSkip {
+				if output != "" {
+					t.Errorf("expected no log output for path %q, got %q", tt.path, output)
+				}
+				return
+			}
+
+			if output == "" {
+				t.Errorf("expected log output for path %q, got none", tt.path)
+				return
+			}
+
+			if !bytes.Contains(buf.Bytes(), []byte(tt.wantLog)) {
+				t.Errorf("expected log to contain %q, got %q", tt.wantLog, output)
+			}
+			if !bytes.Contains(buf.Bytes(), []byte(tt.value)) {
+				t.Errorf("expected log to contain value %q, got %q", tt.value, output)
+			}
+		})
+	}
 }

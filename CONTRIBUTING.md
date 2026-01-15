@@ -644,29 +644,29 @@ cnsctl recipe \
 
 # Snapshot mode: Generate recipe from captured snapshot
 cnsctl recipe --snapshot system.yaml --intent training
-cnsctl recipe -f system.yaml -i inference -o recipe.yaml
-cnsctl recipe -f cm://gpu-operator/cns-snapshot -i training -o cm://gpu-operator/cns-recipe  # ConfigMap I/O
+cnsctl recipe -s system.yaml -i inference -o recipe.yaml
+cnsctl recipe -s cm://gpu-operator/cns-snapshot -i training -o cm://gpu-operator/cns-recipe  # ConfigMap I/O
 
 # With custom kubeconfig for ConfigMap access
 cnsctl recipe \
-  -f cm://gpu-operator/cns-snapshot \
+  -s cm://gpu-operator/cns-snapshot \
   --kubeconfig ~/.kube/prod-cluster \
   -i training \
   -o recipe.yaml
 
 # STEP 3: Bundle - Create deployment artifacts
 cnsctl bundle --recipe recipe.yaml --output ./bundles
-cnsctl bundle -f recipe.yaml -b gpu-operator -o ./deployment
-cnsctl bundle -f cm://gpu-operator/cns-recipe -o ./bundles  # ConfigMap input
+cnsctl bundle -r recipe.yaml -b gpu-operator -o ./deployment
+cnsctl bundle -r cm://gpu-operator/cns-recipe -o ./bundles  # ConfigMap input
 
 # Override bundle values at generation time
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --set gpuoperator:gds.enabled=true \
   --set gpuoperator:driver.version=570.86.16 \
   -o ./bundles
 
 # Multiple bundlers with overrides
-cnsctl bundle -f recipe.yaml \
+cnsctl bundle -r recipe.yaml \
   -b gpu-operator \
   -b network-operator \
   --set gpuoperator:mig.strategy=mixed \
@@ -735,17 +735,17 @@ cnsctl snapshot --deploy-agent -o cm://gpu-operator/cns-snapshot
 cnsctl snapshot -o cm://gpu-operator/cns-snapshot
 
 # 2. Generate recipe from ConfigMap snapshot to ConfigMap output
-cnsctl recipe -f cm://gpu-operator/cns-snapshot --intent training -o cm://gpu-operator/cns-recipe
+cnsctl recipe -s cm://gpu-operator/cns-snapshot --intent training -o cm://gpu-operator/cns-recipe
 
 # With custom kubeconfig
 cnsctl recipe \
-  -f cm://gpu-operator/cns-snapshot \
+  -s cm://gpu-operator/cns-snapshot \
   --kubeconfig ~/.kube/config \
   --intent training \
   -o cm://gpu-operator/cns-recipe
 
 # 3. Create bundle from ConfigMap recipe
-cnsctl bundle -f cm://gpu-operator/cns-recipe -b gpu-operator -o ./bundles
+cnsctl bundle -r cm://gpu-operator/cns-recipe -b gpu-operator -o ./bundles
 
 # 4. Verify ConfigMap data
 kubectl get configmap cns-snapshot -n gpu-operator -o yaml

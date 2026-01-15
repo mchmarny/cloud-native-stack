@@ -17,9 +17,21 @@ import (
 type Collector struct {
 }
 
+const nvidiaSMICommand = "nvidia-smi"
+
 // Collect retrieves the NVIDIA SMI information by executing nvidia-smi command and
-// parses the XML output into NVSMIDevice structures
+// parses the XML output into NVSMIDevice structures.
+// If nvidia-smi is not installed, returns a measurement with gpu-count=0 (graceful degradation).
 func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, error) {
+	slog.Info("collecting GPU information via nvidia-smi")
+
+	// Check if nvidia-smi is available before attempting to run it
+	if _, err := exec.LookPath(nvidiaSMICommand); err != nil {
+		slog.Warn("nvidia-smi not found - no GPU data will be collected",
+			slog.String("hint", "install NVIDIA drivers to enable GPU collection"))
+		return noGPUMeasurement(), nil
+	}
+
 	// Use parent context deadline if it's sooner than our default 10s timeout
 	deadline, ok := ctx.Deadline()
 	timeout := 10 * time.Second
@@ -39,7 +51,7 @@ func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 		return nil, err
 	}
 
-	data, err := executeCommand(ctx, "nvidia-smi", "-q", "-x")
+	data, err := executeCommand(ctx, nvidiaSMICommand, "-q", "-x")
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute nvidia-smi command: %w", err)
 	}
@@ -59,6 +71,22 @@ func (s *Collector) Collect(ctx context.Context) (*measurement.Measurement, erro
 	}
 
 	return res, nil
+}
+
+// noGPUMeasurement returns a measurement indicating no GPU is available.
+// This is used for graceful degradation when nvidia-smi is not installed.
+func noGPUMeasurement() *measurement.Measurement {
+	return &measurement.Measurement{
+		Type: measurement.TypeGPU,
+		Subtypes: []measurement.Subtype{
+			{
+				Name: "smi",
+				Data: map[string]measurement.Reading{
+					measurement.KeyGPUCount: measurement.Int(0),
+				},
+			},
+		},
+	}
 }
 
 func getSMIReadings(data []byte) (map[string]measurement.Reading, error) {

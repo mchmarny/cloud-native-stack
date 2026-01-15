@@ -16,6 +16,7 @@ func TestResult_New(t *testing.T) {
 
 	if result == nil {
 		t.Fatal("New() returned nil")
+		return
 	}
 
 	if result.Type != bundlerType {

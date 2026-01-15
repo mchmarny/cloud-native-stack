@@ -41,11 +41,26 @@ func NewDeployer() registry.Deployer {
 
 // ApplicationData contains data for ArgoCD Application template.
 type ApplicationData struct {
+	Name         string
+	Source       string
+	Version      string
+	Namespace    string
+	SyncWave     int    // Deployment order (0 = first, 1 = second, etc.)
+	ValuesFile   string // Path to values.yaml relative to Git repo root
+	HasManifests bool   // Whether component has manifests/ directory
+	ManifestsDir string // Path to manifests directory relative to Git repo root
+}
+
+// AppOfAppsData contains data for the app-of-apps template.
+type AppOfAppsData struct {
+	Components []AppOfAppsComponent
+}
+
+// AppOfAppsComponent represents a component reference in app-of-apps.
+type AppOfAppsComponent struct {
 	Name      string
-	Source    string
-	Version   string
 	Namespace string
-	SyncWave  int // Deployment order (0 = first, 1 = second, etc.)
+	Path      string // Path to component's argocd directory in Git repo
 }
 
 // Generate creates ArgoCD Application manifests and deployment README.
@@ -55,14 +70,6 @@ func (d *Deployer) Generate(ctx context.Context, recipeResult *recipe.RecipeResu
 	startTime := time.Now()
 	artifacts := result.New(string(types.DeployerTypeArgoCD))
 
-	// Create argocd directory
-	argocdDir := filepath.Join(bundleDir, "argocd")
-	if err := os.MkdirAll(argocdDir, 0755); err != nil {
-		artifacts.Success = false
-		artifacts.Error = fmt.Sprintf("failed to create argocd directory: %v", err)
-		return artifacts, err
-	}
-
 	// Build a map from component name to its position in DeploymentOrder
 	orderMap := make(map[string]int)
 	for i, name := range recipeResult.DeploymentOrder {
@@ -71,14 +78,35 @@ func (d *Deployer) Generate(ctx context.Context, recipeResult *recipe.RecipeResu
 
 	// Generate Application manifest for each component in deployment order
 	orderedComponents := orderComponentsByDeployment(recipeResult.ComponentRefs, recipeResult.DeploymentOrder)
+	appOfAppsComponents := make([]AppOfAppsComponent, 0, len(orderedComponents))
+
 	for _, componentRef := range orderedComponents {
+		// Create argocd subdirectory within the component directory
+		componentArgoDir := filepath.Join(bundleDir, componentRef.Name, "argocd")
+		if err := os.MkdirAll(componentArgoDir, 0755); err != nil {
+			artifacts.Success = false
+			artifacts.Error = fmt.Sprintf("failed to create argocd directory for %s: %v", componentRef.Name, err)
+			return artifacts, err
+		}
+
 		syncWave := orderMap[componentRef.Name] // Default to 0 if not in order
+
+		// Check if component has manifests directory
+		manifestsDir := filepath.Join(bundleDir, componentRef.Name, "manifests")
+		hasManifests := false
+		if info, err := os.Stat(manifestsDir); err == nil && info.IsDir() {
+			hasManifests = true
+		}
+
 		appData := ApplicationData{
-			Name:      componentRef.Name,
-			Source:    componentRef.Source,
-			Version:   componentRef.Version,
-			Namespace: internal.GetNamespaceForComponent(componentRef.Name),
-			SyncWave:  syncWave,
+			Name:         componentRef.Name,
+			Source:       componentRef.Source,
+			Version:      componentRef.Version,
+			Namespace:    internal.GetNamespaceForComponent(componentRef.Name),
+			SyncWave:     syncWave,
+			ValuesFile:   fmt.Sprintf("%s/values.yaml", componentRef.Name),
+			HasManifests: hasManifests,
+			ManifestsDir: fmt.Sprintf("%s/manifests", componentRef.Name),
 		}
 
 		appManifest, err := internal.RenderTemplate(applicationTemplate, appData)
@@ -88,7 +116,8 @@ func (d *Deployer) Generate(ctx context.Context, recipeResult *recipe.RecipeResu
 			return artifacts, err
 		}
 
-		appPath := filepath.Join(argocdDir, fmt.Sprintf("%s-app.yaml", componentRef.Name))
+		// Write application.yaml to component's argocd directory
+		appPath := filepath.Join(componentArgoDir, "application.yaml")
 		if err := os.WriteFile(appPath, []byte(appManifest), 0600); err != nil {
 			artifacts.Success = false
 			artifacts.Error = fmt.Sprintf("failed to write Application manifest: %v", err)
@@ -96,17 +125,28 @@ func (d *Deployer) Generate(ctx context.Context, recipeResult *recipe.RecipeResu
 		}
 
 		artifacts.Files = append(artifacts.Files, appPath)
+
+		// Track component for app-of-apps
+		appOfAppsComponents = append(appOfAppsComponents, AppOfAppsComponent{
+			Name:      componentRef.Name,
+			Namespace: internal.GetNamespaceForComponent(componentRef.Name),
+			Path:      fmt.Sprintf("%s/argocd", componentRef.Name),
+		})
 	}
 
-	// Generate parent app-of-apps Application
-	appOfAppsManifest, err := internal.RenderTemplate(appOfAppsTemplate, nil)
+	// Generate parent app-of-apps Application at bundle root
+	appOfAppsData := AppOfAppsData{
+		Components: appOfAppsComponents,
+	}
+	appOfAppsManifest, err := internal.RenderTemplate(appOfAppsTemplate, appOfAppsData)
 	if err != nil {
 		artifacts.Success = false
 		artifacts.Error = fmt.Sprintf("failed to render app-of-apps template: %v", err)
 		return artifacts, err
 	}
 
-	appOfAppsPath := filepath.Join(argocdDir, "app-of-apps.yaml")
+	// Write app-of-apps.yaml to bundle root (next to recipe.yaml)
+	appOfAppsPath := filepath.Join(bundleDir, "app-of-apps.yaml")
 	if writeErr := os.WriteFile(appOfAppsPath, []byte(appOfAppsManifest), 0600); writeErr != nil {
 		artifacts.Success = false
 		artifacts.Error = fmt.Sprintf("failed to write app-of-apps manifest: %v", writeErr)

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -289,4 +290,44 @@ func NewConfig(options ...Option) *Config {
 		opt(c)
 	}
 	return c
+}
+
+// ParseValueOverrides parses value override strings in format "bundler:path.to.field=value".
+// Returns a map of bundler -> (path -> value).
+// This function is used by both CLI and API handlers to parse --set flags and query parameters.
+func ParseValueOverrides(overrides []string) (map[string]map[string]string, error) {
+	result := make(map[string]map[string]string)
+
+	for _, override := range overrides {
+		// Split on first ':' to get bundler and path=value
+		parts := strings.SplitN(override, ":", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid format '%s': expected 'bundler:path=value'", override)
+		}
+
+		bundlerName := parts[0]
+		pathValue := parts[1]
+
+		// Split on first '=' to get path and value
+		kvParts := strings.SplitN(pathValue, "=", 2)
+		if len(kvParts) != 2 {
+			return nil, fmt.Errorf("invalid format '%s': expected 'bundler:path=value'", override)
+		}
+
+		path := kvParts[0]
+		value := kvParts[1]
+
+		if path == "" || value == "" {
+			return nil, fmt.Errorf("invalid format '%s': path and value cannot be empty", override)
+		}
+
+		// Initialize bundler map if needed
+		if result[bundlerName] == nil {
+			result[bundlerName] = make(map[string]string)
+		}
+
+		result[bundlerName][path] = value
+	}
+
+	return result, nil
 }

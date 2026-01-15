@@ -678,7 +678,9 @@ When the `--deployer` flag is set, bundlers generate standard artifacts that dep
 
 **For ArgoCD** (`--deployer argocd`):
 - Bundler generates `values.yaml` and `manifests/`
-- Deployer creates `argocd/application.yaml` with sync-wave annotations
+- Deployer creates `<component>/argocd/application.yaml` with sync-wave annotations
+- Deployer creates `app-of-apps.yaml` at bundle root
+- Applications use multi-source to reference values.yaml and manifests from GitOps repo
 
 **For Flux** (`--deployer flux`):
 - Bundler generates `values.yaml` and `manifests/`
@@ -694,13 +696,13 @@ The deployer is specified at bundle generation time:
 
 ```bash
 # Generate bundles with ArgoCD deployer
-cnsctl bundle -f recipe.yaml -o ./bundles --deployer argocd
+cnsctl bundle -r recipe.yaml -o ./bundles --deployer argocd
 
 # Generate bundles with Flux deployer
-cnsctl bundle -f recipe.yaml -o ./bundles --deployer flux
+cnsctl bundle -r recipe.yaml -o ./bundles --deployer flux
 
 # Generate bundles with Script deployer (default)
-cnsctl bundle -f recipe.yaml -o ./bundles --deployer script
+cnsctl bundle -r recipe.yaml -o ./bundles --deployer script
 ```
 
 See [CLI Architecture](cli.md#deployer-framework-gitops-integration) for detailed deployer documentation.

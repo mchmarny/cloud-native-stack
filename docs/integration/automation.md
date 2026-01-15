@@ -100,7 +100,7 @@ generate_recipe:
   image: ghcr.io/nvidia/cns:latest
   script:
     # Option 1: Use ConfigMap directly (no artifact needed)
-    - cnsctl recipe -f cm://gpu-operator/cns-snapshot --intent training -o recipe.yaml
+    - cnsctl recipe -s cm://gpu-operator/cns-snapshot --intent training -o recipe.yaml
     # Option 2: Use snapshot file from previous stage
     # - cnsctl recipe --snapshot snapshot.yaml --intent training --output recipe.yaml
   artifacts:
@@ -115,7 +115,7 @@ create_bundle:
   script:
     - cnsctl bundle --recipe recipe.yaml --bundlers gpu-operator --output ./bundles
     # Override values at bundle generation time
-    # - cnsctl bundle -f recipe.yaml -b gpu-operator --set gpuoperator:gds.enabled=true -o ./bundles
+    # - cnsctl bundle -r recipe.yaml -b gpu-operator --set gpuoperator:gds.enabled=true -o ./bundles
   artifacts:
     paths:
       - bundles/
@@ -231,7 +231,7 @@ for cluster_config in "${CLUSTERS[@]}"; do
   
   # Generate recipe (can use ConfigMap directly or file)
   # Option 1: Use ConfigMap
-  cnsctl recipe -f "cm://gpu-operator/cns-snapshot" --intent training -o "recipe-${CLUSTER}.yaml"
+  cnsctl recipe -s "cm://gpu-operator/cns-snapshot" --intent training -o "recipe-${CLUSTER}.yaml"
   # Option 2: Use saved file
   # cnsctl recipe --snapshot "snapshot-${CLUSTER}.yaml" --intent training --output "recipe-${CLUSTER}.yaml"
   
@@ -308,8 +308,10 @@ jobs:
       
       - name: Commit to GitOps repo
         run: |
-          # Copy ArgoCD manifests to GitOps repository
-          cp -r bundles/*/argocd/* gitops-repo/apps/
+          # Copy entire bundle to GitOps repository
+          # ArgoCD apps are in <component>/argocd/ directories
+          # app-of-apps.yaml is at bundle root
+          cp -r bundles/* gitops-repo/
           
           cd gitops-repo
           git add .
@@ -317,7 +319,7 @@ jobs:
           git push
 ```
 
-**Generated ArgoCD Application with sync-wave:**
+**Generated ArgoCD Application with multi-source:**
 ```yaml
 # bundles/gpu-operator/argocd/application.yaml
 apiVersion: argoproj.io/v1alpha1
@@ -329,13 +331,22 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"  # Deployed after cert-manager (wave 0)
 spec:
   project: default
-  source:
-    repoURL: https://helm.ngc.nvidia.com/nvidia
-    chart: gpu-operator
-    targetRevision: v25.3.3
-    helm:
-      valueFiles:
-        - values.yaml
+  sources:
+    # Helm chart from upstream
+    - repoURL: https://helm.ngc.nvidia.com/nvidia
+      chart: gpu-operator
+      targetRevision: v25.3.3
+      helm:
+        valueFiles:
+          - $values/gpu-operator/values.yaml
+    # Values from GitOps repo
+    - repoURL: <YOUR_GIT_REPO>
+      targetRevision: main
+      ref: values
+    # Additional manifests (ClusterPolicy, etc.)
+    - repoURL: <YOUR_GIT_REPO>
+      targetRevision: main
+      path: gpu-operator/manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: gpu-operator
@@ -365,7 +376,7 @@ generate_flux_bundles:
   image: ghcr.io/nvidia/cns:latest
   script:
     - cnsctl recipe --service gke --accelerator gb200 --intent training -o recipe.yaml
-    - cnsctl bundle -f recipe.yaml -b gpu-operator,network-operator,cert-manager --deployer flux -o ./bundles
+    - cnsctl bundle -r recipe.yaml -b gpu-operator,network-operator,cert-manager --deployer flux -o ./bundles
   artifacts:
     paths:
       - bundles/
@@ -477,7 +488,7 @@ resource "null_resource" "generate_recipe" {
   provisioner "local-exec" {
     command = <<-EOT
       cnsctl recipe \
-        -f cm://gpu-operator/cns-snapshot \
+        -s cm://gpu-operator/cns-snapshot \
         --intent ${var.workload_intent} \
         -o ${var.recipe_output}
     EOT

@@ -70,17 +70,11 @@ func TestDeployer_Generate(t *testing.T) {
 		t.Errorf("Generate() artifacts.Success = false, want true (error: %s)", artifacts.Error)
 	}
 
-	// Verify argocd directory was created
-	argocdDir := filepath.Join(tmpDir, "argocd")
-	if _, err := os.Stat(argocdDir); os.IsNotExist(err) {
-		t.Error("Generate() did not create argocd directory")
-	}
-
-	// Verify Application manifests were created
+	// Verify Application manifests were created in component directories
 	expectedFiles := []string{
-		"argocd/gpu-operator-app.yaml",
-		"argocd/network-operator-app.yaml",
-		"argocd/app-of-apps.yaml",
+		"gpu-operator/argocd/application.yaml",
+		"network-operator/argocd/application.yaml",
+		"app-of-apps.yaml",
 		"README.md",
 	}
 
@@ -132,10 +126,10 @@ func TestDeployer_Generate_EmptyComponents(t *testing.T) {
 		t.Errorf("Generate() with empty components failed: %s", artifacts.Error)
 	}
 
-	// Should still create argocd directory and app-of-apps
-	argocdDir := filepath.Join(tmpDir, "argocd")
-	if _, err := os.Stat(argocdDir); os.IsNotExist(err) {
-		t.Error("Generate() did not create argocd directory for empty components")
+	// Should still create app-of-apps.yaml at root
+	appOfAppsPath := filepath.Join(tmpDir, "app-of-apps.yaml")
+	if _, err := os.Stat(appOfAppsPath); os.IsNotExist(err) {
+		t.Error("Generate() did not create app-of-apps.yaml for empty components")
 	}
 }
 
@@ -191,10 +185,14 @@ func TestInternalGetNamespaceForComponent(t *testing.T) {
 
 func TestApplicationData_Fields(t *testing.T) {
 	data := ApplicationData{
-		Name:      "test-app",
-		Source:    "https://example.com",
-		Version:   "v1.2.3",
-		Namespace: "test-ns",
+		Name:         "test-app",
+		Source:       "https://example.com",
+		Version:      "v1.2.3",
+		Namespace:    "test-ns",
+		SyncWave:     0,
+		ValuesFile:   "test-app/values.yaml",
+		HasManifests: true,
+		ManifestsDir: "test-app/manifests",
 	}
 
 	if data.Name != "test-app" {
@@ -211,6 +209,18 @@ func TestApplicationData_Fields(t *testing.T) {
 
 	if data.Namespace != "test-ns" {
 		t.Errorf("ApplicationData.Namespace = %s, want test-ns", data.Namespace)
+	}
+
+	if data.ValuesFile != "test-app/values.yaml" {
+		t.Errorf("ApplicationData.ValuesFile = %s, want test-app/values.yaml", data.ValuesFile)
+	}
+
+	if !data.HasManifests {
+		t.Error("ApplicationData.HasManifests = false, want true")
+	}
+
+	if data.ManifestsDir != "test-app/manifests" {
+		t.Errorf("ApplicationData.ManifestsDir = %s, want test-app/manifests", data.ManifestsDir)
 	}
 }
 
@@ -318,8 +328,8 @@ func TestDeployer_Generate_VerifiesApplicationContent(t *testing.T) {
 		t.Fatalf("Generate() failed: %v", err)
 	}
 
-	// Read and verify the Application manifest
-	appPath := filepath.Join(tmpDir, "argocd", "gpu-operator-app.yaml")
+	// Read and verify the Application manifest from component directory
+	appPath := filepath.Join(tmpDir, "gpu-operator", "argocd", "application.yaml")
 	content, err := os.ReadFile(appPath)
 	if err != nil {
 		t.Fatalf("Failed to read Application manifest: %v", err)
@@ -330,6 +340,8 @@ func TestDeployer_Generate_VerifiesApplicationContent(t *testing.T) {
 		"apiVersion: argoproj.io/v1alpha1",
 		"kind: Application",
 		"gpu-operator",
+		"valueFiles:",
+		"gpu-operator/values.yaml",
 	}
 
 	for _, expected := range expectedStrings {
@@ -394,7 +406,7 @@ func TestDeployer_Generate_DeploymentOrder(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		appPath := filepath.Join(tmpDir, "argocd", tc.component+"-app.yaml")
+		appPath := filepath.Join(tmpDir, tc.component, "argocd", "application.yaml")
 		content, err := os.ReadFile(appPath)
 		if err != nil {
 			t.Fatalf("Failed to read %s: %v", appPath, err)
@@ -462,5 +474,93 @@ func TestOrderComponentsByDeployment(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestDeployer_Generate_WithManifestsDirectory(t *testing.T) {
+	deployer := &Deployer{}
+	ctx := context.Background()
+
+	tmpDir, err := os.MkdirTemp("", "argocd-manifests-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create a manifests directory for gpu-operator (simulating bundler output)
+	gpuManifestsDir := filepath.Join(tmpDir, "gpu-operator", "manifests")
+	if err = os.MkdirAll(gpuManifestsDir, 0755); err != nil {
+		t.Fatalf("Failed to create manifests dir: %v", err)
+	}
+	// Create a sample manifest file
+	if err = os.WriteFile(filepath.Join(gpuManifestsDir, "clusterpolicy.yaml"), []byte("test"), 0600); err != nil {
+		t.Fatalf("Failed to create manifest file: %v", err)
+	}
+
+	recipeResult := &recipe.RecipeResult{}
+	recipeResult.Metadata.Version = testVersion
+	recipeResult.ComponentRefs = []recipe.ComponentRef{
+		{
+			Name:    "gpu-operator",
+			Version: "v25.3.3",
+			Source:  "https://helm.ngc.nvidia.com/nvidia",
+		},
+		{
+			Name:    "cert-manager",
+			Version: "v1.14.0",
+			Source:  "https://charts.jetstack.io",
+		},
+	}
+
+	artifacts, err := deployer.Generate(ctx, recipeResult, tmpDir)
+	if err != nil {
+		t.Fatalf("Generate() failed: %v", err)
+	}
+
+	if !artifacts.Success {
+		t.Fatalf("Generate() failed: %s", artifacts.Error)
+	}
+
+	// Verify gpu-operator Application includes manifests source
+	gpuAppPath := filepath.Join(tmpDir, "gpu-operator", "argocd", "application.yaml")
+	gpuContent, err := os.ReadFile(gpuAppPath)
+	if err != nil {
+		t.Fatalf("Failed to read gpu-operator Application: %v", err)
+	}
+
+	if !strings.Contains(string(gpuContent), "gpu-operator/manifests") {
+		t.Error("gpu-operator Application should include manifests directory source")
+	}
+
+	// Verify cert-manager Application does NOT include manifests source (no manifests dir)
+	certAppPath := filepath.Join(tmpDir, "cert-manager", "argocd", "application.yaml")
+	certContent, err := os.ReadFile(certAppPath)
+	if err != nil {
+		t.Fatalf("Failed to read cert-manager Application: %v", err)
+	}
+
+	if strings.Contains(string(certContent), "cert-manager/manifests") {
+		t.Error("cert-manager Application should NOT include manifests directory source (none exists)")
+	}
+}
+
+func TestAppOfAppsData_Fields(t *testing.T) {
+	data := AppOfAppsData{
+		Components: []AppOfAppsComponent{
+			{Name: "gpu-operator", Namespace: "gpu-operator", Path: "gpu-operator/argocd"},
+			{Name: "cert-manager", Namespace: "cert-manager", Path: "cert-manager/argocd"},
+		},
+	}
+
+	if len(data.Components) != 2 {
+		t.Errorf("AppOfAppsData.Components length = %d, want 2", len(data.Components))
+	}
+
+	if data.Components[0].Name != "gpu-operator" {
+		t.Errorf("AppOfAppsData.Components[0].Name = %s, want gpu-operator", data.Components[0].Name)
+	}
+
+	if data.Components[0].Path != "gpu-operator/argocd" {
+		t.Errorf("AppOfAppsData.Components[0].Path = %s, want gpu-operator/argocd", data.Components[0].Path)
 	}
 }

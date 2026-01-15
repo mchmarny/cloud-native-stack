@@ -85,7 +85,7 @@ cnsctl snapshot [flags]
 | `--node-selector` | | string[] | | Node selector for agent scheduling (key=value, repeatable) |
 | `--toleration` | | string[] | all taints | Tolerations for agent scheduling (key=value:effect, repeatable). **Default: all taints tolerated** (uses `operator: Exists`). Only specify to restrict which taints are tolerated. |
 | `--timeout` | | duration | 5m | Timeout for agent Job completion |
-| `--cleanup` | | bool | false | Delete Job and RBAC on completion. **Default: keeps resources for debugging**. Cleanup runs regardless of success/failure when enabled. |
+| `--cleanup` | | bool | true | Delete Job and RBAC resources on completion. Use `--cleanup=false` to keep resources for debugging. |
 
 **Output Destinations:**
 - **stdout**: Default when no `-o` flag specified
@@ -156,7 +156,7 @@ When `--deploy-agent` is specified, CNS deploys a Kubernetes Job to capture the 
 3. **Waits for completion**: Monitors Job status with configurable timeout
 4. **Retrieves snapshot**: Reads snapshot from ConfigMap after Job completes
 5. **Writes output**: Saves snapshot to specified output destination
-6. **Cleanup**: Optionally deletes Job and RBAC (default: keeps for debugging)
+6. **Cleanup**: Deletes Job and RBAC resources (use `--cleanup=false` to keep for debugging)
 
 **Benefits of agent deployment:**
 - Capture configuration from actual cluster nodes (not local machine)
@@ -184,6 +184,7 @@ metadata:
   labels:
     app.kubernetes.io/name: cns
     app.kubernetes.io/component: snapshot
+    app.kubernetes.io/version: v0.17.0
 data:
   snapshot.yaml: |
     # Full snapshot content
@@ -260,7 +261,7 @@ Generate recipes from captured snapshots:
 **Flags:**
 | Flag | Short | Type | Description |
 |------|-------|------|-------------|
-| `--snapshot` | `-f` | string | Path/URI to snapshot (file path, URL, or cm://namespace/name) |
+| `--snapshot` | `-s` | string | Path/URI to snapshot (file path, URL, or cm://namespace/name) |
 | `--intent` | `-i` | string | Workload intent: training, inference |
 | `--output` | `-o` | string | Output destination (file, ConfigMap URI, or stdout) |
 | `--format` | | string | Format: json, yaml (default: yaml) |
@@ -286,14 +287,14 @@ cnsctl recipe \
   --intent training
 
 # Output to ConfigMap
-cnsctl recipe -f system.yaml -o cm://gpu-operator/cns-recipe
+cnsctl recipe -s system.yaml -o cm://gpu-operator/cns-recipe
 
 # Chain snapshot → recipe with ConfigMaps
 cnsctl snapshot -o cm://default/snapshot
-cnsctl recipe -f cm://default/snapshot -o cm://default/recipe
+cnsctl recipe -s cm://default/snapshot -o cm://default/recipe
 
 # With custom output
-cnsctl recipe -f system.yaml -i inference -o recipe.yaml --format yaml
+cnsctl recipe -s system.yaml -i inference -o recipe.yaml --format yaml
 ```
 
 **Output structure:**
@@ -335,7 +336,7 @@ cnsctl validate [flags]
 **Flags:**
 | Flag | Short | Type | Description |
 |------|-------|------|-------------|
-| `--recipe` | `-f` | string | Path/URI to recipe file containing constraints (required) |
+| `--recipe` | `-r` | string | Path/URI to recipe file containing constraints (required) |
 | `--snapshot` | `-s` | string | Path/URI to snapshot file containing measurements (required) |
 | `--fail-on-error` | | bool | Exit with non-zero status if any constraint fails |
 | `--output` | `-o` | string | Output destination (file or stdout, default: stdout) |
@@ -461,7 +462,7 @@ cnsctl bundle [flags]
 **Flags:**
 | Flag | Short | Type | Description |
 |---------------------------------|-------|------|-------------|
-| `--recipe` | `-f` | string | Path to recipe file (required) |
+| `--recipe` | `-r` | string | Path to recipe file (required) |
 | `--bundlers` | `-b` | string[] | Bundler types to execute (repeatable) |
 | `--output` | `-o` | string | Output directory (default: current dir) |
 | `--deployer` | | string | Deployment method: script (default), argocd, flux |
@@ -526,22 +527,22 @@ Override any value in the generated bundle files using dot notation:
 cnsctl bundle --recipe recipe.yaml --output ./bundles
 
 # Generate specific bundler only
-cnsctl bundle -f recipe.yaml -b gpu-operator -o ./deployment
+cnsctl bundle -r recipe.yaml -b gpu-operator -o ./deployment
 
 # Multiple specific bundlers
-cnsctl bundle -f recipe.yaml \
+cnsctl bundle -r recipe.yaml \
   -b gpu-operator \
   -b network-operator \
   -o ./bundles
 
 # Override values in GPU Operator bundle
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --set gpuoperator:gds.enabled=true \
   --set gpuoperator:driver.version=570.86.16 \
   -o ./bundles
 
 # Override multiple bundlers
-cnsctl bundle -f recipe.yaml \
+cnsctl bundle -r recipe.yaml \
   -b gpu-operator \
   -b network-operator \
   --set gpuoperator:mig.strategy=mixed \
@@ -550,31 +551,31 @@ cnsctl bundle -f recipe.yaml \
   -o ./bundles
 
 # Override cert-manager resources
-cnsctl bundle -f recipe.yaml -b certmanager \
+cnsctl bundle -r recipe.yaml -b certmanager \
   --set certmanager:controller.resources.memory.limit=512Mi \
   --set certmanager:webhook.resources.cpu.limit=200m \
   -o ./bundles
 
 # Override Skyhook manager resources
-cnsctl bundle -f recipe.yaml -b skyhook \
+cnsctl bundle -r recipe.yaml -b skyhook \
   --set skyhook:manager.resources.cpu.limit=500m \
   --set skyhook:manager.resources.memory.limit=256Mi \
   -o ./bundles
 
 # Schedule system components on specific node pool
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --system-node-selector nodeGroup=system-pool \
   --system-node-toleration dedicated=system:NoSchedule \
   -o ./bundles
 
 # Schedule GPU workloads on labeled GPU nodes
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --accelerated-node-selector nvidia.com/gpu.present=true \
   --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule \
   -o ./bundles
 
 # Combined: separate system and GPU scheduling
-cnsctl bundle -f recipe.yaml -b gpu-operator \
+cnsctl bundle -r recipe.yaml -b gpu-operator \
   --system-node-selector nodeGroup=system-pool \
   --system-node-toleration dedicated=system:NoSchedule \
   --accelerated-node-selector accelerator=nvidia-h100 \
@@ -582,13 +583,13 @@ cnsctl bundle -f recipe.yaml -b gpu-operator \
   -o ./bundles
 
 # Generate ArgoCD Application manifests for GitOps
-cnsctl bundle -f recipe.yaml --deployer argocd -o ./bundles
+cnsctl bundle -r recipe.yaml --deployer argocd -o ./bundles
 
 # Generate Flux HelmRelease resources for GitOps
-cnsctl bundle -f recipe.yaml --deployer flux -o ./bundles
+cnsctl bundle -r recipe.yaml --deployer flux -o ./bundles
 
 # Combine deployer with specific bundlers
-cnsctl bundle -f recipe.yaml \
+cnsctl bundle -r recipe.yaml \
   -b gpu-operator \
   -b network-operator \
   --deployer argocd \
@@ -611,16 +612,24 @@ gpu-operator/
 **ArgoCD bundle structure** (with `--deployer argocd`):
 ```
 bundles/
+├── app-of-apps.yaml               # Parent Application (bundle root)
+├── recipe.yaml                    # Recipe used to generate bundle
 ├── gpu-operator/
-│   └── ...                        # Component-specific files
+│   ├── values.yaml                # Helm values for GPU Operator
+│   ├── manifests/                 # Additional manifests (ClusterPolicy, etc.)
+│   └── argocd/
+│       └── application.yaml       # ArgoCD Application (sync-wave: 0)
 ├── network-operator/
-│   └── ...
-└── argocd/
-    ├── gpu-operator-app.yaml      # ArgoCD Application (sync-wave: 0)
-    ├── network-operator-app.yaml  # ArgoCD Application (sync-wave: 1)
-    ├── app-of-apps.yaml           # Parent Application
-    └── README.md                  # ArgoCD deployment guide
+│   ├── values.yaml                # Helm values for Network Operator
+│   └── argocd/
+│       └── application.yaml       # ArgoCD Application (sync-wave: 1)
+└── README.md                      # ArgoCD deployment guide
 ```
+
+ArgoCD Applications use multi-source to:
+1. Pull Helm charts from upstream repositories
+2. Apply values.yaml from your GitOps repository
+3. Deploy additional manifests from component's manifests/ directory (if present)
 
 **Flux bundle structure** (with `--deployer flux`):
 ```
@@ -775,7 +784,7 @@ cnsctl completion zsh
 cnsctl completion fish
 
 # PowerShell
-cnsctl completion powershell
+cnsctl completion pwsh
 ```
 
 **Installation:**
@@ -825,8 +834,8 @@ cnsctl recipe --os ubuntu --accelerator h100 | jq '.componentRefs[]'
 ### Save All Steps
 ```shell
 cnsctl snapshot -o snapshot.yaml
-cnsctl recipe -f snapshot.yaml -i training -o recipe.yaml
-cnsctl bundle -f recipe.yaml -o ./bundles
+cnsctl recipe -s snapshot.yaml -i training -o recipe.yaml
+cnsctl bundle -r recipe.yaml -o ./bundles
 ```
 
 ### JSON Processing
@@ -879,7 +888,7 @@ cat recipe.yaml
 cnsctl bundle --help  # Shows available bundlers
 
 # Run with debug
-cnsctl --debug bundle -f recipe.yaml -b gpu-operator
+cnsctl --debug bundle -r recipe.yaml -b gpu-operator
 ```
 
 ## See Also

@@ -38,7 +38,7 @@ gfd:
   enabled: true
 
 driver:
-  version: 570.124.06
+  version: 580.105.08
   enabled: true
   useOpenKernelModules: true
   kernelModuleConfig:

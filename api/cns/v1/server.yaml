@@ -245,9 +245,9 @@ paths:
         Generates deployment bundles (Helm values, Kubernetes manifests, installation scripts)
         from a recipe and returns them as a compressed zip archive.
 
-        The request body contains the recipe (RecipeResult) directly. Bundler types can be
-        specified via the "bundlers" query parameter (comma-delimited). If no bundlers are
-        specified, all registered bundlers are executed.
+        The request body contains the recipe (RecipeResult) directly. Configuration options
+        can be specified via query parameters. All query parameters support multiple values
+        by repeating the parameter name (e.g., ?set=a:x=1&set=b:y=2).
 
         This design enables a simple workflow: pipe the output from GET /v1/recipe directly
         to POST /v1/bundle.
@@ -270,6 +270,87 @@ paths:
             multiple:
               summary: Multiple bundlers
               value: "gpu-operator,network-operator"
+        - name: set
+          in: query
+          required: false
+          description: >
+            Override values in generated bundle files (format: bundler:path.to.field=value).
+            Can be repeated for multiple overrides.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          examples:
+            single:
+              summary: Single override
+              value: ["gpuoperator:gds.enabled=true"]
+            multiple:
+              summary: Multiple overrides
+              value: ["gpuoperator:gds.enabled=true", "gpuoperator:driver.version=570.86.16"]
+        - name: system-node-selector
+          in: query
+          required: false
+          description: >
+            Node selector for system components (format: key=value).
+            Can be repeated for multiple selectors.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          example: ["nodeGroup=system-pool"]
+        - name: system-node-toleration
+          in: query
+          required: false
+          description: >
+            Toleration for system components (format: key=value:effect or key:effect).
+            Can be repeated for multiple tolerations.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          example: ["dedicated=system:NoSchedule"]
+        - name: accelerated-node-selector
+          in: query
+          required: false
+          description: >
+            Node selector for accelerated/GPU nodes (format: key=value).
+            Can be repeated for multiple selectors.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          example: ["nvidia.com/gpu.present=true"]
+        - name: accelerated-node-toleration
+          in: query
+          required: false
+          description: >
+            Toleration for accelerated/GPU nodes (format: key=value:effect or key:effect).
+            Can be repeated for multiple tolerations.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          example: ["nvidia.com/gpu=present:NoSchedule"]
+        - name: deployer
+          in: query
+          required: false
+          description: >
+            Deployment method for generated components.
+            Supported values: script (default), argocd, flux.
+          schema:
+            type: string
+            enum: [script, argocd, flux]
+            default: script
       requestBody:
         required: true
         description: The recipe (RecipeResult) to generate bundles from

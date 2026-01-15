@@ -8,9 +8,24 @@ Generated: {{ .Timestamp }}
 - **{{ .Name }}** ({{ .Version }})
 {{- end }}
 
+## Bundle Structure
+
+```
+bundles/
+├── app-of-apps.yaml              # Parent ArgoCD Application
+├── recipe.yaml                    # Recipe used to generate bundle
+{{- range .Components }}
+├── {{ .Name }}/
+│   ├── values.yaml               # Helm values for {{ .Name }}
+│   └── argocd/
+│       └── application.yaml      # ArgoCD Application for {{ .Name }}
+{{- end }}
+└── README.md
+```
+
 ## Prerequisites
 
-- ArgoCD v2.4+ installed in your cluster
+- ArgoCD v2.4+ installed in your cluster (multi-source Application support)
 - Git repository to host bundle manifests
 - kubectl and argocd CLI configured with cluster access
 
@@ -23,14 +38,20 @@ Generated: {{ .Timestamp }}
    git push
    ```
 
-2. Update app-of-apps.yaml with your Git repository URL:
+2. Update all ArgoCD manifests with your Git repository URL:
    ```bash
-   sed -i 's|<YOUR_GIT_REPO>|https://github.com/your-org/your-repo.git|' argocd/app-of-apps.yaml
+   # Update app-of-apps.yaml
+   sed -i 's|<YOUR_GIT_REPO>|https://github.com/your-org/your-repo.git|' app-of-apps.yaml
+
+   # Update each component's Application
+   {{- range .Components }}
+   sed -i 's|<YOUR_GIT_REPO>|https://github.com/your-org/your-repo.git|' {{ .Name }}/argocd/application.yaml
+   {{- end }}
    ```
 
 3. Deploy the app-of-apps:
    ```bash
-   kubectl apply -f argocd/app-of-apps.yaml
+   kubectl apply -f app-of-apps.yaml
    ```
 
 4. Verify deployment:
@@ -42,9 +63,33 @@ Generated: {{ .Timestamp }}
 
 ## Architecture
 
-This bundle uses the **App of Apps** pattern:
-- **app-of-apps.yaml** - Parent Application that manages all child Applications
-- **<component>-app.yaml** - Individual Application per component
+This bundle uses the **App of Apps** pattern with **multi-source Applications**:
+
+- **app-of-apps.yaml** - Parent Application that discovers and deploys all child Applications
+- **\<component\>/argocd/application.yaml** - Individual ArgoCD Application per component
+- **\<component\>/values.yaml** - Customized Helm values per component
+
+### Multi-Source Applications
+
+Each component Application uses ArgoCD's multi-source feature to:
+1. Pull the Helm chart from the upstream repository
+2. Apply values.yaml from your GitOps repository
+3. Deploy additional manifests from the manifests/ directory (if present)
+
+This allows you to customize values.yaml while still using upstream charts.
+
+## Customization
+
+Edit the values.yaml file for any component to customize its configuration:
+
+```bash
+# Example: Enable GDS for GPU Operator
+vim gpu-operator/values.yaml
+# Edit values as needed
+git add . && git commit -m "Enable GDS" && git push
+```
+
+ArgoCD will automatically sync the changes.
 
 ## Notes
 
@@ -52,4 +97,5 @@ This bundle uses the **App of Apps** pattern:
 - Namespaces are created automatically via `CreateNamespace=true` sync option
 - Server-side apply is enabled for better conflict resolution
 - Resource finalizers ensure proper cleanup on deletion
-- Charts are deployed directly from their source repositories
+- Sync waves control deployment order (cert-manager → operators → apps)
+

@@ -59,14 +59,14 @@ Load snapshot from ConfigMap (results to stdout):
   cnsctl validate --recipe recipe.yaml --snapshot cm://gpu-operator/cns-snapshot
 
 Output validation result to a file:
-  cnsctl validate -f recipe.yaml -s snapshot.yaml -o result.yaml
+  cnsctl validate -r recipe.yaml -s snapshot.yaml -o result.yaml
 
 Fail the command if any constraint fails (useful for CI/CD):
-  cnsctl validate -f recipe.yaml -s snapshot.yaml --fail-on-error`,
+  cnsctl validate -r recipe.yaml -s snapshot.yaml --fail-on-error`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "recipe",
-				Aliases:  []string{"f"},
+				Aliases:  []string{"r"},
 				Required: true,
 				Usage: `Path/URI to recipe file containing constraints to validate.
 	Supports: file paths, HTTP/HTTPS URLs, or ConfigMap URIs (cm://namespace/name).`,

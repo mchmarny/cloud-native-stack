@@ -78,7 +78,7 @@ Or query the [CNS API](https://cns.dgxc.io) directly:
 curl -s "https://cns.dgxc.io/v1/recipe?service=eks&accelerator=h100&intent=training" | jq .
 ```
 
-![data flow](images/data.png)
+![data flow](images/recipe.png)
 
 ## 3. Validate 
 
@@ -163,13 +163,13 @@ Output:
 bundle generation completed: success=4 errors=0 summary=Generated 24 files (33.2 KB)
 ```
 
-Similarly, bundles using API: 
+Similarly, bundles using API with full options: 
 
 ```shell
 # Query recipe API and pipe response to bundle API
-curl -s "https://cns.dgxc.io/v1/recipe?service=eks&accelerator=gb200&intent=training&os=ubuntu" | \
-  curl -X POST "https://cns.dgxc.io/v1/bundle" -H "Content-Type: application/json" -d @- \
-    -o bundles.zip
+curl -s "https://cns.dgxc.io/v1/recipe?service=eks&accelerator=h100&intent=training" | \
+  curl -X POST "https://cns.dgxc.io/v1/bundle?deployer=argocd" \
+    -H "Content-Type: application/json" -d @- -o bundles.zip
 
 # List generated bundles
 unzip bundles.zip -d ./bundles
@@ -184,3 +184,16 @@ GPU Operator README:
 ```shell
 grip --browser --quiet ./bundles/gpu-operator/README.md
 ```
+
+Bundle is deployable:
+
+```shell
+grip --browser --quiet ./bundles/README.md
+```
+
+
+## 5. Future
+
+* CNCF AI Conformance (recipe and cluster validation)
+* New recipe based on configured cluster measurements (API > CNS Repo > Release)
+* Recipe + synthetic workload (expected perf characteristic)

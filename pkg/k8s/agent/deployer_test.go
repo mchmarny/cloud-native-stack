@@ -1,8 +1,10 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"testing"
+	"time"
 
 	authv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -397,6 +399,99 @@ func TestDeployer_Cleanup(t *testing.T) {
 	}
 }
 
+func TestDeployer_Cleanup_AttemptsAllDeletions(t *testing.T) {
+	clientset := fake.NewClientset()
+
+	// Mock SelfSubjectAccessReview to allow all permissions
+	clientset.PrependReactor("create", "selfsubjectaccessreviews", func(action k8stesting.Action) (bool, runtime.Object, error) {
+		return true, &authv1.SelfSubjectAccessReview{
+			Status: authv1.SubjectAccessReviewStatus{
+				Allowed: true,
+				Reason:  "test permissions allowed",
+			},
+		}, nil
+	})
+
+	config := Config{
+		Namespace:          "test-namespace",
+		ServiceAccountName: testName,
+		JobName:            testName,
+		Image:              "ghcr.io/nvidia/cns:latest",
+		Output:             "cm://test-namespace/cns-snapshot",
+	}
+	deployer := NewDeployer(clientset, config)
+	ctx := context.Background()
+
+	// Deploy first
+	if err := deployer.Deploy(ctx); err != nil {
+		t.Fatalf("Deploy() failed: %v", err)
+	}
+
+	// Manually delete the Job to simulate it already being cleaned up
+	// This tests that cleanup continues to delete other resources
+	if err := clientset.BatchV1().Jobs(config.Namespace).Delete(ctx, config.JobName, metav1.DeleteOptions{}); err != nil {
+		t.Fatalf("Failed to pre-delete Job: %v", err)
+	}
+
+	// Cleanup should still succeed (Job not found is ignored)
+	// and should delete all RBAC resources
+	if cleanupErr := deployer.Cleanup(ctx, CleanupOptions{Enabled: true}); cleanupErr != nil {
+		t.Fatalf("Cleanup() should succeed even when Job already deleted: %v", cleanupErr)
+	}
+
+	// Verify all RBAC resources were deleted
+	_, err := clientset.CoreV1().ServiceAccounts(config.Namespace).
+		Get(ctx, testName, metav1.GetOptions{})
+	if err == nil {
+		t.Error("ServiceAccount should be deleted")
+	}
+
+	_, err = clientset.RbacV1().Roles(config.Namespace).
+		Get(ctx, testName, metav1.GetOptions{})
+	if err == nil {
+		t.Error("Role should be deleted")
+	}
+
+	_, err = clientset.RbacV1().RoleBindings(config.Namespace).
+		Get(ctx, testName, metav1.GetOptions{})
+	if err == nil {
+		t.Error("RoleBinding should be deleted")
+	}
+
+	_, err = clientset.RbacV1().ClusterRoles().
+		Get(ctx, clusterRoleName, metav1.GetOptions{})
+	if err == nil {
+		t.Error("ClusterRole should be deleted")
+	}
+
+	_, err = clientset.RbacV1().ClusterRoleBindings().
+		Get(ctx, clusterRoleName, metav1.GetOptions{})
+	if err == nil {
+		t.Error("ClusterRoleBinding should be deleted")
+	}
+}
+
+func TestDeployer_Cleanup_ReportsAllErrors(t *testing.T) {
+	clientset := fake.NewClientset()
+
+	// Don't create any resources - cleanup will try to delete non-existent resources
+	// but ignoreNotFound should make these succeed
+	config := Config{
+		Namespace:          "test-namespace",
+		ServiceAccountName: testName,
+		JobName:            testName,
+		Image:              "ghcr.io/nvidia/cns:latest",
+		Output:             "cm://test-namespace/cns-snapshot",
+	}
+	deployer := NewDeployer(clientset, config)
+	ctx := context.Background()
+
+	// Cleanup on empty cluster should succeed (not found errors are ignored)
+	if cleanupErr := deployer.Cleanup(ctx, CleanupOptions{Enabled: true}); cleanupErr != nil {
+		t.Fatalf("Cleanup() should succeed when resources don't exist: %v", cleanupErr)
+	}
+}
+
 func TestParseConfigMapName(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -552,6 +647,104 @@ func TestDeployer_GetSnapshot_MissingKey(t *testing.T) {
 	_, err := deployer.GetSnapshot(ctx)
 	if err == nil {
 		t.Error("GetSnapshot() should fail when snapshot.yaml key is missing")
+	}
+}
+
+func TestDeployer_WaitForPodReady(t *testing.T) {
+	// Create a Pod in Running state
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cns-xyz",
+			Namespace: "test-namespace",
+			Labels: map[string]string{
+				"app.kubernetes.io/name": "cns",
+			},
+		},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+		},
+	}
+
+	clientset := fake.NewClientset(pod)
+	config := Config{
+		Namespace: "test-namespace",
+		JobName:   testName,
+		Output:    "cm://test-namespace/cns-snapshot",
+	}
+	deployer := NewDeployer(clientset, config)
+	ctx := context.Background()
+
+	// Should succeed because Pod is Running
+	err := deployer.WaitForPodReady(ctx, 1*time.Second)
+	if err != nil {
+		t.Errorf("WaitForPodReady() failed: %v", err)
+	}
+}
+
+func TestDeployer_WaitForPodReady_NoPod(t *testing.T) {
+	clientset := fake.NewClientset()
+	config := Config{
+		Namespace: "test-namespace",
+		JobName:   testName,
+		Output:    "cm://test-namespace/cns-snapshot",
+	}
+	deployer := NewDeployer(clientset, config)
+	ctx := context.Background()
+
+	// Should timeout because no Pod exists
+	err := deployer.WaitForPodReady(ctx, 100*time.Millisecond)
+	if err == nil {
+		t.Error("WaitForPodReady() should fail when no Pod exists")
+	}
+}
+
+func TestDeployer_WaitForPodReady_PodFailed(t *testing.T) {
+	// Create a Pod in Failed state
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cns-xyz",
+			Namespace: "test-namespace",
+			Labels: map[string]string{
+				"app.kubernetes.io/name": "cns",
+			},
+		},
+		Status: corev1.PodStatus{
+			Phase:   corev1.PodFailed,
+			Message: "container exited with error",
+		},
+	}
+
+	clientset := fake.NewClientset(pod)
+	config := Config{
+		Namespace: "test-namespace",
+		JobName:   testName,
+		Output:    "cm://test-namespace/cns-snapshot",
+	}
+	deployer := NewDeployer(clientset, config)
+	ctx := context.Background()
+
+	// Should fail because Pod failed
+	err := deployer.WaitForPodReady(ctx, 1*time.Second)
+	if err == nil {
+		t.Error("WaitForPodReady() should fail when Pod is in Failed state")
+	}
+}
+
+func TestDeployer_StreamLogs_NoPod(t *testing.T) {
+	clientset := fake.NewClientset()
+	config := Config{
+		Namespace: "test-namespace",
+		JobName:   testName,
+		Output:    "cm://test-namespace/cns-snapshot",
+	}
+	deployer := NewDeployer(clientset, config)
+	ctx := context.Background()
+
+	// Should fail because no Pod exists
+	var buf bytes.Buffer
+	err := deployer.StreamLogs(ctx, &buf, "[agent]")
+	if err == nil {
+		t.Error("StreamLogs() should fail when no Pod exists")
 	}
 }
 

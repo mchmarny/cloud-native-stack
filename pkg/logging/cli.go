@@ -11,6 +11,7 @@ import (
 
 // ANSI color codes
 const (
+	colorGreen = "\033[32m"
 	colorReset = "\033[0m"
 	colorRed   = "\033[31m"
 )
@@ -53,9 +54,11 @@ func (h *CLIHandler) Handle(_ context.Context, r slog.Record) error {
 		}
 	}
 
-	// Add color for error messages
+	// Add color for error messages and success messages
 	if r.Level >= slog.LevelError {
 		msg = colorRed + msg + colorReset
+	} else {
+		msg = colorGreen + msg + colorReset
 	}
 
 	_, err := fmt.Fprintln(h.writer, msg)

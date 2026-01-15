@@ -3,6 +3,8 @@
 
 REPO_NAME          := cloud-native-stack
 VERSION            ?= $(shell git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+IMAGE_REGISTRY     ?= ghcr.io/nvidia
+IMAGE_TAG          ?= latest
 YAML_FILES         := $(shell find . -type f \( -iname "*.yml" -o -iname "*.yaml" \) ! -path "./examples/*" ! -path "./~archive/*" ! -path "./bundles/*")
 COMMIT             := $(shell git rev-parse HEAD)
 BRANCH             := $(shell git rev-parse --abbrev-ref HEAD)
@@ -79,7 +81,7 @@ scan: ## Scans for source vulnerabilities
 	grype dir:. --config .grype.yaml --fail-on high --quiet	
 
 .PHONY: qualify
-qualify: test lint scan ## Qualifies the current codebase (test, lint, scan)
+qualify: test lint e2e scan ## Qualifies the current codebase (test, lint, e2e, scan)
 	@echo "Codebase qualification completed"
 
 .PHONY: server
@@ -102,6 +104,12 @@ build: tidy ## Builds the release for the current OS and architecture
 	@set -e; \
 	goreleaser build --clean --single-target --snapshot --timeout 10m0s || exit 1; \
 	echo "Build completed, binaries are in ./dist"
+
+.PHONY: image
+image: ## Builds and pushes the container image (IMAGE_REGISTRY=ghcr.io/nvidia IMAGE_TAG=latest)
+	@set -e; \
+	echo "Building and pushing image to $(IMAGE_REGISTRY)/cns:$(IMAGE_TAG)"; \
+	KO_DOCKER_REPO=$(IMAGE_REGISTRY) ko build --bare --sbom=none --tags=$(IMAGE_TAG) ./cmd/cnsctl
 
 .PHONY: release
 release: ## Runs the release process

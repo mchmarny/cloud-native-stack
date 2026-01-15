@@ -43,6 +43,7 @@ func TestRegistry_NewRegistry(t *testing.T) {
 
 	if reg == nil {
 		t.Fatal("NewRegistry() returned nil")
+		return
 	}
 
 	if reg.bundlers == nil {
@@ -579,6 +580,7 @@ func TestBundler_Make(t *testing.T) {
 
 	if res == nil {
 		t.Fatal("Make() returned nil result")
+		return
 	}
 
 	if !res.Success {

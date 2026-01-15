@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -78,14 +79,14 @@ func TestParseType(t *testing.T) {
 		{
 			name:    "uppercase",
 			input:   "GPU-OPERATOR",
-			want:    "",
-			wantErr: true,
+			want:    BundleTypeGpuOperator,
+			wantErr: false,
 		},
 		{
 			name:    "mixed case",
 			input:   "Gpu-Operator",
-			want:    "",
-			wantErr: true,
+			want:    BundleTypeGpuOperator,
+			wantErr: false,
 		},
 		{
 			name:    "with spaces",
@@ -112,14 +113,6 @@ func TestParseType(t *testing.T) {
 
 			if got != tt.want {
 				t.Errorf("ParseType(%q) = %q, want %q", tt.input, got, tt.want)
-			}
-
-			// Verify error message format for error cases
-			if tt.wantErr && err != nil {
-				expectedErrMsg := "unsupported bundle type: " + tt.input
-				if err.Error() != expectedErrMsg {
-					t.Errorf("ParseType(%q) error message = %q, want %q", tt.input, err.Error(), expectedErrMsg)
-				}
 			}
 		})
 	}
@@ -405,9 +398,8 @@ func TestParseType_ErrorMessage(t *testing.T) {
 	invalidInputs := []string{
 		"invalid",
 		"foo-bar",
-		"GPU-OPERATOR",
 		"",
-		"random-text",
+		"completely-random-unrelated-text",
 	}
 
 	for _, input := range invalidInputs {
@@ -418,16 +410,142 @@ func TestParseType_ErrorMessage(t *testing.T) {
 				return
 			}
 
-			expectedPrefix := "unsupported bundle type:"
+			expectedPrefix := "unsupported bundle type"
 			if len(err.Error()) < len(expectedPrefix) || err.Error()[:len(expectedPrefix)] != expectedPrefix {
 				t.Errorf("ParseType(%q) error message = %q, should start with %q", input, err.Error(), expectedPrefix)
 			}
+		})
+	}
+}
 
-			// Verify the input is mentioned in the error
-			expectedMsg := "unsupported bundle type: " + input
-			if err.Error() != expectedMsg {
-				t.Errorf("ParseType(%q) error message = %q, want %q", input, err.Error(), expectedMsg)
+// TestParseType_CaseInsensitive tests that parsing is case-insensitive
+func TestParseType_CaseInsensitive(t *testing.T) {
+	tests := []struct {
+		input string
+		want  BundleType
+	}{
+		{"gpu-operator", BundleTypeGpuOperator},
+		{"GPU-OPERATOR", BundleTypeGpuOperator},
+		{"Gpu-Operator", BundleTypeGpuOperator},
+		{"gPu-OpErAtOr", BundleTypeGpuOperator},
+		{"NETWORK-OPERATOR", BundleTypeNetworkOperator},
+		{"Network-Operator", BundleTypeNetworkOperator},
+		{"SKYHOOK", BundleTypeSkyhook},
+		{"Skyhook", BundleTypeSkyhook},
+		{"NVSENTINEL", BundleTypeNVSentinel},
+		{"NvSentinel", BundleTypeNVSentinel},
+		{"CERT-MANAGER", BundleTypeCertManager},
+		{"Cert-Manager", BundleTypeCertManager},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got, err := ParseType(tt.input)
+			if err != nil {
+				t.Errorf("ParseType(%q) unexpected error: %v", tt.input, err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ParseType(%q) = %q, want %q", tt.input, got, tt.want)
 			}
 		})
 	}
+}
+
+// TestParseType_LevenshteinSuggestions tests that close matches get suggestions
+func TestParseType_LevenshteinSuggestions(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		wantSuggest string
+	}{
+		{
+			name:        "typo in gpu-operator",
+			input:       "gpu-opertor",
+			wantSuggest: "gpu-operator",
+		},
+		{
+			name:        "typo in network-operator",
+			input:       "network-operater",
+			wantSuggest: "network-operator",
+		},
+		{
+			name:        "missing hyphen",
+			input:       "gpuoperator",
+			wantSuggest: "gpu-operator",
+		},
+		{
+			name:        "typo in skyhook",
+			input:       "skyhok",
+			wantSuggest: "skyhook",
+		},
+		{
+			name:        "typo in cert-manager",
+			input:       "cert-manger",
+			wantSuggest: "cert-manager",
+		},
+		{
+			name:        "typo in nvsentinel",
+			input:       "nvsentinal",
+			wantSuggest: "nvsentinel",
+		},
+		{
+			name:        "underscore instead of hyphen",
+			input:       "gpu_operator",
+			wantSuggest: "gpu-operator",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ParseType(tt.input)
+			if err == nil {
+				t.Errorf("ParseType(%q) should return error", tt.input)
+				return
+			}
+
+			expectedSuffix := fmt.Sprintf("(did you mean %q?)", tt.wantSuggest)
+			if !contains(err.Error(), expectedSuffix) {
+				t.Errorf("ParseType(%q) error = %q, should contain suggestion %q", tt.input, err.Error(), expectedSuffix)
+			}
+		})
+	}
+}
+
+// TestParseType_NoSuggestionForDistantStrings tests that very different strings don't get suggestions
+func TestParseType_NoSuggestionForDistantStrings(t *testing.T) {
+	distantInputs := []string{
+		"xyz",
+		"completely-different",
+		"abcdefghijklmnop",
+	}
+
+	for _, input := range distantInputs {
+		t.Run(input, func(t *testing.T) {
+			_, err := ParseType(input)
+			if err == nil {
+				t.Errorf("ParseType(%q) should return error", input)
+				return
+			}
+
+			if contains(err.Error(), "did you mean") {
+				t.Errorf("ParseType(%q) error = %q, should NOT contain suggestion for distant string", input, err.Error())
+			}
+		})
+	}
+}
+
+// contains checks if s contains substr
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
+		(len(s) > 0 && len(substr) > 0 && findSubstring(s, substr)))
+}
+
+func findSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }

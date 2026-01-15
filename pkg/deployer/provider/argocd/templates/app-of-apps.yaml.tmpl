@@ -7,13 +7,13 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    # Replace with your Git repository URL
-    repoURL: <YOUR_GIT_REPO>
-    targetRevision: HEAD
-    path: argocd
-    directory:
-      recurse: false
+  sources:
+{{- range .Components }}
+    # {{ .Name }} Application
+    - repoURL: <YOUR_GIT_REPO>  # TODO: Replace with your GitOps repository URL
+      targetRevision: main       # TODO: Adjust branch/tag as needed
+      path: {{ .Path }}
+{{- end }}
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

@@ -17,9 +17,9 @@ Deployers follow the registry pattern similar to the bundler package:
 
 The deployer is selected via the --deployer flag in the bundle command:
 
-	cnsctl bundle -f recipe.yaml --deployer script  # Default: manual deployment
-	cnsctl bundle -f recipe.yaml --deployer argocd  # ArgoCD GitOps
-	cnsctl bundle -f recipe.yaml --deployer flux    # Flux GitOps
+	cnsctl bundle -r recipe.yaml --deployer script  # Default: manual deployment
+	cnsctl bundle -r recipe.yaml --deployer argocd  # ArgoCD GitOps
+	cnsctl bundle -r recipe.yaml --deployer flux    # Flux GitOps
 
 # Supported Deployers
 

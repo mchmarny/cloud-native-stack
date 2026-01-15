@@ -601,14 +601,21 @@ bundle-output/gpu-operator/
 
 **ArgoCD Deployer**:
 ```
-bundle-output/gpu-operator/
-├── values.yaml
-├── manifests/
-└── argocd/
-    └── application.yaml   # With sync-wave annotation
+bundle-output/
+├── app-of-apps.yaml       # Parent Application (bundle root)
+├── gpu-operator/
+│   ├── values.yaml
+│   ├── manifests/
+│   └── argocd/
+│       └── application.yaml   # With sync-wave annotation
+├── network-operator/
+│   ├── values.yaml
+│   └── argocd/
+│       └── application.yaml   # With sync-wave annotation
+└── README.md
 ```
 
-ArgoCD Application with sync-wave:
+ArgoCD Application with multi-source:
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -617,11 +624,22 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"  # After cert-manager (0)
 spec:
-  source:
-    chart: gpu-operator
-    helm:
-      valueFiles:
-        - values.yaml
+  sources:
+    # Helm chart from upstream
+    - repoURL: https://helm.ngc.nvidia.com/nvidia
+      targetRevision: v25.3.3
+      chart: gpu-operator
+      helm:
+        valueFiles:
+          - $values/gpu-operator/values.yaml
+    # Values from GitOps repo
+    - repoURL: <YOUR_GIT_REPO>
+      targetRevision: main
+      ref: values
+    # Additional manifests (if present)
+    - repoURL: <YOUR_GIT_REPO>
+      targetRevision: main
+      path: gpu-operator/manifests
 ```
 
 **Flux Deployer**:
@@ -655,7 +673,7 @@ spec:
 │ Complete Bundle + Deploy Flow                                │
 ├──────────────────────────────────────────────────────────────┤
 │                                                              │
-│  cnsctl bundle -f recipe.yaml --deployer argocd -o ./out     │
+│  cnsctl bundle -r recipe.yaml --deployer argocd -o ./out     │
 │                                                              │
 │  1. Parse recipe                                             │
 │     └─ Extract componentRefs + deploymentOrder               │
@@ -668,10 +686,11 @@ spec:
 │     ├─ gpu-operator   → values.yaml, manifests/              │
 │     └─ network-operator → values.yaml, manifests/            │
 │                                                              │
-│  4. Run deployer (argocd)                                    │
-│     ├─ cert-manager   → argocd/application.yaml (wave: 0)    │
-│     ├─ gpu-operator   → argocd/application.yaml (wave: 1)    │
-│     └─ network-operator → argocd/application.yaml (wave: 2)  │
+│  4. Run deployer (argocd) → per-component argocd/ dirs       │
+│     ├─ cert-manager/argocd/application.yaml (wave: 0)        │
+│     ├─ gpu-operator/argocd/application.yaml (wave: 1)        │
+│     └─ network-operator/argocd/application.yaml (wave: 2)    │
+│     └─ app-of-apps.yaml (bundle root)                        │
 │                                                              │
 │  5. Generate checksums                                       │
 │     └─ checksums.txt for each component                      │

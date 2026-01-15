@@ -1,0 +1,1 @@
+defaultBaseImage: nvcr.io/nvidia/cuda:13.1.0-runtime-ubuntu24.04

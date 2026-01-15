@@ -8,12 +8,12 @@ The CNS API Server provides HTTP REST access to recipe generation and bundle cre
 
 ```
 ┌──────────────┐      ┌──────────────┐
-│ GET /recipe  │─────▶│    Recipe    │
+│ GET /recipe  │─────▶│   Recipe     │
 └──────────────┘      └──────────────┘
         │
         ▼
 ┌──────────────┐      ┌──────────────┐
-│ POST /bundle │─────▶│   bundles.zip│
+│ POST /bundle │─────▶│  bundles.zip │
 └──────────────┘      └──────────────┘
 ```
 
@@ -166,6 +166,12 @@ Generate deployment bundles from a recipe.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `bundlers` | string | (all) | Comma-delimited list of bundler types to execute |
+| `set` | string[] | | Value overrides (format: `bundler:path.to.field=value`). Repeat for multiple. |
+| `system-node-selector` | string[] | | Node selectors for system components (format: `key=value`). Repeat for multiple. |
+| `system-node-toleration` | string[] | | Tolerations for system components (format: `key=value:effect`). Repeat for multiple. |
+| `accelerated-node-selector` | string[] | | Node selectors for GPU nodes (format: `key=value`). Repeat for multiple. |
+| `accelerated-node-toleration` | string[] | | Tolerations for GPU nodes (format: `key=value:effect`). Repeat for multiple. |
+| `deployer` | string | script | Deployment method: `script`, `argocd`, or `flux` |
 
 **Request Body:**
 
@@ -184,10 +190,21 @@ The request body is the recipe (RecipeResult) directly. No wrapper object needed
 **Examples:**
 
 ```shell
-# Simplest workflow: pipe recipe to bundle
+# Basic: pipe recipe to bundle (GPU Operator only)
 curl -s "https://cns.dgxc.io/v1/recipe?accelerator=h100&service=eks" | \
   curl -X POST "https://cns.dgxc.io/v1/bundle?bundlers=gpu-operator" \
     -H "Content-Type: application/json" -d @- -o bundles.zip
+
+# Advanced: with value overrides and ArgoCD deployer
+curl -s "https://cns.dgxc.io/v1/recipe?accelerator=h100&service=eks" | \
+  curl -X POST "https://cns.dgxc.io/v1/bundle?bundlers=gpu-operator&deployer=argocd&set=gpuoperator:gds.enabled=true&set=gpuoperator:driver.version=570.86.16" \
+    -H "Content-Type: application/json" -d @- -o bundles.zip
+
+# With node scheduling for system and GPU nodes
+curl -X POST "https://cns.dgxc.io/v1/bundle?bundlers=gpu-operator&system-node-selector=nodeGroup=system&system-node-toleration=dedicated=system:NoSchedule&accelerated-node-selector=nvidia.com/gpu.present=true&accelerated-node-toleration=nvidia.com/gpu=present:NoSchedule" \
+  -H "Content-Type: application/json" \
+  -d @recipe.json \
+  -o bundles.zip
 
 # Generate GPU Operator bundle from saved recipe
 curl -X POST "https://cns.dgxc.io/v1/bundle?bundlers=gpu-operator" \
