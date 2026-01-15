@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/registry"
@@ -30,6 +32,113 @@ const (
 	outputFormatDir = "dir"
 	outputFormatOCI = "oci"
 )
+
+// bundleCmdOptions holds parsed options for the bundle command.
+type bundleCmdOptions struct {
+	recipeFilePath             string
+	outputDir                  string
+	bundlerTypes               []types.BundleType
+	deployerType               deployerTypes.DeployerType
+	valueOverrides             map[string]map[string]string
+	systemNodeSelector         map[string]string
+	systemNodeTolerations      []corev1.Toleration
+	acceleratedNodeSelector    map[string]string
+	acceleratedNodeTolerations []corev1.Toleration
+	outputFormat               string
+	registryHost               string
+	repository                 string
+	tag                        string
+	push                       bool
+	plainHTTP                  bool
+	insecureTLS                bool
+}
+
+// parseBundleCmdOptions parses and validates command options.
+func parseBundleCmdOptions(cmd *cli.Command) (*bundleCmdOptions, error) {
+	opts := &bundleCmdOptions{
+		recipeFilePath: cmd.String("recipe"),
+		outputDir:      cmd.String("output"),
+		outputFormat:   cmd.String("output-format"),
+		registryHost:   cmd.String("registry"),
+		repository:     cmd.String("repository"),
+		tag:            cmd.String("tag"),
+		push:           cmd.Bool("push"),
+		insecureTLS:    cmd.Bool("insecure-tls"),
+		plainHTTP:      cmd.Bool("plain-http"),
+	}
+
+	// Validate output-format
+	if opts.outputFormat != outputFormatDir && opts.outputFormat != outputFormatOCI {
+		return nil, fmt.Errorf("--output-format must be '%s' or '%s', got '%s'",
+			outputFormatDir, outputFormatOCI, opts.outputFormat)
+	}
+
+	// Validate --push requires --output-format=oci
+	if opts.push && opts.outputFormat != outputFormatOCI {
+		return nil, fmt.Errorf("--push requires --output-format=oci")
+	}
+
+	// Validate OCI flags when output-format is oci
+	if opts.outputFormat == outputFormatOCI {
+		if opts.registryHost == "" {
+			return nil, fmt.Errorf("--registry is required when --output-format is 'oci'")
+		}
+		if opts.repository == "" {
+			return nil, fmt.Errorf("--repository is required when --output-format is 'oci'")
+		}
+		if err := oci.ValidateRegistryReference(opts.registryHost, opts.repository); err != nil {
+			return nil, err
+		}
+	}
+
+	// Parse value overrides from --set flags
+	var err error
+	opts.valueOverrides, err = config.ParseValueOverrides(cmd.StringSlice("set"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid --set flag: %w", err)
+	}
+
+	// Parse node selectors
+	opts.systemNodeSelector, err = snapshotter.ParseNodeSelectors(cmd.StringSlice("system-node-selector"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid --system-node-selector: %w", err)
+	}
+	opts.acceleratedNodeSelector, err = snapshotter.ParseNodeSelectors(cmd.StringSlice("accelerated-node-selector"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid --accelerated-node-selector: %w", err)
+	}
+
+	// Parse tolerations
+	opts.systemNodeTolerations, err = snapshotter.ParseTolerations(cmd.StringSlice("system-node-toleration"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid --system-node-toleration: %w", err)
+	}
+	opts.acceleratedNodeTolerations, err = snapshotter.ParseTolerations(cmd.StringSlice("accelerated-node-toleration"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid --accelerated-node-toleration: %w", err)
+	}
+
+	// Parse and validate deployer type
+	deployerTypeStr := cmd.String("deployer")
+	opts.deployerType = deployerTypes.DeployerType(deployerTypeStr)
+	if !opts.deployerType.IsValid() {
+		deployerReg := deployerRegistry.NewFromGlobal()
+		registeredTypes := deployerReg.Types()
+		return nil, fmt.Errorf("invalid deployer type '%s': must be one of %s",
+			deployerTypeStr, strings.Join(deployerTypesToStrings(registeredTypes), ", "))
+	}
+
+	// Parse bundler types
+	for _, t := range cmd.StringSlice("bundlers") {
+		bt, parseErr := types.ParseType(t)
+		if parseErr != nil {
+			return nil, fmt.Errorf("invalid bundler type '%s': %w", t, parseErr)
+		}
+		opts.bundlerTypes = append(opts.bundlerTypes, bt)
+	}
+
+	return opts, nil
+}
 
 func bundleCmd() *cli.Command {
 	return &cli.Command{
@@ -124,99 +233,21 @@ func bundleCmd() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			recipeFilePath := cmd.String("recipe")
-			outputDir := cmd.String("output")
-			bundlerTypesStr := cmd.StringSlice("bundlers")
-
-			// Output format and OCI options
-			outputFormat := cmd.String("output-format")
-			registryHost := cmd.String("registry")
-			repository := cmd.String("repository")
-			tag := cmd.String("tag")
-			push := cmd.Bool("push")
-			insecureTLS := cmd.Bool("insecure-tls")
-			plainHTTP := cmd.Bool("plain-http")
-
-			// Validate output-format
-			if outputFormat != outputFormatDir && outputFormat != outputFormatOCI {
-				return fmt.Errorf("--output-format must be '%s' or '%s', got '%s'", outputFormatDir, outputFormatOCI, outputFormat)
-			}
-
-			// Validate --push requires --output-format=oci
-			if push && outputFormat != outputFormatOCI {
-				return fmt.Errorf("--push requires --output-format=oci")
-			}
-
-			// Validate OCI flags when output-format is oci
-			if outputFormat == outputFormatOCI {
-				if registryHost == "" {
-					return fmt.Errorf("--registry is required when --output-format is 'oci'")
-				}
-				if repository == "" {
-					return fmt.Errorf("--repository is required when --output-format is 'oci'")
-				}
-				// Validate registry and repository format early
-				if err := oci.ValidateRegistryReference(registryHost, repository); err != nil {
-					return err
-				}
-			}
-
-			// Parse value overrides from --set flags
-			valueOverrides, err := config.ParseValueOverrides(cmd.StringSlice("set"))
+			opts, err := parseBundleCmdOptions(cmd)
 			if err != nil {
-				return fmt.Errorf("invalid --set flag: %w", err)
+				return err
 			}
 
-			// Parse node selectors
-			systemNodeSelector, err := snapshotter.ParseNodeSelectors(cmd.StringSlice("system-node-selector"))
-			if err != nil {
-				return fmt.Errorf("invalid --system-node-selector: %w", err)
-			}
-			acceleratedNodeSelector, err := snapshotter.ParseNodeSelectors(cmd.StringSlice("accelerated-node-selector"))
-			if err != nil {
-				return fmt.Errorf("invalid --accelerated-node-selector: %w", err)
-			}
-
-			// Parse tolerations
-			systemNodeTolerations, err := snapshotter.ParseTolerations(cmd.StringSlice("system-node-toleration"))
-			if err != nil {
-				return fmt.Errorf("invalid --system-node-toleration: %w", err)
-			}
-			acceleratedNodeTolerations, err := snapshotter.ParseTolerations(cmd.StringSlice("accelerated-node-toleration"))
-			if err != nil {
-				return fmt.Errorf("invalid --accelerated-node-toleration: %w", err)
-			}
-
-			// Parse and validate deployer type
-			deployerTypeStr := cmd.String("deployer")
-			deployerType := deployerTypes.DeployerType(deployerTypeStr)
-			if !deployerType.IsValid() {
-				// Get list of valid types from registry
-				deployerReg := deployerRegistry.NewFromGlobal()
-				registeredTypes := deployerReg.Types()
-				return fmt.Errorf("invalid deployer type '%s': must be one of %s",
-					deployerTypeStr, strings.Join(deployerTypesToStrings(registeredTypes), ", "))
-			}
-
-			// Parse bundler types
-			var bundlerTypes []types.BundleType
-			for _, t := range bundlerTypesStr {
-				bt, parseErr := types.ParseType(t)
-				if parseErr != nil {
-					return fmt.Errorf("invalid bundler type '%s': %w", t, parseErr)
-				}
-				bundlerTypes = append(bundlerTypes, bt)
-			}
 			slog.Info("generating bundle",
-				slog.String("recipeFilePath", recipeFilePath),
-				slog.String("outputDir", outputDir),
-				slog.Any("bundlerTypes", bundlerTypes),
-				slog.String("deployerType", string(deployerType)),
+				slog.String("recipeFilePath", opts.recipeFilePath),
+				slog.String("outputDir", opts.outputDir),
+				slog.Any("bundlerTypes", opts.bundlerTypes),
+				slog.String("deployerType", string(opts.deployerType)),
 			)
 
-			rec, err := serializer.FromFile[recipe.RecipeResult](recipeFilePath)
+			rec, err := serializer.FromFile[recipe.RecipeResult](opts.recipeFilePath)
 			if err != nil {
-				slog.Error("failed to load recipe file", "error", err, "path", recipeFilePath)
+				slog.Error("failed to load recipe file", "error", err, "path", opts.recipeFilePath)
 				return err
 			}
 
@@ -224,21 +255,19 @@ func bundleCmd() *cli.Command {
 			reg := registry.NewFromGlobal(
 				config.NewConfig(
 					config.WithVersion(version),
-					config.WithValueOverrides(valueOverrides),
-					config.WithSystemNodeSelector(systemNodeSelector),
-					config.WithSystemNodeTolerations(systemNodeTolerations),
-					config.WithAcceleratedNodeSelector(acceleratedNodeSelector),
-					config.WithAcceleratedNodeTolerations(acceleratedNodeTolerations),
+					config.WithValueOverrides(opts.valueOverrides),
+					config.WithSystemNodeSelector(opts.systemNodeSelector),
+					config.WithSystemNodeTolerations(opts.systemNodeTolerations),
+					config.WithAcceleratedNodeSelector(opts.acceleratedNodeSelector),
+					config.WithAcceleratedNodeTolerations(opts.acceleratedNodeTolerations),
 				),
 			)
 
 			// Create bundler instance
 			b, err := bundler.New(
-				// If bundler types are not specified, all supported bundlers are used.
-				// An empty or nil slice means all bundlers as well.
-				bundler.WithBundlerTypes(bundlerTypes),
+				bundler.WithBundlerTypes(opts.bundlerTypes),
 				bundler.WithRegistry(reg),
-				bundler.WithDeployer(deployerType),
+				bundler.WithDeployer(opts.deployerType),
 			)
 			if err != nil {
 				slog.Error("failed to create bundler", "error", err)
@@ -246,7 +275,7 @@ func bundleCmd() *cli.Command {
 			}
 
 			// Generate bundle
-			out, err := b.Make(ctx, rec, outputDir)
+			out, err := b.Make(ctx, rec, opts.outputDir)
 			if err != nil {
 				slog.Error("bundle generation failed", "error", err)
 				return err
@@ -261,7 +290,6 @@ func bundleCmd() *cli.Command {
 
 			// Return error if any bundlers failed
 			if out.HasErrors() {
-				// Log each bundler error for debugging
 				for _, bundleErr := range out.Errors {
 					slog.Error("bundler failed",
 						"bundler_type", bundleErr.BundlerType,
@@ -273,16 +301,16 @@ func bundleCmd() *cli.Command {
 			}
 
 			// Package as OCI artifact when output-format is oci
-			if outputFormat == outputFormatOCI {
+			if opts.outputFormat == outputFormatOCI {
 				if ociErr := handleOCIOutput(ctx, ociConfig{
-					sourceDir:   outputDir,
-					outputDir:   outputDir,
-					registry:    registryHost,
-					repository:  repository,
-					tag:         tag,
-					push:        push,
-					plainHTTP:   plainHTTP,
-					insecureTLS: insecureTLS,
+					sourceDir:   opts.outputDir,
+					outputDir:   opts.outputDir,
+					registry:    opts.registryHost,
+					repository:  opts.repository,
+					tag:         opts.tag,
+					push:        opts.push,
+					plainHTTP:   opts.plainHTTP,
+					insecureTLS: opts.insecureTLS,
 				}, out.Results); ociErr != nil {
 					return ociErr
 				}
