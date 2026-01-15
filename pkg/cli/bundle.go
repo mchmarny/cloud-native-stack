@@ -11,6 +11,8 @@ import (
 	"log/slog"
 	"path/filepath"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/result"
@@ -29,6 +31,103 @@ const (
 	outputFormatDir = "dir"
 	outputFormatOCI = "oci"
 )
+
+// bundleCmdOptions holds parsed options for the bundle command.
+type bundleCmdOptions struct {
+	recipeFilePath             string
+	outputDir                  string
+	kubeconfig                 string
+	deployer                   string
+	repoURL                    string
+	valueOverrides             map[string]map[string]string
+	systemNodeSelector         map[string]string
+	systemNodeTolerations      []corev1.Toleration
+	acceleratedNodeSelector    map[string]string
+	acceleratedNodeTolerations []corev1.Toleration
+	outputFormat               string
+	registryHost               string
+	repository                 string
+	tag                        string
+	push                       bool
+	plainHTTP                  bool
+	insecureTLS                bool
+}
+
+// parseBundleCmdOptions parses and validates command options.
+func parseBundleCmdOptions(cmd *cli.Command) (*bundleCmdOptions, error) {
+	opts := &bundleCmdOptions{
+		recipeFilePath: cmd.String("recipe"),
+		outputDir:      cmd.String("output"),
+		kubeconfig:     cmd.String("kubeconfig"),
+		deployer:       cmd.String("deployer"),
+		repoURL:        cmd.String("repo"),
+		outputFormat:   cmd.String("output-format"),
+		registryHost:   cmd.String("registry"),
+		repository:     cmd.String("repository"),
+		tag:            cmd.String("tag"),
+		push:           cmd.Bool("push"),
+		insecureTLS:    cmd.Bool("insecure-tls"),
+		plainHTTP:      cmd.Bool("plain-http"),
+	}
+
+	// Validate deployer flag
+	if opts.deployer != "" && opts.deployer != deployerArgoCD {
+		return nil, fmt.Errorf("invalid --deployer value: %q (must be '' or 'argocd')", opts.deployer)
+	}
+
+	// Validate output-format
+	if opts.outputFormat != outputFormatDir && opts.outputFormat != outputFormatOCI {
+		return nil, fmt.Errorf("--output-format must be '%s' or '%s', got '%s'",
+			outputFormatDir, outputFormatOCI, opts.outputFormat)
+	}
+
+	// Validate --push requires --output-format=oci
+	if opts.push && opts.outputFormat != outputFormatOCI {
+		return nil, fmt.Errorf("--push requires --output-format=oci")
+	}
+
+	// Validate OCI flags when output-format is oci
+	if opts.outputFormat == outputFormatOCI {
+		if opts.registryHost == "" {
+			return nil, fmt.Errorf("--registry is required when --output-format is 'oci'")
+		}
+		if opts.repository == "" {
+			return nil, fmt.Errorf("--repository is required when --output-format is 'oci'")
+		}
+		if err := oci.ValidateRegistryReference(opts.registryHost, opts.repository); err != nil {
+			return nil, fmt.Errorf("invalid OCI reference: %w", err)
+		}
+	}
+
+	// Parse value overrides from --set flags
+	var err error
+	opts.valueOverrides, err = config.ParseValueOverrides(cmd.StringSlice("set"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid --set flag: %w", err)
+	}
+
+	// Parse node selectors
+	opts.systemNodeSelector, err = snapshotter.ParseNodeSelectors(cmd.StringSlice("system-node-selector"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid --system-node-selector: %w", err)
+	}
+	opts.acceleratedNodeSelector, err = snapshotter.ParseNodeSelectors(cmd.StringSlice("accelerated-node-selector"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid --accelerated-node-selector: %w", err)
+	}
+
+	// Parse tolerations
+	opts.systemNodeTolerations, err = snapshotter.ParseTolerations(cmd.StringSlice("system-node-toleration"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid --system-node-toleration: %w", err)
+	}
+	opts.acceleratedNodeTolerations, err = snapshotter.ParseTolerations(cmd.StringSlice("accelerated-node-toleration"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid --accelerated-node-toleration: %w", err)
+	}
+
+	return opts, nil
+}
 
 func bundleCmd() *cli.Command {
 	return &cli.Command{
@@ -170,104 +269,39 @@ After generating the ArgoCD bundle:
 			kubeconfigFlag,
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			recipeFilePath := cmd.String("recipe")
-			outputDir := cmd.String("output")
-			kubeconfig := cmd.String("kubeconfig")
-			deployer := cmd.String("deployer")
-			repoURL := cmd.String("repo")
-
-			// Validate deployer flag
-			if deployer != "" && deployer != deployerArgoCD {
-				return fmt.Errorf("invalid --deployer value: %q (must be '' or 'argocd')", deployer)
-			}
-
-			// Output format and OCI options
-			outputFormat := cmd.String("output-format")
-			registryHost := cmd.String("registry")
-			repository := cmd.String("repository")
-			tag := cmd.String("tag")
-			push := cmd.Bool("push")
-			insecureTLS := cmd.Bool("insecure-tls")
-			plainHTTP := cmd.Bool("plain-http")
-
-			// Validate output-format
-			if outputFormat != outputFormatDir && outputFormat != outputFormatOCI {
-				return fmt.Errorf("--output-format must be '%s' or '%s', got '%s'", outputFormatDir, outputFormatOCI, outputFormat)
-			}
-
-			// Validate --push requires --output-format=oci
-			if push && outputFormat != outputFormatOCI {
-				return fmt.Errorf("--push requires --output-format=oci")
-			}
-
-			// Validate OCI flags when output-format is oci
-			if outputFormat == outputFormatOCI {
-				if registryHost == "" {
-					return fmt.Errorf("--registry is required when --output-format is 'oci'")
-				}
-				if repository == "" {
-					return fmt.Errorf("--repository is required when --output-format is 'oci'")
-				}
-				// Validate registry and repository format early
-				if err := oci.ValidateRegistryReference(registryHost, repository); err != nil {
-					return fmt.Errorf("invalid OCI reference: %w", err)
-				}
-			}
-
-			// Parse value overrides from --set flags
-			valueOverrides, err := config.ParseValueOverrides(cmd.StringSlice("set"))
+			opts, err := parseBundleCmdOptions(cmd)
 			if err != nil {
-				return fmt.Errorf("invalid --set flag: %w", err)
-			}
-
-			// Parse node selectors
-			systemNodeSelector, err := snapshotter.ParseNodeSelectors(cmd.StringSlice("system-node-selector"))
-			if err != nil {
-				return fmt.Errorf("invalid --system-node-selector: %w", err)
-			}
-			acceleratedNodeSelector, err := snapshotter.ParseNodeSelectors(cmd.StringSlice("accelerated-node-selector"))
-			if err != nil {
-				return fmt.Errorf("invalid --accelerated-node-selector: %w", err)
-			}
-
-			// Parse tolerations
-			systemNodeTolerations, err := snapshotter.ParseTolerations(cmd.StringSlice("system-node-toleration"))
-			if err != nil {
-				return fmt.Errorf("invalid --system-node-toleration: %w", err)
-			}
-			acceleratedNodeTolerations, err := snapshotter.ParseTolerations(cmd.StringSlice("accelerated-node-toleration"))
-			if err != nil {
-				return fmt.Errorf("invalid --accelerated-node-toleration: %w", err)
+				return err
 			}
 
 			outputType := "umbrella chart"
-			if deployer == deployerArgoCD {
+			if opts.deployer == deployerArgoCD {
 				outputType = "ArgoCD applications"
 			}
 			slog.Info("generating bundle",
 				slog.String("type", outputType),
-				slog.String("recipe", recipeFilePath),
-				slog.String("output", outputDir),
-				slog.String("output-format", outputFormat),
+				slog.String("recipe", opts.recipeFilePath),
+				slog.String("output", opts.outputDir),
+				slog.String("output-format", opts.outputFormat),
 			)
 
 			// Load recipe from file/URL/ConfigMap
-			rec, err := serializer.FromFileWithKubeconfig[recipe.RecipeResult](recipeFilePath, kubeconfig)
+			rec, err := serializer.FromFileWithKubeconfig[recipe.RecipeResult](opts.recipeFilePath, opts.kubeconfig)
 			if err != nil {
-				slog.Error("failed to load recipe file", "error", err, "path", recipeFilePath)
+				slog.Error("failed to load recipe file", "error", err, "path", opts.recipeFilePath)
 				return err
 			}
 
 			// Create bundler with config
 			cfg := config.NewConfig(
 				config.WithVersion(version),
-				config.WithDeployer(deployer),
-				config.WithRepoURL(repoURL),
-				config.WithValueOverrides(valueOverrides),
-				config.WithSystemNodeSelector(systemNodeSelector),
-				config.WithSystemNodeTolerations(systemNodeTolerations),
-				config.WithAcceleratedNodeSelector(acceleratedNodeSelector),
-				config.WithAcceleratedNodeTolerations(acceleratedNodeTolerations),
+				config.WithDeployer(opts.deployer),
+				config.WithRepoURL(opts.repoURL),
+				config.WithValueOverrides(opts.valueOverrides),
+				config.WithSystemNodeSelector(opts.systemNodeSelector),
+				config.WithSystemNodeTolerations(opts.systemNodeTolerations),
+				config.WithAcceleratedNodeSelector(opts.acceleratedNodeSelector),
+				config.WithAcceleratedNodeTolerations(opts.acceleratedNodeTolerations),
 			)
 
 			b, err := bundler.NewWithConfig(cfg)
@@ -277,7 +311,7 @@ After generating the ArgoCD bundle:
 			}
 
 			// Generate bundle
-			out, err := b.Make(ctx, rec, outputDir)
+			out, err := b.Make(ctx, rec, opts.outputDir)
 			if err != nil {
 				slog.Error("bundle generation failed", "error", err)
 				return err
@@ -292,21 +326,21 @@ After generating the ArgoCD bundle:
 			)
 
 			// Print deployment instructions (only for dir output)
-			if outputFormat == outputFormatDir {
-				printBundleDeploymentInstructions(deployer, repoURL, out)
+			if opts.outputFormat == outputFormatDir {
+				printBundleDeploymentInstructions(opts.deployer, opts.repoURL, out)
 			}
 
 			// Package as OCI artifact when output-format is oci
-			if outputFormat == outputFormatOCI {
+			if opts.outputFormat == outputFormatOCI {
 				if ociErr := handleOCIOutput(ctx, ociConfig{
-					sourceDir:   outputDir,
-					outputDir:   outputDir,
-					registry:    registryHost,
-					repository:  repository,
-					tag:         tag,
-					push:        push,
-					plainHTTP:   plainHTTP,
-					insecureTLS: insecureTLS,
+					sourceDir:   opts.outputDir,
+					outputDir:   opts.outputDir,
+					registry:    opts.registryHost,
+					repository:  opts.repository,
+					tag:         opts.tag,
+					push:        opts.push,
+					plainHTTP:   opts.plainHTTP,
+					insecureTLS: opts.insecureTLS,
 				}); ociErr != nil {
 					return ociErr
 				}

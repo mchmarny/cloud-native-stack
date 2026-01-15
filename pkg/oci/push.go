@@ -153,8 +153,8 @@ func Package(ctx context.Context, opts PackageOptions) (*PackageResult, error) {
 
 	// Create OCI Image Layout store at output directory
 	ociStorePath := filepath.Join(opts.OutputDir, "oci-layout")
-	if err := os.MkdirAll(ociStorePath, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create OCI store directory: %w", err)
+	if mkdirErr := os.MkdirAll(ociStorePath, 0755); mkdirErr != nil {
+		return nil, fmt.Errorf("failed to create OCI store directory: %w", mkdirErr)
 	}
 
 	ociStore, err := oci.New(ociStorePath)
@@ -215,6 +215,8 @@ func Package(ctx context.Context, opts PackageOptions) (*PackageResult, error) {
 }
 
 // PushFromStore pushes an already-packaged OCI artifact from a local OCI store to a remote registry.
+//
+//nolint:unparam // PushResult is part of the public API, returned for future callers
 func PushFromStore(ctx context.Context, storePath string, opts PushOptions) (*PushResult, error) {
 	if opts.Tag == "" {
 		return nil, fmt.Errorf("tag is required to push OCI image")

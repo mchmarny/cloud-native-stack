@@ -24,9 +24,7 @@ import (
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/component/certmanager"
-	"github.com/NVIDIA/cloud-native-stack/pkg/measurement"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
-	"github.com/NVIDIA/cloud-native-stack/pkg/recipe/header"
 )
 
 func TestStripProtocol(t *testing.T) {
@@ -295,31 +293,21 @@ func TestOCIPackagingIntegration(t *testing.T) {
 	// Create output directory for bundler
 	bundleOutputDir := t.TempDir()
 
-	// Create a test recipe directly (same structure as bundler tests use)
-	rec := &recipe.Recipe{
-		Measurements: []*measurement.Measurement{
+	// Create a test RecipeResult with cert-manager component reference
+	// (RecipeResult is required because bundlers use GetComponentRef)
+	rec := &recipe.RecipeResult{
+		Kind:       "recipeResult",
+		APIVersion: recipe.FullAPIVersion,
+		ComponentRefs: []recipe.ComponentRef{
 			{
-				Type: measurement.TypeK8s,
-				Subtypes: []measurement.Subtype{
-					{
-						Name: "image",
-						Data: map[string]measurement.Reading{
-							"cert-manager": measurement.Str("v1.19.1"),
-						},
-					},
-					{
-						Name: "config",
-						Data: map[string]measurement.Reading{
-							"install-crds":   measurement.Str("true"),
-							"enable-webhook": measurement.Str("true"),
-							"replica-count":  measurement.Str("1"),
-						},
-					},
-				},
+				Name:       "cert-manager",
+				Type:       "Helm",
+				Source:     "https://charts.jetstack.io",
+				Version:    "v1.14.0",
+				ValuesFile: "components/cert-manager/values.yaml",
 			},
 		},
 	}
-	rec.Init(header.KindRecipe, "v1", "1.0.0")
 
 	// Use the REAL cert-manager bundler to generate output
 	bundler := certmanager.NewBundler(config.NewConfig())
