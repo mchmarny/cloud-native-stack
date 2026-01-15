@@ -1,0 +1,882 @@
+{
+  "lockfile-version": 1,
+  "manifest": {
+    "version": 1,
+    "install": {
+      "git": {
+        "pkg-path": "git"
+      },
+      "gnumake": {
+        "pkg-path": "gnumake"
+      },
+      "go": {
+        "pkg-path": "go",
+        "version": "^1.23"
+      },
+      "golangci-lint": {
+        "pkg-path": "golangci-lint"
+      },
+      "goreleaser": {
+        "pkg-path": "goreleaser"
+      },
+      "grype": {
+        "pkg-path": "grype"
+      },
+      "yamllint": {
+        "pkg-path": "yamllint"
+      }
+    },
+    "vars": {
+      "CGO_ENABLED": "0"
+    },
+    "hook": {
+      "on-activate": "  export GOPATH=\"${FLOX_ENV_CACHE:-$HOME/.cache}/go\"\n  export GOCACHE=\"${FLOX_ENV_CACHE:-$HOME/.cache}/go-build\"\n  mkdir -p \"$GOPATH\" \"$GOCACHE\"\n"
+    },
+    "options": {
+      "systems": [
+        "aarch64-darwin",
+        "aarch64-linux",
+        "x86_64-darwin",
+        "x86_64-linux"
+      ]
+    }
+  },
+  "packages": [
+    {
+      "attr_path": "git",
+      "broken": false,
+      "derivation": "/nix/store/iljbks0y8x34b38iyr6cp45w40y7i5fk-git-2.52.0.drv",
+      "description": "Distributed version control system",
+      "install_id": "git",
+      "license": "GPL-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "git-2.52.0",
+      "pname": "git",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T02:56:34.530213Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.52.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "doc": "/nix/store/1518yqnr4z0p65jfv8skw2qwc30ad5la-git-2.52.0-doc",
+        "out": "/nix/store/1xy62wrp3m91snd3cazxgg0yrplb6sav-git-2.52.0"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "git",
+      "broken": false,
+      "derivation": "/nix/store/vfyf0r08fdqp19g4542inp1sbsa51i3m-git-2.52.0.drv",
+      "description": "Distributed version control system",
+      "install_id": "git",
+      "license": "GPL-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "git-2.52.0",
+      "pname": "git",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:12:55.387338Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.52.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/q0lq2fczq1y9q9028k4ripf38mfy3n42-git-2.52.0-debug",
+        "doc": "/nix/store/lm1plgvh8qlv0amm8wiz8l00ky298hws-git-2.52.0-doc",
+        "out": "/nix/store/mfbr42w740arf759n51nhki221lang5z-git-2.52.0"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "git",
+      "broken": false,
+      "derivation": "/nix/store/1gr7bffbw1vx7q9n1cirxw76py4nqhbg-git-2.52.0.drv",
+      "description": "Distributed version control system",
+      "install_id": "git",
+      "license": "GPL-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "git-2.52.0",
+      "pname": "git",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:23:31.038407Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.52.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "doc": "/nix/store/a9903b6q3clvx61l8drkpr262fb5qmik-git-2.52.0-doc",
+        "out": "/nix/store/0lxp1s4hb0xb0di1a5jg08rr8hk0cvz8-git-2.52.0"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "git",
+      "broken": false,
+      "derivation": "/nix/store/38ld2rqc31vsfzm9d20h6wdpkj3sy0v1-git-2.52.0.drv",
+      "description": "Distributed version control system",
+      "install_id": "git",
+      "license": "GPL-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "git-2.52.0",
+      "pname": "git",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:33:06.720699Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.52.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/q6m51s4q8kddlh9b9rb63v1yqvlv3xgp-git-2.52.0-debug",
+        "doc": "/nix/store/n4zq81winwf8d5y2ra7fjznwl6cnhggz-git-2.52.0-doc",
+        "out": "/nix/store/fryiyyhhilpqhx2wc4b6l5gnxc8w18rg-git-2.52.0"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gnumake",
+      "broken": false,
+      "derivation": "/nix/store/58x1glcig8inznfv5sdrigljk4rn4lb0-gnumake-4.4.1.drv",
+      "description": "Tool to control the generation of non-source files from sources",
+      "install_id": "gnumake",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "gnumake-4.4.1",
+      "pname": "gnumake",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T02:56:34.636323Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "4.4.1",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "info": "/nix/store/mmvr4hwsambcigjihl7lf3aiprhkdcd2-gnumake-4.4.1-info",
+        "man": "/nix/store/b5lxm0lk6x1bix95n07cz810qfli84c5-gnumake-4.4.1-man",
+        "out": "/nix/store/p15ia8pn2wxzdqaf07nrwdspfwsyrzyn-gnumake-4.4.1"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gnumake",
+      "broken": false,
+      "derivation": "/nix/store/sklna5kvkyxs68s80xnyggz1z8b702b6-gnumake-4.4.1.drv",
+      "description": "Tool to control the generation of non-source files from sources",
+      "install_id": "gnumake",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "gnumake-4.4.1",
+      "pname": "gnumake",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:12:55.964700Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "4.4.1",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/nzgvdhdnqcg0bpcq4k2aa2zd5qmwgg9x-gnumake-4.4.1-debug",
+        "info": "/nix/store/ij1n1xja5ixfhv4fqi5j8xlkbc80n1lc-gnumake-4.4.1-info",
+        "man": "/nix/store/3nailcskmiij9a4hb6dihaf0hqsfy7kg-gnumake-4.4.1-man",
+        "out": "/nix/store/644anc4jyqal79d739mwr5bxznb1i5qx-gnumake-4.4.1"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gnumake",
+      "broken": false,
+      "derivation": "/nix/store/2v7zdb79wj91xd2pgpm3hs7bvc16w62i-gnumake-4.4.1.drv",
+      "description": "Tool to control the generation of non-source files from sources",
+      "install_id": "gnumake",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "gnumake-4.4.1",
+      "pname": "gnumake",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:23:31.176502Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "4.4.1",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "info": "/nix/store/rbyz3pnr7n8wprrhy588siv2csisr5va-gnumake-4.4.1-info",
+        "man": "/nix/store/rv8sy3pwwdn90a5vzk47rm5rx8q040dc-gnumake-4.4.1-man",
+        "out": "/nix/store/w1zxhygdjxaff1rrp6na4qkh9x4aks8p-gnumake-4.4.1"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gnumake",
+      "broken": false,
+      "derivation": "/nix/store/c8z2mcy4jhgpzm02s88gz34n8qa2k2ix-gnumake-4.4.1.drv",
+      "description": "Tool to control the generation of non-source files from sources",
+      "install_id": "gnumake",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "gnumake-4.4.1",
+      "pname": "gnumake",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:33:07.336940Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "4.4.1",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/sg196gmr26wc93qj8ajzr5nw5hy54hfq-gnumake-4.4.1-debug",
+        "info": "/nix/store/mcbi0v4cy602a08rkaxl3w3r3k1qmds2-gnumake-4.4.1-info",
+        "man": "/nix/store/9l7klscdz1cf1wdhm6ihd0as6dxlxg72-gnumake-4.4.1-man",
+        "out": "/nix/store/n5m6p0j4anvf5cyy79nb2qn7smkzs176-gnumake-4.4.1"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "go",
+      "broken": false,
+      "derivation": "/nix/store/hgsy7836w5mmvbmfqq85ahvaijxp6hg5-go-1.25.5.drv",
+      "description": "Go Programming language",
+      "install_id": "go",
+      "license": "BSD-3-Clause",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "go-1.25.5",
+      "pname": "go",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T02:56:34.644816Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.25.5",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/fy2aq0rg6vbiyjfdpqy3429hqsan7iwm-go-1.25.5"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "go",
+      "broken": false,
+      "derivation": "/nix/store/szsqy070dn220802p3xz4qzayg21v51h-go-1.25.5.drv",
+      "description": "Go Programming language",
+      "install_id": "go",
+      "license": "BSD-3-Clause",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "go-1.25.5",
+      "pname": "go",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:12:55.979388Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.25.5",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/30d96229dgrh6n6bmd4hn9r1hcngj9bn-go-1.25.5"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "go",
+      "broken": false,
+      "derivation": "/nix/store/h6nns7plcgc96n5d5fx6d3gaimdb5ji1-go-1.25.5.drv",
+      "description": "Go Programming language",
+      "install_id": "go",
+      "license": "BSD-3-Clause",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "go-1.25.5",
+      "pname": "go",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:23:31.185201Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.25.5",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/wzakp2xy6if4n2b4fb1fkdjwilwlpifk-go-1.25.5"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "go",
+      "broken": false,
+      "derivation": "/nix/store/zl4wd83m32ygpjcljdl5wqsn0fq9093j-go-1.25.5.drv",
+      "description": "Go Programming language",
+      "install_id": "go",
+      "license": "BSD-3-Clause",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "go-1.25.5",
+      "pname": "go",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:33:07.351789Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.25.5",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/60z37432vmgkg54krwr1z057bqwp7583-go-1.25.5"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "golangci-lint",
+      "broken": false,
+      "derivation": "/nix/store/wxbnphj1qbk0jh0jqg79ivlsqim9x644-golangci-lint-2.7.2.drv",
+      "description": "Fast linters Runner for Go",
+      "install_id": "golangci-lint",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "golangci-lint-2.7.2",
+      "pname": "golangci-lint",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T02:56:34.693245Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.7.2",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/ysbphh6mli3npxvzb9p30nwyp213mlq3-golangci-lint-2.7.2"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "golangci-lint",
+      "broken": false,
+      "derivation": "/nix/store/di57lrl7939n2mjwxzknpnb3wdr3m1yf-golangci-lint-2.7.2.drv",
+      "description": "Fast linters Runner for Go",
+      "install_id": "golangci-lint",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "golangci-lint-2.7.2",
+      "pname": "golangci-lint",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:12:56.065250Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.7.2",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/vhp9hkr55yrgpvl9l04h3clgqlhsb4zy-golangci-lint-2.7.2"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "golangci-lint",
+      "broken": false,
+      "derivation": "/nix/store/fh0kk45kkjkb3n1p485z4yqi59czq7mw-golangci-lint-2.7.2.drv",
+      "description": "Fast linters Runner for Go",
+      "install_id": "golangci-lint",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "golangci-lint-2.7.2",
+      "pname": "golangci-lint",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:23:31.234202Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.7.2",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/4l0i40g6xkbfnhfgdf83npk0d0v033yc-golangci-lint-2.7.2"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "golangci-lint",
+      "broken": false,
+      "derivation": "/nix/store/1qab8bi0ah0z58wr3cs5fs01ivzwp1sn-golangci-lint-2.7.2.drv",
+      "description": "Fast linters Runner for Go",
+      "install_id": "golangci-lint",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "golangci-lint-2.7.2",
+      "pname": "golangci-lint",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:33:07.441280Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.7.2",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/q983imcmzczmzgj58k0xwn9kkn3f87jj-golangci-lint-2.7.2"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "goreleaser",
+      "broken": false,
+      "derivation": "/nix/store/ldqc7f3ji5l4xw3j5w82s82w3knxndfq-goreleaser-2.13.0.drv",
+      "description": "Deliver Go binaries as fast and easily as possible",
+      "install_id": "goreleaser",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "goreleaser-2.13.0",
+      "pname": "goreleaser",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T02:56:34.716372Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.13.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/mrhz3rnjq0b69rxwyih93bialblb52yy-goreleaser-2.13.0"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "goreleaser",
+      "broken": false,
+      "derivation": "/nix/store/6l1nfxkrs28jyn0531f5h4yc555n1mhr-goreleaser-2.13.0.drv",
+      "description": "Deliver Go binaries as fast and easily as possible",
+      "install_id": "goreleaser",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "goreleaser-2.13.0",
+      "pname": "goreleaser",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:12:56.103499Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.13.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/7xm2awzjyxn9xxiy82rw19sxxz0ry2qi-goreleaser-2.13.0"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "goreleaser",
+      "broken": false,
+      "derivation": "/nix/store/9pkn9lpwk7kqvxfs8lgqdbcax2b0zq7w-goreleaser-2.13.0.drv",
+      "description": "Deliver Go binaries as fast and easily as possible",
+      "install_id": "goreleaser",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "goreleaser-2.13.0",
+      "pname": "goreleaser",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:23:31.257990Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.13.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/bq3vff3fcgn6fcp1v7ck1j7fkdgb7j6c-goreleaser-2.13.0"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "goreleaser",
+      "broken": false,
+      "derivation": "/nix/store/dijfni1qscwmgj4fr5z6737a4yg6dn4d-goreleaser-2.13.0.drv",
+      "description": "Deliver Go binaries as fast and easily as possible",
+      "install_id": "goreleaser",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "goreleaser-2.13.0",
+      "pname": "goreleaser",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:33:07.481853Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.13.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/z34vcsv6x83d2iqdjf0kiaq99y1qq3nr-goreleaser-2.13.0"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "grype",
+      "broken": false,
+      "derivation": "/nix/store/9d63m77jl5bk4p8wraa39x18jjrrpqaw-grype-0.104.3.drv",
+      "description": "Vulnerability scanner for container images and filesystems",
+      "install_id": "grype",
+      "license": "[ Apache-2.0 ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "grype-0.104.3",
+      "pname": "grype",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T02:56:34.804959Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.104.3",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/w3l796kff0li6gz1f8w6sgdiczyc6v4f-grype-0.104.3"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "grype",
+      "broken": false,
+      "derivation": "/nix/store/m5z2arsv6fff4j0bzrv68h8fjz5cjxpx-grype-0.104.3.drv",
+      "description": "Vulnerability scanner for container images and filesystems",
+      "install_id": "grype",
+      "license": "[ Apache-2.0 ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "grype-0.104.3",
+      "pname": "grype",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:12:56.250426Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.104.3",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/ar1dizkvrfar2ymdrsb8fjiw93phapw6-grype-0.104.3"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "grype",
+      "broken": false,
+      "derivation": "/nix/store/zpc486xclwk7ra1zm8v27xa00b898jbr-grype-0.104.3.drv",
+      "description": "Vulnerability scanner for container images and filesystems",
+      "install_id": "grype",
+      "license": "[ Apache-2.0 ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "grype-0.104.3",
+      "pname": "grype",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:23:31.348667Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.104.3",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/cgyhp89wq722226arn7a0mn1q2cjdgjz-grype-0.104.3"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "grype",
+      "broken": false,
+      "derivation": "/nix/store/cr5cn0h3sd2qq92minbl5wm3dziq2jqw-grype-0.104.3.drv",
+      "description": "Vulnerability scanner for container images and filesystems",
+      "install_id": "grype",
+      "license": "[ Apache-2.0 ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "grype-0.104.3",
+      "pname": "grype",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:33:07.641716Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "0.104.3",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/54q7xjiwdrjw3hdbch1fm0qkgb7x0m6q-grype-0.104.3"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "yamllint",
+      "broken": false,
+      "derivation": "/nix/store/xdlznk0l5s37xxx9izm5z54cw7yjxl4w-python3.13-yamllint-1.37.1.drv",
+      "description": "Linter for YAML files",
+      "install_id": "yamllint",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "python3.13-yamllint-1.37.1",
+      "pname": "yamllint",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T02:59:09.483075Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.37.1",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "dist": "/nix/store/j8fr0jlrpn3kn4fv40ll3v0jjsxvq1sd-python3.13-yamllint-1.37.1-dist",
+        "out": "/nix/store/r8an3bdz2xbfp8vz6dwgyvzpc2rl3ln6-python3.13-yamllint-1.37.1"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "yamllint",
+      "broken": false,
+      "derivation": "/nix/store/0zx5k46irz5dj1fhyc5kcdnzjnx3r7ws-python3.13-yamllint-1.37.1.drv",
+      "description": "Linter for YAML files",
+      "install_id": "yamllint",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "python3.13-yamllint-1.37.1",
+      "pname": "yamllint",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:16:19.350423Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.37.1",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "dist": "/nix/store/pg06j9nyb5fa0g1zp0lfwm607mxibx6s-python3.13-yamllint-1.37.1-dist",
+        "out": "/nix/store/yr51znrdsiydx759y8qm6hqkdv5iv3fg-python3.13-yamllint-1.37.1"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "yamllint",
+      "broken": false,
+      "derivation": "/nix/store/89c6msx00a161ijn0vkjjyq29lxqbzcw-python3.13-yamllint-1.37.1.drv",
+      "description": "Linter for YAML files",
+      "install_id": "yamllint",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "python3.13-yamllint-1.37.1",
+      "pname": "yamllint",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:26:05.586643Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.37.1",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "dist": "/nix/store/7zd2cxybp0zc4g70bijisj13jy49mw6c-python3.13-yamllint-1.37.1-dist",
+        "out": "/nix/store/y2rdrvj9x9k9ib384pja6j3vilakzl04-python3.13-yamllint-1.37.1"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "yamllint",
+      "broken": false,
+      "derivation": "/nix/store/mijvr5wvqaqwwiqknqv5s84xanrwvz4b-python3.13-yamllint-1.37.1.drv",
+      "description": "Linter for YAML files",
+      "install_id": "yamllint",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=5912c1772a44e31bf1c63c0390b90501e5026886",
+      "name": "python3.13-yamllint-1.37.1",
+      "pname": "yamllint",
+      "rev": "5912c1772a44e31bf1c63c0390b90501e5026886",
+      "rev_count": 923638,
+      "rev_date": "2026-01-07T06:26:47Z",
+      "scrape_date": "2026-01-08T03:36:41.941251Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.37.1",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "dist": "/nix/store/mswzcnf2sr9lnbdx9qfgzjxnmsv3dapr-python3.13-yamllint-1.37.1-dist",
+        "out": "/nix/store/s8zbfqgmjririxy1g4nvb6rs70mgykvg-python3.13-yamllint-1.37.1"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    }
+  ]
+}

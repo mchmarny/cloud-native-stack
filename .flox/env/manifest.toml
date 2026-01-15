@@ -1,0 +1,25 @@
+# Flox Environment Manifest for Cloud Native Stack (eidos)
+version = 1
+
+[install]
+git.pkg-path = "git"
+gnumake.pkg-path = "gnumake"
+go.pkg-path = "go"
+go.version = "^1.23"
+golangci-lint.pkg-path = "golangci-lint"
+goreleaser.pkg-path = "goreleaser"
+grype.pkg-path = "grype"
+yamllint.pkg-path = "yamllint"
+
+[vars]
+CGO_ENABLED = "0"
+
+[hook]
+on-activate = '''
+  export GOPATH="${FLOX_ENV_CACHE:-$HOME/.cache}/go"
+  export GOCACHE="${FLOX_ENV_CACHE:-$HOME/.cache}/go-build"
+  mkdir -p "$GOPATH" "$GOCACHE"
+'''
+
+[options]
+systems = ["aarch64-darwin", "aarch64-linux", "x86_64-darwin", "x86_64-linux"]

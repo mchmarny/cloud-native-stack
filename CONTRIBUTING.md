@@ -54,7 +54,31 @@ This project follows NVIDIA's commitment to fostering an open and welcoming envi
 
 ## Development Setup
 
-### Prerequisites
+### Clone the Repository
+
+```bash
+git clone https://github.com/NVIDIA/cloud-native-stack.git
+cd cloud-native-stack
+```
+
+### Option A: Using Flox (Recommended)
+
+The easiest way to set up a development environment is with [Flox](https://flox.dev/), which provides all required tools in a reproducible environment.
+
+```bash
+# Install Flox if you haven't already
+# https://flox.dev/docs/install-flox/
+
+# Activate the development environment
+flox activate
+
+# Optional: Enable auto-activation with direnv
+direnv allow
+```
+
+### Option B: Manual Installation
+
+If you prefer to install tools manually:
 
 - **Go**: Version 1.21 or higher ([download](https://golang.org/dl/))
 - **golangci-lint**: Latest version ([installation](https://golangci-lint.run/usage/install/))
@@ -63,13 +87,6 @@ This project follows NVIDIA's commitment to fostering an open and welcoming envi
 - **goreleaser**: For building releases ([installation](https://goreleaser.com/install/))
 - **make**: For build automation (usually pre-installed on Unix systems)
 - **git**: For version control
-
-### Clone the Repository
-
-```bash
-git clone https://github.com/NVIDIA/cloud-native-stack.git
-cd cloud-native-stack
-```
 
 ### Install Dependencies
 
