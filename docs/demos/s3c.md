@@ -241,3 +241,7 @@ Get entry details:
 ```shell
 rekor-cli get --uuid <entry-uuid>
 ```
+
+## Links
+
+* [Security](https://github.com/mchmarny/cloud-native-stack/blob/main/SECURITY.md)
