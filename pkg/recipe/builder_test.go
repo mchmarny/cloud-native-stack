@@ -205,7 +205,8 @@ func TestBuilder_BuildFromCriteriaWithEvaluator(t *testing.T) {
 				t.Errorf("expected version test-v1.0.0, got %q", result.Metadata.Version)
 			}
 
-			// Verify warnings match expectations (skip when wantWarningCount is -1)
+			// Verify warnings match expectations. A wantWarningCount of -1 means
+			// "skip exact count validation" for constraint warnings.
 			if tt.wantWarningCount >= 0 {
 				if len(result.Metadata.ConstraintWarnings) != tt.wantWarningCount {
 					t.Errorf("expected %d warnings, got %d",
