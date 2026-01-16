@@ -117,6 +117,7 @@ func (w *ConfigMapWriter) Serialize(ctx context.Context, snapshot any) error {
 
 	// Use Server-Side Apply for atomic create-or-update operation
 	// This eliminates race conditions from the previous Get-then-Update pattern
+	// Force allows taking ownership from previous field managers (cnsctl CLI vs agent)
 	slog.Info("applying ConfigMap",
 		"namespace", w.namespace,
 		"name", w.name,
@@ -125,7 +126,10 @@ func (w *ConfigMapWriter) Serialize(ctx context.Context, snapshot any) error {
 	_, err = client.CoreV1().ConfigMaps(w.namespace).Apply(
 		writeCtx,
 		configMap,
-		metav1.ApplyOptions{FieldManager: "cnsctl"},
+		metav1.ApplyOptions{
+			FieldManager: "cnsctl",
+			Force:        true,
+		},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to apply ConfigMap: %w", err)
