@@ -312,3 +312,207 @@ func (s *MetadataStore) BuildRecipeResult(ctx context.Context, criteria *Criteri
 
 	return result, nil
 }
+
+// BuildRecipeResultWithEvaluator builds a RecipeResult by merging base with matching overlays,
+// filtering overlays based on constraint evaluation using the provided evaluator function.
+//
+// This method extends BuildRecipeResult with constraint-aware filtering:
+//   - Each overlay that matches by criteria is tested against its constraints
+//   - Overlays with failing constraints are excluded from the merge
+//   - Warnings about excluded overlays are included in the result metadata
+//
+// The evaluator function is called for each constraint in each matching overlay.
+// If evaluator is nil, this method behaves identically to BuildRecipeResult.
+func (s *MetadataStore) BuildRecipeResultWithEvaluator(ctx context.Context, criteria *Criteria, evaluator ConstraintEvaluatorFunc) (*RecipeResult, error) {
+	// If no evaluator provided, use the standard build method
+	if evaluator == nil {
+		return s.BuildRecipeResult(ctx, criteria)
+	}
+
+	// Check if ctx has been canceled
+	select {
+	case <-ctx.Done():
+		return nil, cnserrors.WrapWithContext(
+			cnserrors.ErrCodeTimeout,
+			"build recipe result context cancelled during initialization",
+			ctx.Err(),
+			map[string]any{
+				"stage": "initialization",
+			},
+		)
+	default:
+	}
+
+	// Find matching overlays (sorted by specificity, least specific first)
+	overlays := s.FindMatchingOverlays(criteria)
+
+	// Evaluate constraints and filter overlays
+	var filteredOverlays []*RecipeMetadata
+	var excludedOverlays []string
+	var constraintWarnings []ConstraintWarning
+
+	for _, overlay := range overlays {
+		slog.Debug("evaluating overlay constraints",
+			"overlay", overlay.Metadata.Name,
+			"constraint_count", len(overlay.Spec.Constraints))
+
+		passed, warnings := s.evaluateOverlayConstraints(overlay, evaluator)
+		if passed {
+			filteredOverlays = append(filteredOverlays, overlay)
+			slog.Debug("overlay passed all constraints",
+				"overlay", overlay.Metadata.Name)
+		} else {
+			excludedOverlays = append(excludedOverlays, overlay.Metadata.Name)
+			constraintWarnings = append(constraintWarnings, warnings...)
+			slog.Info("excluding overlay due to constraint failures",
+				"overlay", overlay.Metadata.Name,
+				"failed_constraints", len(warnings))
+		}
+	}
+
+	// Track all applied recipes (from inheritance chains)
+	appliedOverlays := make([]string, 0)
+
+	// Start with the base spec
+	mergedSpec := RecipeMetadataSpec{
+		Constraints:   make([]Constraint, len(s.Base.Spec.Constraints)),
+		ComponentRefs: make([]ComponentRef, len(s.Base.Spec.ComponentRefs)),
+	}
+	copy(mergedSpec.Constraints, s.Base.Spec.Constraints)
+	copy(mergedSpec.ComponentRefs, s.Base.Spec.ComponentRefs)
+	appliedOverlays = append(appliedOverlays, "base")
+
+	// For each filtered overlay, resolve its inheritance chain and merge
+	processedChains := make(map[string]bool)
+
+	for _, overlay := range filteredOverlays {
+		// Resolve the full inheritance chain for this overlay
+		chain, err := s.resolveInheritanceChain(overlay.Metadata.Name)
+		if err != nil {
+			return nil, cnserrors.WrapWithContext(
+				cnserrors.ErrCodeInvalidRequest,
+				"failed to resolve inheritance chain",
+				err,
+				map[string]any{
+					"overlay": overlay.Metadata.Name,
+				},
+			)
+		}
+
+		// Apply each recipe in the chain that hasn't been applied yet
+		// Skip base (index 0) since we already started with it
+		for i := 1; i < len(chain); i++ {
+			recipe := chain[i]
+			if processedChains[recipe.Metadata.Name] {
+				continue
+			}
+			processedChains[recipe.Metadata.Name] = true
+			mergedSpec.Merge(&recipe.Spec)
+			appliedOverlays = append(appliedOverlays, recipe.Metadata.Name)
+		}
+	}
+
+	// Log information about filtered overlays
+	if len(excludedOverlays) > 0 {
+		slog.Warn("some overlays were excluded due to constraint failures",
+			"excluded", excludedOverlays,
+			"applied", appliedOverlays,
+			"criteria", criteria.String())
+	}
+
+	// Warn if no overlays were applied
+	if len(appliedOverlays) <= 1 {
+		if len(excludedOverlays) > 0 {
+			slog.Warn("all matching overlays were excluded due to constraint failures, using base configuration only",
+				"excluded_count", len(excludedOverlays),
+				"criteria", criteria.String())
+		} else {
+			slog.Warn("no environment-specific overlays matched, using base configuration only",
+				"criteria", criteria.String(),
+				"hint", "recipe may not be optimized for your environment")
+		}
+	}
+
+	// Validate merged dependencies
+	if err := mergedSpec.ValidateDependencies(); err != nil {
+		return nil, cnserrors.Wrap(cnserrors.ErrCodeInvalidRequest, "merged recipe validation failed", err)
+	}
+
+	// Compute deployment order
+	deployOrder, err := mergedSpec.TopologicalSort()
+	if err != nil {
+		return nil, cnserrors.Wrap(cnserrors.ErrCodeInternal, "failed to compute deployment order", err)
+	}
+
+	// Build result
+	result := &RecipeResult{
+		Kind:            "recipeResult",
+		APIVersion:      "cns.nvidia.com/v1alpha1",
+		Criteria:        criteria,
+		Constraints:     mergedSpec.Constraints,
+		ComponentRefs:   mergedSpec.ComponentRefs,
+		DeploymentOrder: deployOrder,
+	}
+	result.Metadata.GeneratedAt = time.Now().UTC()
+	result.Metadata.AppliedOverlays = appliedOverlays
+	result.Metadata.ExcludedOverlays = excludedOverlays
+	result.Metadata.ConstraintWarnings = constraintWarnings
+
+	return result, nil
+}
+
+// evaluateOverlayConstraints evaluates all constraints in an overlay.
+// Returns true if all constraints pass, false otherwise.
+// Returns warnings for any constraints that failed or had errors.
+func (s *MetadataStore) evaluateOverlayConstraints(overlay *RecipeMetadata, evaluator ConstraintEvaluatorFunc) (bool, []ConstraintWarning) {
+	if len(overlay.Spec.Constraints) == 0 {
+		// No constraints means the overlay passes
+		return true, nil
+	}
+
+	var warnings []ConstraintWarning
+	allPassed := true
+
+	for _, constraint := range overlay.Spec.Constraints {
+		result := evaluator(constraint)
+
+		switch {
+		case result.Error != nil:
+			// Treat evaluation errors as failures with a warning
+			warnings = append(warnings, ConstraintWarning{
+				Overlay:    overlay.Metadata.Name,
+				Constraint: constraint.Name,
+				Expected:   constraint.Value,
+				Actual:     result.Actual,
+				Reason:     result.Error.Error(),
+			})
+			allPassed = false
+			slog.Debug("constraint evaluation error",
+				"overlay", overlay.Metadata.Name,
+				"constraint", constraint.Name,
+				"error", result.Error)
+		case !result.Passed:
+			warnings = append(warnings, ConstraintWarning{
+				Overlay:    overlay.Metadata.Name,
+				Constraint: constraint.Name,
+				Expected:   constraint.Value,
+				Actual:     result.Actual,
+				Reason:     fmt.Sprintf("expected %s, got %s", constraint.Value, result.Actual),
+			})
+			allPassed = false
+			slog.Debug("constraint failed",
+				"overlay", overlay.Metadata.Name,
+				"constraint", constraint.Name,
+				"expected", constraint.Value,
+				"actual", result.Actual)
+		default:
+			slog.Debug("constraint passed",
+				"overlay", overlay.Metadata.Name,
+				"constraint", constraint.Name,
+				"expected", constraint.Value,
+				"actual", result.Actual)
+		}
+	}
+
+	return allPassed, warnings
+}

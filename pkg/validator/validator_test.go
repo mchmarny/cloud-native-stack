@@ -379,3 +379,108 @@ func TestPrintDetectedCriteria(t *testing.T) {
 		})
 	}
 }
+
+// TestEvaluateConstraint tests the standalone EvaluateConstraint function.
+func TestEvaluateConstraint(t *testing.T) {
+	snapshot := &snapshotter.Snapshot{
+		Measurements: []*measurement.Measurement{
+			{
+				Type: measurement.TypeK8s,
+				Subtypes: []measurement.Subtype{
+					{
+						Name: "server",
+						Data: map[string]measurement.Reading{
+							"version": measurement.Str("v1.33.5-eks-3025e55"),
+						},
+					},
+				},
+			},
+			{
+				Type: measurement.TypeOS,
+				Subtypes: []measurement.Subtype{
+					{
+						Name: "release",
+						Data: map[string]measurement.Reading{
+							"ID":         measurement.Str("ubuntu"),
+							"VERSION_ID": measurement.Str("24.04"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name       string
+		constraint recipe.Constraint
+		wantPassed bool
+		wantActual string
+		wantError  bool
+	}{
+		{
+			name:       "version constraint passes",
+			constraint: recipe.Constraint{Name: "K8s.server.version", Value: ">= 1.32.4"},
+			wantPassed: true,
+			wantActual: "v1.33.5-eks-3025e55",
+			wantError:  false,
+		},
+		{
+			name:       "version constraint fails",
+			constraint: recipe.Constraint{Name: "K8s.server.version", Value: ">= 1.35.0"},
+			wantPassed: false,
+			wantActual: "v1.33.5-eks-3025e55",
+			wantError:  false,
+		},
+		{
+			name:       "exact match passes",
+			constraint: recipe.Constraint{Name: "OS.release.ID", Value: "ubuntu"},
+			wantPassed: true,
+			wantActual: "ubuntu",
+			wantError:  false,
+		},
+		{
+			name:       "exact match fails",
+			constraint: recipe.Constraint{Name: "OS.release.ID", Value: "rhel"},
+			wantPassed: false,
+			wantActual: "ubuntu",
+			wantError:  false,
+		},
+		{
+			name:       "invalid path format",
+			constraint: recipe.Constraint{Name: "invalid.path", Value: "test"},
+			wantPassed: false,
+			wantActual: "",
+			wantError:  true,
+		},
+		{
+			name:       "value not found",
+			constraint: recipe.Constraint{Name: "K8s.server.nonexistent", Value: "test"},
+			wantPassed: false,
+			wantActual: "",
+			wantError:  true,
+		},
+		{
+			name:       "measurement type not found",
+			constraint: recipe.Constraint{Name: "GPU.info.driver", Value: "test"},
+			wantPassed: false,
+			wantActual: "",
+			wantError:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := EvaluateConstraint(tt.constraint, snapshot)
+
+			if result.Passed != tt.wantPassed {
+				t.Errorf("Passed = %v, want %v", result.Passed, tt.wantPassed)
+			}
+			if result.Actual != tt.wantActual {
+				t.Errorf("Actual = %q, want %q", result.Actual, tt.wantActual)
+			}
+			if (result.Error != nil) != tt.wantError {
+				t.Errorf("Error = %v, wantError = %v", result.Error, tt.wantError)
+			}
+		})
+	}
+}

@@ -40,7 +40,7 @@ func (h *CLIHandler) Enabled(_ context.Context, level slog.Level) bool {
 
 // Handle formats and writes the log record with attributes.
 func (h *CLIHandler) Handle(_ context.Context, r slog.Record) error {
-	msg := "[cli]" + r.Message
+	msg := "[cli] " + r.Message
 
 	// Append attributes as key=value pairs
 	if r.NumAttrs() > 0 {

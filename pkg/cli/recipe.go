@@ -16,6 +16,7 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
+	"github.com/NVIDIA/cloud-native-stack/pkg/validator"
 )
 
 func recipeCmd() *cli.Command {
@@ -114,8 +115,31 @@ Override snapshot-detected criteria:
 					return applyErr
 				}
 
-				slog.Info("building recipe from snapshot", "criteria", criteria.String())
-				result, err = builder.BuildFromCriteria(ctx, criteria)
+				// Create a constraint evaluator that uses the snapshot
+				// This wraps validator.EvaluateConstraint with the snapshot data
+				evaluator := func(constraint recipe.Constraint) recipe.ConstraintEvalResult {
+					valResult := validator.EvaluateConstraint(constraint, snap)
+					return recipe.ConstraintEvalResult{
+						Passed: valResult.Passed,
+						Actual: valResult.Actual,
+						Error:  valResult.Error,
+					}
+				}
+
+				slog.Info("building recipe from snapshot with constraint validation", "criteria", criteria.String())
+				result, err = builder.BuildFromCriteriaWithEvaluator(ctx, criteria, evaluator)
+
+				// Log constraint warnings for visibility
+				if result != nil && len(result.Metadata.ConstraintWarnings) > 0 {
+					for _, w := range result.Metadata.ConstraintWarnings {
+						slog.Warn("overlay excluded due to constraint failure",
+							"overlay", w.Overlay,
+							"constraint", w.Constraint,
+							"expected", w.Expected,
+							"actual", w.Actual,
+							"reason", w.Reason)
+					}
+				}
 			} else {
 				// Build criteria from CLI flags
 				criteria, buildErr := buildCriteriaFromCmd(cmd)

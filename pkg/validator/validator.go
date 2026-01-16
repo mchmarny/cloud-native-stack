@@ -21,6 +21,58 @@ const (
 	APIVersion = "cns.nvidia.com/v1alpha1"
 )
 
+// ConstraintEvalResult represents the result of evaluating a single constraint.
+type ConstraintEvalResult struct {
+	// Passed indicates if the constraint was satisfied.
+	Passed bool
+
+	// Actual is the actual value extracted from the snapshot.
+	Actual string
+
+	// Error contains the error if evaluation failed (e.g., value not found).
+	Error error
+}
+
+// EvaluateConstraint evaluates a single constraint against a snapshot.
+// This is a standalone function that can be used by other packages without
+// creating a full Validator instance. Used by the recipe package to filter
+// overlays based on constraint evaluation during snapshot-based recipe generation.
+func EvaluateConstraint(constraint recipe.Constraint, snap *snapshotter.Snapshot) ConstraintEvalResult {
+	result := ConstraintEvalResult{}
+
+	// Parse the constraint path
+	path, err := ParseConstraintPath(constraint.Name)
+	if err != nil {
+		result.Error = fmt.Errorf("invalid constraint path: %w", err)
+		return result
+	}
+
+	// Extract the actual value from snapshot
+	actual, err := path.ExtractValue(snap)
+	if err != nil {
+		result.Error = fmt.Errorf("value not found in snapshot: %w", err)
+		return result
+	}
+	result.Actual = actual
+
+	// Parse the constraint expression
+	parsed, err := ParseConstraintExpression(constraint.Value)
+	if err != nil {
+		result.Error = fmt.Errorf("invalid constraint expression: %w", err)
+		return result
+	}
+
+	// Evaluate the constraint
+	passed, err := parsed.Evaluate(actual)
+	if err != nil {
+		result.Error = fmt.Errorf("evaluation failed: %w", err)
+		return result
+	}
+
+	result.Passed = passed
+	return result
+}
+
 // Validator evaluates recipe constraints against snapshot measurements.
 type Validator struct {
 	// Version is the validator version (typically the CLI version).

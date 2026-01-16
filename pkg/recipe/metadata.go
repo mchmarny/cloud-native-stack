@@ -97,6 +97,25 @@ type RecipeMetadata struct {
 	Spec RecipeMetadataSpec `json:"spec" yaml:"spec"`
 }
 
+// ConstraintWarning represents a warning about an overlay that matched criteria
+// but was excluded due to failing constraint validation against the snapshot.
+type ConstraintWarning struct {
+	// Overlay is the name of the overlay that was excluded.
+	Overlay string `json:"overlay" yaml:"overlay"`
+
+	// Constraint is the name of the constraint that failed.
+	Constraint string `json:"constraint" yaml:"constraint"`
+
+	// Expected is the expected constraint value.
+	Expected string `json:"expected" yaml:"expected"`
+
+	// Actual is the actual value from the snapshot (if found).
+	Actual string `json:"actual,omitempty" yaml:"actual,omitempty"`
+
+	// Reason explains why the constraint evaluation resulted in exclusion.
+	Reason string `json:"reason" yaml:"reason"`
+}
+
 // RecipeResult represents the final merged recipe output.
 type RecipeResult struct {
 	// Kind is always "recipeResult".
@@ -115,6 +134,16 @@ type RecipeResult struct {
 
 		// AppliedOverlays lists the overlay names in order of application.
 		AppliedOverlays []string `json:"appliedOverlays,omitempty" yaml:"appliedOverlays,omitempty"`
+
+		// ExcludedOverlays lists overlays that matched criteria but were excluded
+		// due to failing constraint validation against the snapshot.
+		// Only populated when a snapshot is provided during recipe generation.
+		ExcludedOverlays []string `json:"excludedOverlays,omitempty" yaml:"excludedOverlays,omitempty"`
+
+		// ConstraintWarnings contains details about why specific overlays were excluded.
+		// Helps users understand why certain environment-specific configurations
+		// were not applied and what would need to change to include them.
+		ConstraintWarnings []ConstraintWarning `json:"constraintWarnings,omitempty" yaml:"constraintWarnings,omitempty"`
 	} `json:"metadata" yaml:"metadata"`
 
 	// Criteria is the input criteria used to generate this result.
