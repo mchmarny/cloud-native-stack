@@ -29,7 +29,7 @@ type Result struct {
 	// Success indicates whether the bundler completed successfully.
 	Success bool `json:"success" yaml:"success"`
 
-	// OCI metadata (populated when --push is used)
+	// OCI metadata (populated when --output-format=oci is used)
 
 	// OCIDigest is the SHA256 digest of the pushed OCI artifact.
 	OCIDigest string `json:"oci_digest,omitempty" yaml:"oci_digest,omitempty"`
@@ -74,9 +74,10 @@ func (r *Result) GeneratedAt() string {
 	return time.Now().UTC().Format(time.RFC3339)
 }
 
-// SetOCIMetadata sets the OCI push metadata on the result.
-func (r *Result) SetOCIMetadata(digest, reference string) {
+// SetOCIMetadata sets the OCI metadata on the result.
+// The pushed parameter indicates whether the artifact was pushed to a remote registry.
+func (r *Result) SetOCIMetadata(digest, reference string, pushed bool) {
 	r.OCIDigest = digest
 	r.OCIReference = reference
-	r.Pushed = true
+	r.Pushed = pushed
 }

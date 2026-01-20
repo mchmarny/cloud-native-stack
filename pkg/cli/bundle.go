@@ -30,6 +30,7 @@ const deployerArgoCD = "argocd"
 const (
 	outputFormatDir = "dir"
 	outputFormatOCI = "oci"
+	defaultOCITag   = "latest"
 )
 
 // bundleCmdOptions holds parsed options for the bundle command.
@@ -251,7 +252,7 @@ After generating the ArgoCD bundle:
 			},
 			&cli.StringFlag{
 				Name:  "tag",
-				Usage: "OCI image tag (default: latest)",
+				Usage: fmt.Sprintf("OCI image tag (default: %s)", defaultOCITag),
 			},
 			// Push flag - controls whether to push to remote registry
 			&cli.BoolFlag{
@@ -341,7 +342,7 @@ After generating the ArgoCD bundle:
 					push:        opts.push,
 					plainHTTP:   opts.plainHTTP,
 					insecureTLS: opts.insecureTLS,
-				}); ociErr != nil {
+				}, out.Results); ociErr != nil {
 					return ociErr
 				}
 			}
@@ -391,7 +392,8 @@ type ociConfig struct {
 
 // handleOCIOutput packages the bundle as an OCI artifact and optionally pushes to a remote registry.
 // When --push is specified, the artifact is also pushed to the remote registry.
-func handleOCIOutput(ctx context.Context, cfg ociConfig) error {
+// OCI metadata (digest, reference) is populated on results when --output-format=oci is used.
+func handleOCIOutput(ctx context.Context, cfg ociConfig, results []*result.Result) error {
 	absSourceDir, err := filepath.Abs(cfg.sourceDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve source directory: %w", err)
@@ -402,10 +404,10 @@ func handleOCIOutput(ctx context.Context, cfg ociConfig) error {
 		return fmt.Errorf("failed to resolve output directory: %w", err)
 	}
 
-	// Default tag to "latest" if not provided
+	// Default tag if not provided
 	imageTag := cfg.tag
 	if imageTag == "" {
-		imageTag = "latest"
+		imageTag = defaultOCITag
 	}
 
 	slog.Info("packaging bundle as OCI artifact",
@@ -433,6 +435,13 @@ func handleOCIOutput(ctx context.Context, cfg ociConfig) error {
 		"store_path", packageResult.StorePath,
 	)
 
+	// Update results with OCI metadata (pushed=false initially, updated after successful push)
+	for i := range results {
+		if results[i].Success {
+			results[i].SetOCIMetadata(packageResult.Digest, packageResult.Reference, false)
+		}
+	}
+
 	// Push to remote registry if requested
 	if cfg.push {
 		slog.Info("pushing OCI artifact to remote registry",
@@ -456,6 +465,13 @@ func handleOCIOutput(ctx context.Context, cfg ociConfig) error {
 			"reference", pushResult.Reference,
 			"digest", pushResult.Digest,
 		)
+
+		// Mark results as pushed after successful push
+		for i := range results {
+			if results[i].Success {
+				results[i].Pushed = true
+			}
+		}
 	}
 
 	return nil

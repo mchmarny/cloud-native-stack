@@ -676,7 +676,7 @@ func TestOCIReproducibleBuild(t *testing.T) {
 			Layers: []ociv1.Descriptor{layerDesc},
 			// Use fixed timestamp for reproducible manifest
 			ManifestAnnotations: map[string]string{
-				ociv1.AnnotationCreated: "2025-01-01T00:00:00Z",
+				ociv1.AnnotationCreated: "2000-01-01T00:00:00Z",
 			},
 		}
 		manifestDesc, err := oras.PackManifest(ctx, fs, oras.PackManifestVersion1_1, ArtifactType, packOpts)

@@ -27,8 +27,15 @@ import (
 	"oras.land/oras-go/v2/registry/remote/credentials"
 )
 
-// ArtifactType is the media type for eidos OCI artifacts.
-const ArtifactType = "application/vnd.nvidia.eidos.artifact"
+// ArtifactType is the OCI media type for CNS bundle artifacts.
+//
+// Artifacts with this type package a directory tree into an OCI artifact using ORAS.
+// The artifact contains standard OCI layout (manifest, config, layers) but is not
+// a runnable container image - it's an opaque bundle of files.
+//
+// Use cases: distributing CNS bundles (configs, assets) via OCI registries.
+// Consumers that don't understand this type should treat it as a non-executable blob.
+const ArtifactType = "application/vnd.nvidia.cns.artifact"
 
 // registryHostPattern validates registry host format (host:port or host).
 var registryHostPattern = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:[0-9]+)?$`)
@@ -51,6 +58,7 @@ type PackageOptions struct {
 	// SubDir optionally limits packaging to a subdirectory within SourceDir.
 	SubDir string
 	// ReproducibleTimestamp sets a fixed timestamp for reproducible builds.
+	// This option is for programmatic use only and is not exposed via CLI flags.
 	ReproducibleTimestamp string
 }
 
@@ -81,6 +89,7 @@ type PushOptions struct {
 	// InsecureTLS skips TLS certificate verification.
 	InsecureTLS bool
 	// ReproducibleTimestamp sets a fixed timestamp for reproducible builds.
+	// This option is for programmatic use only and is not exposed via CLI flags.
 	ReproducibleTimestamp string
 }
 
@@ -153,7 +162,7 @@ func Package(ctx context.Context, opts PackageOptions) (*PackageResult, error) {
 
 	// Create OCI Image Layout store at output directory
 	ociStorePath := filepath.Join(opts.OutputDir, "oci-layout")
-	if mkdirErr := os.MkdirAll(ociStorePath, 0755); mkdirErr != nil {
+	if mkdirErr := os.MkdirAll(ociStorePath, 0o755); mkdirErr != nil {
 		return nil, fmt.Errorf("failed to create OCI store directory: %w", mkdirErr)
 	}
 
@@ -340,6 +349,10 @@ func createAuthClient(plainHTTP, insecureTLS bool) (*auth.Client, error) {
 
 // hardLinkDir recursively creates hard links from src to dst.
 // This is much faster than copying and uses no additional disk space.
+//
+// Note: Hard links may not work on Windows for files on different volumes
+// or filesystems that don't support them. This function is primarily
+// intended for Linux/container environments.
 func hardLinkDir(src, dst string) error {
 	srcInfo, err := os.Stat(src)
 	if err != nil {
