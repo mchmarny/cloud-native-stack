@@ -713,4 +713,4 @@ See [CLI Architecture](cli.md#deployer-framework-gitops-integration) for detaile
 - [CLI Architecture](cli.md) - Deployer framework and GitOps integration
 - [CLI Reference](../user-guide/cli-reference.md) - Bundle generation commands
 - [API Reference](../integration/api-reference.md) - Programmatic access (recipe generation only)
-- GPU Operator implementation (`pkg/component/gpuoperator/`) - Reference example
+- [GPU Operator implementation](../../pkg/component/gpuoperator) - Reference example
