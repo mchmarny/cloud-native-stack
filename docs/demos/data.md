@@ -37,7 +37,7 @@ Demo:
 View embedded recipe files structure:
 
 ```shell
-tree -L 1 pkg/recipe/data/
+tree -L 2 pkg/recipe/data/
 ```
 
 Expected structure:
