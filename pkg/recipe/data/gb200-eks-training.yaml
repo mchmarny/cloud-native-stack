@@ -41,7 +41,7 @@ spec:
       overrides:
         customization: training
 
-    # Enable dra-driver for GB200
+    # Add dra-driver for GB200
     - name: dra-driver
       type: Helm
       source: https://helm.ngc.nvidia.com/nvidia

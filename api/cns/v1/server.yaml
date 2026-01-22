@@ -463,7 +463,7 @@ paths:
                     details:
                       bundler: "invalid-bundler"
                       error: "unsupported bundle type: invalid-bundler"
-                      valid: ["gpu-operator", "network-operator", "skyhook", "nvsentinel", "cert-manager"]
+                      valid: ["gpu-operator", "network-operator", "skyhook", "nvsentinel", "cert-manager", "dra-driver"]
                     requestId: "550e8400-e29b-41d4-a716-446655440000"
                     timestamp: "2025-01-15T10:30:00Z"
                     retryable: false
@@ -811,7 +811,7 @@ components:
           type: array
           items:
             type: string
-            enum: [gpu-operator, network-operator, skyhook, nvsentinel, cert-manager]
+            enum: [gpu-operator, network-operator, skyhook, nvsentinel, cert-manager, dra-driver]
           description: >
             Optional list of bundler types to execute.
             If not specified, all registered bundlers are executed.

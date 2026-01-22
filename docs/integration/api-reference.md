@@ -304,7 +304,7 @@ bundles.zip
   "details": {
     "bundler": "invalid-bundler",
     "error": "unsupported bundle type: invalid-bundler",
-    "valid": ["gpu-operator", "network-operator", "skyhook", "nvsentinel", "cert-manager"]
+    "valid": ["gpu-operator", "network-operator", "skyhook", "nvsentinel", "cert-manager", "dra-driver"]
   },
   "requestId": "550e8400-e29b-41d4-a716-446655440000",
   "timestamp": "2025-12-31T10:30:00Z",

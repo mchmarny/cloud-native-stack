@@ -482,6 +482,7 @@ cnsctl bundle [flags]
 - `cert-manager` - cert-manager deployment bundle
 - `nvsentinel` - NVSentinel deployment bundle
 - `skyhook` - Skyhook node optimization deployment bundle
+- `dra-driver` - NVIDIA DRA (Dynamic Resource Allocation) Driver deployment bundle
 
 **Behavior:**
 - If `--bundlers` is omitted, **all registered bundlers** execute

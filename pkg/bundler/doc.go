@@ -93,6 +93,11 @@ Currently supported bundlers:
   - Installation/uninstallation scripts
   - README documentation
   - SHA256 checksums
+  - dra-driver: Generates NVIDIA DRA Driver deployment bundles
+  - Helm values.yaml with DRA configuration
+  - Installation/uninstallation scripts
+  - README documentation
+  - SHA256 checksums
 
 # Execution Modes
 

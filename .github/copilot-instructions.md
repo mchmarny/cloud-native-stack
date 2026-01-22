@@ -41,7 +41,7 @@ NVIDIA Cloud Native Stack (CNS) provides validated GPU-accelerated Kubernetes co
 - **CLI (`cnsctl`)**: All four stages (snapshot/recipe/validate/bundle)
 - **API Server**: Recipe generation and bundle creation via REST API (https://cns.dgxc.io)
 - **Agent**: Kubernetes Job for automated cluster snapshots → ConfigMaps
-- **Bundlers**: Plugin-based artifact generators (GPU Operator, Network Operator, Cert-Manager, NVSentinel, Skyhook)
+- **Bundlers**: Plugin-based artifact generators (GPU Operator, Network Operator, Cert-Manager, NVSentinel, Skyhook, DRA Driver)
 - **Deployers**: GitOps integration providers (script, argocd, flux) with deployment ordering
 
 **Tech Stack:** Go 1.25, Kubernetes 1.33+, golangci-lint v2.6, Container images via Ko
