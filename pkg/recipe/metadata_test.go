@@ -52,7 +52,7 @@ func TestRecipeMetadataSpecValidateDependencies(t *testing.T) {
 				ComponentRefs: []ComponentRef{
 					{Name: "cert-manager", Type: ComponentTypeHelm},
 					{Name: "gpu-operator", Type: ComponentTypeHelm, DependencyRefs: []string{"cert-manager"}},
-					{Name: "k8s-dra-driver-gpu", Type: ComponentTypeHelm, DependencyRefs: []string{"gpu-operator"}},
+					{Name: "dra-driver", Type: ComponentTypeHelm, DependencyRefs: []string{"gpu-operator"}},
 				},
 			},
 			wantErr: false,
@@ -108,7 +108,7 @@ func TestRecipeMetadataSpecValidateDependencies(t *testing.T) {
 					{Name: "gpu-operator", Type: ComponentTypeHelm, DependencyRefs: []string{"cert-manager"}},
 					{Name: "network-operator", Type: ComponentTypeHelm, DependencyRefs: []string{"cert-manager"}},
 					{Name: "nvsentinel", Type: ComponentTypeHelm, DependencyRefs: []string{"cert-manager", "gpu-operator"}},
-					{Name: "k8s-dra-driver-gpu", Type: ComponentTypeHelm, DependencyRefs: []string{"gpu-operator"}},
+					{Name: "dra-driver", Type: ComponentTypeHelm, DependencyRefs: []string{"gpu-operator"}},
 				},
 			},
 			wantErr: false,
@@ -154,10 +154,10 @@ func TestRecipeMetadataSpecTopologicalSort(t *testing.T) {
 				ComponentRefs: []ComponentRef{
 					{Name: "cert-manager", Type: ComponentTypeHelm},
 					{Name: "gpu-operator", Type: ComponentTypeHelm, DependencyRefs: []string{"cert-manager"}},
-					{Name: "k8s-dra-driver-gpu", Type: ComponentTypeHelm, DependencyRefs: []string{"gpu-operator"}},
+					{Name: "dra-driver", Type: ComponentTypeHelm, DependencyRefs: []string{"gpu-operator"}},
 				},
 			},
-			want: []string{"cert-manager", "gpu-operator", "k8s-dra-driver-gpu"},
+			want: []string{"cert-manager", "gpu-operator", "dra-driver"},
 		},
 		{
 			name: "diamond dependencies",
@@ -382,7 +382,7 @@ func TestOverlayAddsNewComponent(t *testing.T) {
 	}
 
 	// Build recipe for EKS GB200 training workload
-	// gb200-eks-ubuntu-training.yaml adds k8s-dra-driver-gpu which is NOT in base.yaml
+	// gb200-eks-training.yaml adds dra-driver which is NOT in base.yaml
 	builder = NewBuilder()
 	criteria = NewCriteria()
 	criteria.Accelerator = CriteriaAcceleratorGB200
@@ -399,16 +399,16 @@ func TestOverlayAddsNewComponent(t *testing.T) {
 	}
 
 	// Verify overlay-added component exists
-	draDriverOp := result.GetComponentRef("k8s-dra-driver-gpu")
+	draDriverOp := result.GetComponentRef("dra-driver")
 	if draDriverOp == nil {
-		t.Fatalf("k8s-dra-driver-gpu not found (should be added by gb200 overlay)")
+		t.Fatalf("dra-driver not found (should be added by gb200 overlay)")
 	}
 
 	t.Logf("Successfully verified overlay can add new components")
 	t.Logf("   Base components: %d", len(baseComponents))
 	t.Logf("   Total components: %d", len(result.ComponentRefs))
 	t.Logf("   network-operator version: %s", networkOp.Version)
-	t.Logf("   k8s-dra-driver-gpu version: %s", draDriverOp.Version)
+	t.Logf("   dra-driver version: %s", draDriverOp.Version)
 }
 
 // TestOverlayMergeDoesNotLoseBaseComponents verifies that when overlays add

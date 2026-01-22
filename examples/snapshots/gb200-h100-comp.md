@@ -108,7 +108,7 @@ Both systems use the enhanced v0.7.10 snapshot format with four measurement type
 - Grove Operator (v0.1.0-alpha.3)
 
 #### Unique to GB200
-- DRA Driver (k8s-dra-driver-gpu: v25.8.0)
+- DRA Driver (dra-driver: v25.8.0)
 - ArgoCD (v2.14.3)
 - Bitnami images (kubectl, mongodb, nginx)
 - Cert Manager suite

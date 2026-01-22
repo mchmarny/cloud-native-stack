@@ -1,4 +1,4 @@
-// Package k8sdradrivergpu implements bundle generation for NVIDIA GPU Operator.
+// Package dradriver implements bundle generation for NVIDIA DRA Driver.
 //
 // The DRA Driver manages GPU and ComputeDomain resources in Kubernetes clusters by automating deployment
 // and lifecycle management of the DRA Driver controller and kubelet plugins.
@@ -22,7 +22,7 @@
 //
 // Or through the bundler framework:
 //
-//	cnsctl bundle --recipe recipe.yaml --bundlers k8s-dra-driver-gpu --output ./bundles
+//	cnsctl bundle --recipe recipe.yaml --bundlers dra-driver --output ./bundles
 //
 // # Configuration Extraction
 //
@@ -53,4 +53,4 @@
 //
 // When multiple bundlers are registered, they execute in parallel with proper
 // synchronization. The BaseBundler helper handles concurrent writes safely.
-package k8sdradrivergpu
+package dradriver

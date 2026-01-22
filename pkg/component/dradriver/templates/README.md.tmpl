@@ -52,8 +52,8 @@ kubectl create namespace {{ .Script.Namespace }}
 # 3. Apply manifests (ConfigMaps and ClusterPolicy)
 kubectl apply -f manifests/ -n {{ .Script.Namespace }}
 
-# 4. Install GPU Operator with Helm
-helm upgrade --install k8s-dra-driver-gpu nvidia/k8s-dra-driver-gpu \
+# 4. Install DRA Driver with Helm
+helm upgrade --install dra-driver nvidia/k8s-dra-driver \
   --namespace {{ .Script.Namespace }} \
   {{- if .Script.HelmChartVersion }}
   --version {{ .Script.HelmChartVersion }} \
@@ -64,7 +64,7 @@ helm upgrade --install k8s-dra-driver-gpu nvidia/k8s-dra-driver-gpu \
 
 ## Verification
 
-Check the k8s-dra-driver-gpu pods:
+Check the DRA driver pods:
 
 ```bash
 kubectl get pods -n {{ .Script.Namespace }}
@@ -90,7 +90,7 @@ chmod +x scripts/uninstall.sh
 Or manually:
 
 ```bash
-helm uninstall k8s-dra-driver-gpu -n {{ .Script.Namespace }}
+helm uninstall dra-driver -n {{ .Script.Namespace }}
 kubectl delete -f manifests/ --ignore-not-found=true
 ```
 
@@ -102,5 +102,5 @@ kubectl delete -f manifests/ --ignore-not-found=true
 
 ## Support
 
-- [k8s-dra-driver-gpu](https://github.com/NVIDIA/k8s-dra-driver-gpu)
+- [NVIDIA k8s-dra-driver](https://github.com/NVIDIA/k8s-dra-driver)
 - [Cloud Native Stack Repository](https://github.com/NVIDIA/cloud-native-stack)

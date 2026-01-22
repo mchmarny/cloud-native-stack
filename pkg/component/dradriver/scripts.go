@@ -1,4 +1,4 @@
-package k8sdradrivergpu
+package dradriver
 
 import (
 	"time"
@@ -22,9 +22,9 @@ type ScriptData struct {
 func GenerateScriptDataFromConfig(config map[string]string) *ScriptData {
 	data := &ScriptData{
 		Timestamp:        time.Now().UTC().Format(time.RFC3339),
-		Namespace:        common.GetConfigValue(config, "namespace", "nvidia-dra-driver-gpu"),
+		Namespace:        common.GetConfigValue(config, "namespace", "nvidia-dra-driver"),
 		HelmRepository:   common.GetConfigValue(config, "helm_repository", "https://helm.ngc.nvidia.com/nvidia"),
-		HelmChart:        "nvidia/k8s-dra-driver-gpu",
+		HelmChart:        "nvidia/k8s-dra-driver",
 		HelmChartVersion: common.GetConfigValue(config, "helm_chart_version", ""),
 		Version:          common.GetBundlerVersion(config),
 		RecipeVersion:    common.GetRecipeBundlerVersion(config),

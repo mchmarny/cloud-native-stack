@@ -21,8 +21,8 @@ log_error() {
 uninstall_dra_driver() {
     log_info "Uninstalling DRA driver..."
     
-    if helm list -n "$NAMESPACE" | grep -q k8s-dra-driver-gpu; then
-        helm uninstall k8s-dra-driver-gpu -n "$NAMESPACE" --wait
+    if helm list -n "$NAMESPACE" | grep -q dra-driver; then
+        helm uninstall dra-driver -n "$NAMESPACE" --wait
         log_info "DRA driver uninstalled."
     else
         log_info "DRA driver not found."

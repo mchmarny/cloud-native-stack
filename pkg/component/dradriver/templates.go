@@ -1,4 +1,4 @@
-package k8sdradrivergpu
+package dradriver
 
 import (
 	_ "embed"

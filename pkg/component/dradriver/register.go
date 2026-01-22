@@ -1,4 +1,4 @@
-package k8sdradrivergpu
+package dradriver
 
 import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
@@ -8,7 +8,7 @@ import (
 
 func init() {
 	// Register DRA Driver bundler factory in global registry
-	registry.MustRegister(types.BundleTypeK8sDraDriverGpu, func(cfg *config.Config) registry.Bundler {
+	registry.MustRegister(types.BundleTypeDraDriver, func(cfg *config.Config) registry.Bundler {
 		return NewBundler(cfg)
 	})
 }
