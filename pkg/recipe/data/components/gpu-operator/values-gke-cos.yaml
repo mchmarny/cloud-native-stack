@@ -1,0 +1,17 @@
+# GPU Operator Helm values
+# GKE-COS clusterconfiguration overrides
+
+cdi:
+  enabled: true
+  default: true
+
+hostPaths:
+  driverInstallDir: /home/kubernetes/bin/nvidia
+
+driver:
+  enabled: false
+
+devicePlugin:
+  env:
+    - name: DEVICE_LIST_STRATEGY
+      value: cdi-cri,cdi-annotations,volume-mounts

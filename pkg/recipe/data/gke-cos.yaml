@@ -1,0 +1,18 @@
+kind: recipeMetadata
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: gke-cos
+
+spec:
+  # Inherits from base (implicit when spec.base is empty)
+  # This recipe contains EKS-specific settings shared by all EKS deployments
+
+  criteria:
+    service: gke
+    os: cos
+
+  componentRefs:
+    # GKE-COS-specific GPU Operator overrides (inherits valuesFile from base)
+    - name: gpu-operator
+      type: Helm
+      valuesFile: components/gpu-operator/values-gke-cos.yaml
