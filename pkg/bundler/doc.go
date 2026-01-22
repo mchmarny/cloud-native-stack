@@ -18,7 +18,7 @@ Component implementations are in pkg/component, which provides:
 
   - BaseBundler: Helper that reduces boilerplate in component implementations
   - internal: Shared utilities (template rendering, file writing, subtype extraction)
-  - Component packages: gpuoperator, networkoperator, certmanager, nvsentinel, skyhook
+  - Component packages: gpuoperator, networkoperator, certmanager, nvsentinel, skyhook, k8sdradrivergpu
 
 # Core Components
 

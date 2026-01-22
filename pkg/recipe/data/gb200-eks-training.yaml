@@ -40,3 +40,12 @@ spec:
       type: Helm
       overrides:
         customization: training
+
+    # Enable k8s-dra-driver-gpu for GB200
+    - name: k8s-dra-driver-gpu
+      type: Helm
+      source: https://helm.ngc.nvidia.com/nvidia
+      version: v25.8.1
+      valuesFile: components/k8s-dra-driver-gpu/values.yaml
+      dependencyRefs:
+        - gpu-operator

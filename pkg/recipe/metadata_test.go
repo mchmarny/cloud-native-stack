@@ -52,6 +52,7 @@ func TestRecipeMetadataSpecValidateDependencies(t *testing.T) {
 				ComponentRefs: []ComponentRef{
 					{Name: "cert-manager", Type: ComponentTypeHelm},
 					{Name: "gpu-operator", Type: ComponentTypeHelm, DependencyRefs: []string{"cert-manager"}},
+					{Name: "k8s-dra-driver-gpu", Type: ComponentTypeHelm, DependencyRefs: []string{"gpu-operator"}},
 				},
 			},
 			wantErr: false,
@@ -107,6 +108,7 @@ func TestRecipeMetadataSpecValidateDependencies(t *testing.T) {
 					{Name: "gpu-operator", Type: ComponentTypeHelm, DependencyRefs: []string{"cert-manager"}},
 					{Name: "network-operator", Type: ComponentTypeHelm, DependencyRefs: []string{"cert-manager"}},
 					{Name: "nvsentinel", Type: ComponentTypeHelm, DependencyRefs: []string{"cert-manager", "gpu-operator"}},
+					{Name: "k8s-dra-driver-gpu", Type: ComponentTypeHelm, DependencyRefs: []string{"gpu-operator"}},
 				},
 			},
 			wantErr: false,
@@ -152,9 +154,10 @@ func TestRecipeMetadataSpecTopologicalSort(t *testing.T) {
 				ComponentRefs: []ComponentRef{
 					{Name: "cert-manager", Type: ComponentTypeHelm},
 					{Name: "gpu-operator", Type: ComponentTypeHelm, DependencyRefs: []string{"cert-manager"}},
+					{Name: "k8s-dra-driver-gpu", Type: ComponentTypeHelm, DependencyRefs: []string{"gpu-operator"}},
 				},
 			},
-			want: []string{"cert-manager", "gpu-operator"},
+			want: []string{"cert-manager", "gpu-operator", "k8s-dra-driver-gpu"},
 		},
 		{
 			name: "diamond dependencies",
@@ -378,10 +381,34 @@ func TestOverlayAddsNewComponent(t *testing.T) {
 		t.Error("network-operator has no dependencies (should depend on cert-manager)")
 	}
 
+	// Build recipe for EKS GB200 training workload
+	// gb200-eks-ubuntu-training.yaml adds k8s-dra-driver-gpu which is NOT in base.yaml
+	builder = NewBuilder()
+	criteria = NewCriteria()
+	criteria.Accelerator = CriteriaAcceleratorGB200
+	criteria.Intent = CriteriaIntentTraining
+	criteria.Service = CriteriaServiceEKS
+
+	result, err = builder.BuildFromCriteria(ctx, criteria)
+	if err != nil {
+		t.Fatalf("BuildFromCriteria failed: %v", err)
+	}
+
+	if result == nil {
+		t.Fatal("Recipe result is nil")
+	}
+
+	// Verify overlay-added component exists
+	draDriverOp := result.GetComponentRef("k8s-dra-driver-gpu")
+	if draDriverOp == nil {
+		t.Fatalf("k8s-dra-driver-gpu not found (should be added by gb200 overlay)")
+	}
+
 	t.Logf("Successfully verified overlay can add new components")
 	t.Logf("   Base components: %d", len(baseComponents))
 	t.Logf("   Total components: %d", len(result.ComponentRefs))
 	t.Logf("   network-operator version: %s", networkOp.Version)
+	t.Logf("   k8s-dra-driver-gpu version: %s", draDriverOp.Version)
 }
 
 // TestOverlayMergeDoesNotLoseBaseComponents verifies that when overlays add

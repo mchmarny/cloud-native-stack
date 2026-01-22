@@ -133,6 +133,7 @@ func TestSupportedTypes(t *testing.T) {
 		BundleTypeSkyhook,
 		BundleTypeNVSentinel,
 		BundleTypeCertManager,
+		BundleTypeK8sDraDriverGpu,
 	}
 
 	if len(types) != len(expectedTypes) {
@@ -189,6 +190,7 @@ func TestSupportedBundleTypesAsStrings(t *testing.T) {
 		"skyhook",
 		"nvsentinel",
 		"cert-manager",
+		"k8s-dra-driver-gpu",
 	}
 
 	if len(strings) != len(expectedStrings) {
@@ -436,6 +438,10 @@ func TestParseType_CaseInsensitive(t *testing.T) {
 		{"NvSentinel", BundleTypeNVSentinel},
 		{"CERT-MANAGER", BundleTypeCertManager},
 		{"Cert-Manager", BundleTypeCertManager},
+		{"K8S-DRA-DRIVER-GPU", BundleTypeK8sDraDriverGpu},
+		{"K8S-Dra-Driver-GPU", BundleTypeK8sDraDriverGpu},
+		{"K8s-Dra-Driver-Gpu", BundleTypeK8sDraDriverGpu},
+		{"K8s-DRA-DRIVER-GPU", BundleTypeK8sDraDriverGpu},
 	}
 
 	for _, tt := range tests {
