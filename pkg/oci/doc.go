@@ -44,10 +44,12 @@
 //
 // # Configuration
 //
+// PackageOptions supports configuration for reproducible builds:
+//   - ReproducibleTimestamp: Set a fixed timestamp for reproducible builds
+//
 // PushOptions supports several configuration options:
 //   - PlainHTTP: Use HTTP instead of HTTPS (for local development registries)
 //   - InsecureTLS: Skip TLS certificate verification
-//   - ReproducibleTimestamp: Set a fixed timestamp for reproducible builds
 //
 // # Authentication
 //

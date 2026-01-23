@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -26,6 +27,121 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/component/certmanager"
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
+
+// testOCIResult holds common results from OCI packaging operations in tests.
+type testOCIResult struct {
+	Digest       string
+	LayoutDir    string
+	ManifestPath string
+}
+
+// extractFilesFromOCIArtifact reads an OCI layout and extracts the file list from the artifact layer.
+// Returns a map of relative file path to file content.
+func extractFilesFromOCIArtifact(t *testing.T, ociLayoutDir, digest string) map[string]string {
+	t.Helper()
+
+	// Read manifest
+	manifestPath := filepath.Join(ociLayoutDir, "blobs", "sha256", strings.TrimPrefix(digest, "sha256:"))
+	manifestData, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatalf("Failed to read manifest: %v", err)
+	}
+
+	var manifest ociv1.Manifest
+	if unmarshalErr := json.Unmarshal(manifestData, &manifest); unmarshalErr != nil {
+		t.Fatalf("Failed to unmarshal manifest: %v", unmarshalErr)
+	}
+
+	if len(manifest.Layers) == 0 {
+		t.Fatal("Manifest has no layers")
+	}
+
+	// Read and extract the layer
+	layerDigest := manifest.Layers[0].Digest.String()
+	layerPath := filepath.Join(ociLayoutDir, "blobs", "sha256", strings.TrimPrefix(layerDigest, "sha256:"))
+	layerFile, err := os.Open(layerPath)
+	if err != nil {
+		t.Fatalf("Failed to open layer: %v", err)
+	}
+	defer layerFile.Close()
+
+	gzr, err := gzip.NewReader(layerFile)
+	if err != nil {
+		t.Fatalf("Failed to create gzip reader: %v", err)
+	}
+	defer gzr.Close()
+
+	// Extract all files
+	extractedFiles := make(map[string]string)
+	tr := tar.NewReader(gzr)
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("Failed to read tar entry: %v", err)
+		}
+
+		if header.Typeflag == tar.TypeReg {
+			content, err := io.ReadAll(tr)
+			if err != nil {
+				t.Fatalf("Failed to read tar file content: %v", err)
+			}
+			extractedFiles[header.Name] = string(content)
+		}
+	}
+
+	return extractedFiles
+}
+
+// packageToOCILayout packages a directory into an OCI layout store and returns the result.
+// This is a test helper that replicates the core OCI packaging logic for test verification.
+func packageToOCILayout(t *testing.T, ctx context.Context, sourceDir, tag string) *testOCIResult {
+	t.Helper()
+
+	ociLayoutDir := t.TempDir()
+	ociStore, err := oci.New(ociLayoutDir)
+	if err != nil {
+		t.Fatalf("Failed to create OCI layout store: %v", err)
+	}
+
+	fs, err := file.New(sourceDir)
+	if err != nil {
+		t.Fatalf("Failed to create file store: %v", err)
+	}
+	defer func() { _ = fs.Close() }()
+
+	fs.TarReproducible = true
+
+	layerDesc, err := fs.Add(ctx, ".", ociv1.MediaTypeImageLayerGzip, sourceDir)
+	if err != nil {
+		t.Fatalf("Failed to add directory to store: %v", err)
+	}
+
+	packOpts := oras.PackManifestOptions{
+		Layers: []ociv1.Descriptor{layerDesc},
+	}
+	manifestDesc, err := oras.PackManifest(ctx, fs, oras.PackManifestVersion1_1, ArtifactType, packOpts)
+	if err != nil {
+		t.Fatalf("Failed to pack manifest: %v", err)
+	}
+
+	if tagErr := fs.Tag(ctx, manifestDesc, tag); tagErr != nil {
+		t.Fatalf("Failed to tag manifest: %v", tagErr)
+	}
+
+	desc, err := oras.Copy(ctx, fs, tag, ociStore, tag, oras.DefaultCopyOptions)
+	if err != nil {
+		t.Fatalf("Failed to copy to OCI layout: %v", err)
+	}
+
+	return &testOCIResult{
+		Digest:       desc.Digest.String(),
+		LayoutDir:    ociLayoutDir,
+		ManifestPath: filepath.Join(ociLayoutDir, "blobs", "sha256", strings.TrimPrefix(desc.Digest.String(), "sha256:")),
+	}
+}
 
 func TestStripProtocol(t *testing.T) {
 	tests := []struct {
@@ -82,9 +198,9 @@ func TestPushFromStore_EmptyTag(t *testing.T) {
 		t.Error("PushFromStore() expected error for empty tag, got nil")
 	}
 
-	expectedErr := "tag is required to push OCI image"
-	if err.Error() != expectedErr {
-		t.Errorf("PushFromStore() error = %q, want %q", err.Error(), expectedErr)
+	// Error message should contain the expected text (structured errors wrap the message)
+	if !strings.Contains(err.Error(), "tag is required to push OCI image") {
+		t.Errorf("PushFromStore() error = %q, want to contain %q", err.Error(), "tag is required to push OCI image")
 	}
 }
 
@@ -328,66 +444,17 @@ func TestOCIPackagingIntegration(t *testing.T) {
 
 	t.Logf("Bundler created %d files in %s", len(result.Files), bundlerDir)
 
-	// Now use the REAL OCI packaging code (same as Push function)
-	// but write to a local OCI layout store instead of a remote registry
-
-	// Create OCI layout store as the push target
-	ociLayoutDir := t.TempDir()
-	ociStore, err := oci.New(ociLayoutDir)
-	if err != nil {
-		t.Fatalf("Failed to create OCI layout store: %v", err)
-	}
-
-	// Create a file store from the bundler output directory (same as Push does)
-	fs, err := file.New(bundlerDir)
-	if err != nil {
-		t.Fatalf("Failed to create file store: %v", err)
-	}
-	defer func() { _ = fs.Close() }()
-
-	// Enable deterministic tar creation (same as Push)
-	fs.TarReproducible = true
-
-	// Add directory contents as a gzipped tar layer (same as Push)
-	layerDesc, err := fs.Add(ctx, ".", ociv1.MediaTypeImageLayerGzip, bundlerDir)
-	if err != nil {
-		t.Fatalf("Failed to add directory to store: %v", err)
-	}
-
-	// Verify layer media type
-	if layerDesc.MediaType != ociv1.MediaTypeImageLayerGzip {
-		t.Errorf("Layer MediaType = %q, want %q", layerDesc.MediaType, ociv1.MediaTypeImageLayerGzip)
-	}
-
-	// Pack an OCI 1.1 manifest (same as Push)
-	packOpts := oras.PackManifestOptions{
-		Layers: []ociv1.Descriptor{layerDesc},
-	}
-	manifestDesc, err := oras.PackManifest(ctx, fs, oras.PackManifestVersion1_1, ArtifactType, packOpts)
-	if err != nil {
-		t.Fatalf("Failed to pack manifest: %v", err)
-	}
-
-	// Tag the manifest
+	// Use helper to package to OCI layout
 	tag := "v1.0.0-integration-test"
-	if tagErr := fs.Tag(ctx, manifestDesc, tag); tagErr != nil {
-		t.Fatalf("Failed to tag manifest: %v", tagErr)
-	}
-
-	// Copy to OCI layout store (simulates push to registry)
-	desc, err := oras.Copy(ctx, fs, tag, ociStore, tag, oras.DefaultCopyOptions)
-	if err != nil {
-		t.Fatalf("Failed to copy to OCI layout: %v", err)
-	}
+	ociResult := packageToOCILayout(t, ctx, bundlerDir, tag)
 
 	// Verify the manifest was pushed with a valid digest
-	if desc.Digest.String() == "" {
+	if ociResult.Digest == "" {
 		t.Error("Pushed manifest has empty digest")
 	}
 
 	// Read and verify the manifest structure
-	manifestPath := filepath.Join(ociLayoutDir, "blobs", "sha256", strings.TrimPrefix(desc.Digest.String(), "sha256:"))
-	manifestData, err := os.ReadFile(manifestPath)
+	manifestData, err := os.ReadFile(ociResult.ManifestPath)
 	if err != nil {
 		t.Fatalf("Failed to read manifest: %v", err)
 	}
@@ -407,36 +474,13 @@ func TestOCIPackagingIntegration(t *testing.T) {
 		t.Fatalf("Manifest has %d layers, want 1", len(manifest.Layers))
 	}
 
-	// Read and extract the layer to verify contents
-	layerDigest := manifest.Layers[0].Digest.String()
-	layerPath := filepath.Join(ociLayoutDir, "blobs", "sha256", strings.TrimPrefix(layerDigest, "sha256:"))
-	layerFile, err := os.Open(layerPath)
-	if err != nil {
-		t.Fatalf("Failed to open layer: %v", err)
-	}
-	defer layerFile.Close()
+	// Use helper to extract files
+	extractedFiles := extractFilesFromOCIArtifact(t, ociResult.LayoutDir, ociResult.Digest)
 
-	// Decompress gzip
-	gzr, err := gzip.NewReader(layerFile)
-	if err != nil {
-		t.Fatalf("Failed to create gzip reader: %v", err)
-	}
-	defer gzr.Close()
-
-	// Extract tar and collect file names
-	var extractedFiles []string
-	tr := tar.NewReader(gzr)
-	for {
-		header, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			t.Fatalf("Failed to read tar entry: %v", err)
-		}
-		if header.Typeflag == tar.TypeReg {
-			extractedFiles = append(extractedFiles, header.Name)
-		}
+	// Collect file names for verification
+	fileNames := make([]string, 0, len(extractedFiles))
+	for name := range extractedFiles {
+		fileNames = append(fileNames, name)
 	}
 
 	// Verify expected cert-manager bundler files are present
@@ -448,24 +492,24 @@ func TestOCIPackagingIntegration(t *testing.T) {
 		"checksums.txt",
 	}
 
-	sort.Strings(extractedFiles)
+	sort.Strings(fileNames)
 	sort.Strings(expectedFiles)
 
 	for _, expected := range expectedFiles {
 		found := false
-		for _, actual := range extractedFiles {
+		for _, actual := range fileNames {
 			if actual == expected {
 				found = true
 				break
 			}
 		}
 		if !found {
-			t.Errorf("Expected file %q not found in OCI artifact. Got files: %v", expected, extractedFiles)
+			t.Errorf("Expected file %q not found in OCI artifact. Got files: %v", expected, fileNames)
 		}
 	}
 
 	t.Logf("Integration test passed: OCI artifact contains %d files from real bundler output, digest: %s",
-		len(extractedFiles), desc.Digest.String())
+		len(fileNames), ociResult.Digest)
 }
 
 // TestOCIArtifactStructure tests the OCI packaging with synthetic test files
@@ -495,63 +539,17 @@ func TestOCIArtifactStructure(t *testing.T) {
 		}
 	}
 
-	// Create an OCI layout store as the push target
-	ociLayoutDir := t.TempDir()
-	ociStore, err := oci.New(ociLayoutDir)
-	if err != nil {
-		t.Fatalf("Failed to create OCI layout store: %v", err)
-	}
-
-	// Create a file store from the bundle directory (same as Push does)
-	fs, err := file.New(bundleDir)
-	if err != nil {
-		t.Fatalf("Failed to create file store: %v", err)
-	}
-	defer func() { _ = fs.Close() }()
-
-	// Enable deterministic tar creation (same as Push)
-	fs.TarReproducible = true
-
-	// Add directory contents as a gzipped tar layer
-	layerDesc, err := fs.Add(ctx, ".", ociv1.MediaTypeImageLayerGzip, bundleDir)
-	if err != nil {
-		t.Fatalf("Failed to add directory to store: %v", err)
-	}
-
-	// Verify layer media type
-	if layerDesc.MediaType != ociv1.MediaTypeImageLayerGzip {
-		t.Errorf("Layer MediaType = %q, want %q", layerDesc.MediaType, ociv1.MediaTypeImageLayerGzip)
-	}
-
-	// Pack an OCI 1.1 manifest (same as Push)
-	packOpts := oras.PackManifestOptions{
-		Layers: []ociv1.Descriptor{layerDesc},
-	}
-	manifestDesc, err := oras.PackManifest(ctx, fs, oras.PackManifestVersion1_1, ArtifactType, packOpts)
-	if err != nil {
-		t.Fatalf("Failed to pack manifest: %v", err)
-	}
-
-	// Tag the manifest
+	// Use helper to package to OCI layout
 	tag := "v1.0.0-test"
-	if tagErr := fs.Tag(ctx, manifestDesc, tag); tagErr != nil {
-		t.Fatalf("Failed to tag manifest: %v", tagErr)
-	}
-
-	// Copy to OCI layout store (simulates push to registry)
-	desc, err := oras.Copy(ctx, fs, tag, ociStore, tag, oras.DefaultCopyOptions)
-	if err != nil {
-		t.Fatalf("Failed to copy to OCI layout: %v", err)
-	}
+	ociResult := packageToOCILayout(t, ctx, bundleDir, tag)
 
 	// Verify the manifest was pushed
-	if desc.Digest.String() == "" {
+	if ociResult.Digest == "" {
 		t.Error("Pushed manifest has empty digest")
 	}
 
 	// Read and verify the manifest structure
-	manifestPath := filepath.Join(ociLayoutDir, "blobs", "sha256", strings.TrimPrefix(desc.Digest.String(), "sha256:"))
-	manifestData, err := os.ReadFile(manifestPath)
+	manifestData, err := os.ReadFile(ociResult.ManifestPath)
 	if err != nil {
 		t.Fatalf("Failed to read manifest: %v", err)
 	}
@@ -571,42 +569,8 @@ func TestOCIArtifactStructure(t *testing.T) {
 		t.Fatalf("Manifest has %d layers, want 1", len(manifest.Layers))
 	}
 
-	// Read and verify the layer contents
-	layerDigest := manifest.Layers[0].Digest.String()
-	layerPath := filepath.Join(ociLayoutDir, "blobs", "sha256", strings.TrimPrefix(layerDigest, "sha256:"))
-	layerFile, err := os.Open(layerPath)
-	if err != nil {
-		t.Fatalf("Failed to open layer: %v", err)
-	}
-	defer layerFile.Close()
-
-	// Decompress and extract tar
-	gzr, err := gzip.NewReader(layerFile)
-	if err != nil {
-		t.Fatalf("Failed to create gzip reader: %v", err)
-	}
-	defer gzr.Close()
-
-	// Extract all files from the tar and verify
-	extractedFiles := make(map[string]string)
-	tr := tar.NewReader(gzr)
-	for {
-		header, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			t.Fatalf("Failed to read tar entry: %v", err)
-		}
-
-		if header.Typeflag == tar.TypeReg {
-			content, err := io.ReadAll(tr)
-			if err != nil {
-				t.Fatalf("Failed to read tar file content: %v", err)
-			}
-			extractedFiles[header.Name] = string(content)
-		}
-	}
+	// Use helper to extract files and verify
+	extractedFiles := extractFilesFromOCIArtifact(t, ociResult.LayoutDir, ociResult.Digest)
 
 	// Verify all expected files are present with correct content
 	for expectedPath, expectedContent := range testFiles {
@@ -627,7 +591,7 @@ func TestOCIArtifactStructure(t *testing.T) {
 		}
 	}
 
-	t.Logf("Successfully verified OCI artifact with %d files, digest: %s", len(extractedFiles), desc.Digest.String())
+	t.Logf("Successfully verified OCI artifact with %d files, digest: %s", len(extractedFiles), ociResult.Digest)
 }
 
 // TestOCIReproducibleBuild verifies that builds are deterministic.
@@ -706,4 +670,397 @@ func TestOCIReproducibleBuild(t *testing.T) {
 	} else {
 		t.Logf("Reproducible build verified: both iterations produced digest %s", digests[0])
 	}
+}
+
+// TestHardLinkDir tests the hardLinkDir function for various scenarios.
+func TestHardLinkDir(t *testing.T) {
+	t.Run("simple directory", func(t *testing.T) {
+		srcDir := t.TempDir()
+		dstDir := t.TempDir()
+
+		// Create test files in source
+		testFiles := map[string]string{
+			"file1.txt": "content 1",
+			"file2.txt": "content 2",
+		}
+		for name, content := range testFiles {
+			if err := os.WriteFile(filepath.Join(srcDir, name), []byte(content), 0o644); err != nil {
+				t.Fatalf("failed to create test file: %v", err)
+			}
+		}
+
+		dstPath := filepath.Join(dstDir, "linked")
+		if err := hardLinkDir(srcDir, dstPath); err != nil {
+			t.Fatalf("hardLinkDir() error = %v", err)
+		}
+
+		// Verify all files were linked
+		for name, expectedContent := range testFiles {
+			content, err := os.ReadFile(filepath.Join(dstPath, name))
+			if err != nil {
+				t.Errorf("failed to read linked file %s: %v", name, err)
+				continue
+			}
+			if string(content) != expectedContent {
+				t.Errorf("file %s content = %q, want %q", name, string(content), expectedContent)
+			}
+		}
+	})
+
+	t.Run("nested directories", func(t *testing.T) {
+		srcDir := t.TempDir()
+		dstDir := t.TempDir()
+
+		// Create nested structure
+		nestedDir := filepath.Join(srcDir, "level1", "level2")
+		if err := os.MkdirAll(nestedDir, 0o755); err != nil {
+			t.Fatalf("failed to create nested dirs: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(nestedDir, "deep.txt"), []byte("deep content"), 0o644); err != nil {
+			t.Fatalf("failed to create deep file: %v", err)
+		}
+
+		dstPath := filepath.Join(dstDir, "linked")
+		if err := hardLinkDir(srcDir, dstPath); err != nil {
+			t.Fatalf("hardLinkDir() error = %v", err)
+		}
+
+		// Verify nested file exists
+		content, err := os.ReadFile(filepath.Join(dstPath, "level1", "level2", "deep.txt"))
+		if err != nil {
+			t.Fatalf("failed to read nested file: %v", err)
+		}
+		if string(content) != "deep content" {
+			t.Errorf("nested file content = %q, want %q", string(content), "deep content")
+		}
+	})
+
+	t.Run("source not exist", func(t *testing.T) {
+		dstDir := t.TempDir()
+		err := hardLinkDir("/nonexistent/path", filepath.Join(dstDir, "linked"))
+		if err == nil {
+			t.Error("hardLinkDir() expected error for nonexistent source, got nil")
+		}
+		if !strings.Contains(err.Error(), "failed to stat source directory") {
+			t.Errorf("hardLinkDir() error = %q, want to contain 'failed to stat source directory'", err.Error())
+		}
+	})
+
+	t.Run("empty directory", func(t *testing.T) {
+		srcDir := t.TempDir()
+		dstDir := t.TempDir()
+
+		dstPath := filepath.Join(dstDir, "linked")
+		if err := hardLinkDir(srcDir, dstPath); err != nil {
+			t.Fatalf("hardLinkDir() error = %v", err)
+		}
+
+		// Verify destination exists and is a directory
+		info, err := os.Stat(dstPath)
+		if err != nil {
+			t.Fatalf("failed to stat destination: %v", err)
+		}
+		if !info.IsDir() {
+			t.Error("destination should be a directory")
+		}
+	})
+
+	t.Run("verifies hard link (same inode)", func(t *testing.T) {
+		srcDir := t.TempDir()
+		dstDir := t.TempDir()
+
+		srcFile := filepath.Join(srcDir, "test.txt")
+		if err := os.WriteFile(srcFile, []byte("test content"), 0o644); err != nil {
+			t.Fatalf("failed to create test file: %v", err)
+		}
+
+		dstPath := filepath.Join(dstDir, "linked")
+		if err := hardLinkDir(srcDir, dstPath); err != nil {
+			t.Fatalf("hardLinkDir() error = %v", err)
+		}
+
+		// Get inode of source and destination files
+		srcInfo, err := os.Stat(srcFile)
+		if err != nil {
+			t.Fatalf("failed to stat source: %v", err)
+		}
+		dstInfo, err := os.Stat(filepath.Join(dstPath, "test.txt"))
+		if err != nil {
+			t.Fatalf("failed to stat destination: %v", err)
+		}
+
+		// On Unix systems, hard links share the same inode
+		if !os.SameFile(srcInfo, dstInfo) {
+			t.Error("source and destination should be hard links (same file)")
+		}
+	})
+}
+
+// TestPreparePushDir tests the preparePushDir function.
+func TestPreparePushDir(t *testing.T) {
+	t.Run("no subdir returns source", func(t *testing.T) {
+		srcDir := t.TempDir()
+		result, cleanup, err := preparePushDir(srcDir, "")
+		if err != nil {
+			t.Fatalf("preparePushDir() error = %v", err)
+		}
+		if cleanup != nil {
+			t.Error("cleanup should be nil when no subdir specified")
+		}
+		if result != srcDir {
+			t.Errorf("preparePushDir() = %q, want %q", result, srcDir)
+		}
+	})
+
+	t.Run("with subdir creates temp with links", func(t *testing.T) {
+		srcDir := t.TempDir()
+
+		// Create subdir with content
+		subDir := filepath.Join(srcDir, "mysubdir")
+		if err := os.MkdirAll(subDir, 0o755); err != nil {
+			t.Fatalf("failed to create subdir: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(subDir, "file.txt"), []byte("content"), 0o644); err != nil {
+			t.Fatalf("failed to create file: %v", err)
+		}
+
+		result, cleanup, err := preparePushDir(srcDir, "mysubdir")
+		if err != nil {
+			t.Fatalf("preparePushDir() error = %v", err)
+		}
+		if cleanup == nil {
+			t.Fatal("cleanup should not be nil when subdir specified")
+		}
+		defer cleanup()
+
+		// Verify the structure preserves the subdir path
+		expectedFile := filepath.Join(result, "mysubdir", "file.txt")
+		content, err := os.ReadFile(expectedFile)
+		if err != nil {
+			t.Fatalf("failed to read linked file: %v", err)
+		}
+		if string(content) != "content" {
+			t.Errorf("file content = %q, want %q", string(content), "content")
+		}
+	})
+
+	t.Run("cleanup removes temp directory", func(t *testing.T) {
+		srcDir := t.TempDir()
+
+		// Create subdir with content
+		subDir := filepath.Join(srcDir, "mysubdir")
+		if err := os.MkdirAll(subDir, 0o755); err != nil {
+			t.Fatalf("failed to create subdir: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(subDir, "file.txt"), []byte("content"), 0o644); err != nil {
+			t.Fatalf("failed to create file: %v", err)
+		}
+
+		result, cleanup, err := preparePushDir(srcDir, "mysubdir")
+		if err != nil {
+			t.Fatalf("preparePushDir() error = %v", err)
+		}
+
+		// Call cleanup
+		cleanup()
+
+		// Verify temp directory is gone
+		if _, err := os.Stat(result); !os.IsNotExist(err) {
+			t.Errorf("temp directory should be removed after cleanup, but still exists: %s", result)
+		}
+	})
+
+	t.Run("nonexistent subdir fails", func(t *testing.T) {
+		srcDir := t.TempDir()
+
+		_, cleanup, err := preparePushDir(srcDir, "nonexistent")
+		if err == nil {
+			if cleanup != nil {
+				cleanup()
+			}
+			t.Error("preparePushDir() expected error for nonexistent subdir, got nil")
+		}
+	})
+}
+
+// TestContextCancellation tests that operations respect context cancellation.
+func TestContextCancellation(t *testing.T) {
+	t.Run("Package respects canceled context", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // Cancel immediately
+
+		_, err := Package(ctx, PackageOptions{
+			SourceDir:  t.TempDir(),
+			OutputDir:  t.TempDir(),
+			Registry:   "ghcr.io",
+			Repository: "test/repo",
+			Tag:        "v1.0.0",
+		})
+
+		if err == nil {
+			t.Error("Package() expected error for canceled context, got nil")
+		}
+		if !strings.Contains(err.Error(), "canceled") {
+			t.Errorf("Package() error = %q, want to contain 'canceled'", err.Error())
+		}
+	})
+
+	t.Run("PushFromStore respects canceled context", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel() // Cancel immediately
+
+		_, err := PushFromStore(ctx, "/nonexistent", PushOptions{
+			Registry:   "localhost:5000",
+			Repository: "test/repo",
+			Tag:        "v1.0.0",
+		})
+
+		if err == nil {
+			t.Error("PushFromStore() expected error for canceled context, got nil")
+		}
+		if !strings.Contains(err.Error(), "canceled") {
+			t.Errorf("PushFromStore() error = %q, want to contain 'canceled'", err.Error())
+		}
+	})
+}
+
+// TestCreateAuthClient tests the auth client creation function.
+func TestCreateAuthClient(t *testing.T) {
+	t.Run("creates client with default settings", func(t *testing.T) {
+		client, _ := createAuthClient(false, false)
+		if client == nil {
+			t.Fatal("createAuthClient() returned nil client")
+		}
+		if client.Client == nil {
+			t.Error("createAuthClient() client.Client is nil")
+		}
+		if client.Cache == nil {
+			t.Error("createAuthClient() client.Cache is nil")
+		}
+	})
+
+	t.Run("creates client with plainHTTP", func(t *testing.T) {
+		client, _ := createAuthClient(true, false)
+		if client == nil {
+			t.Fatal("createAuthClient() returned nil client")
+		}
+	})
+
+	t.Run("creates client with insecureTLS", func(t *testing.T) {
+		client, _ := createAuthClient(false, true)
+		if client == nil {
+			t.Fatal("createAuthClient() returned nil client")
+		}
+		// Verify TLS config has InsecureSkipVerify set
+		transport, ok := client.Client.Transport.(*http.Transport)
+		if !ok {
+			t.Fatal("createAuthClient() transport is not *http.Transport")
+		}
+		if transport.TLSClientConfig == nil {
+			t.Error("createAuthClient() TLSClientConfig is nil with insecureTLS=true")
+		} else if !transport.TLSClientConfig.InsecureSkipVerify {
+			t.Error("createAuthClient() InsecureSkipVerify is false with insecureTLS=true")
+		}
+	})
+}
+
+// TestPushFromStore_MorePaths tests additional error paths in PushFromStore.
+func TestPushFromStore_MorePaths(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("invalid store path", func(t *testing.T) {
+		_, err := PushFromStore(ctx, "/nonexistent/path/to/store", PushOptions{
+			Registry:   "localhost:5000",
+			Repository: "test/repo",
+			Tag:        "v1.0.0",
+		})
+		if err == nil {
+			t.Error("PushFromStore() expected error for invalid store path, got nil")
+		}
+	})
+
+	t.Run("valid store but missing tag in store", func(t *testing.T) {
+		// Create an empty OCI layout store
+		storeDir := t.TempDir()
+		ociLayoutPath := filepath.Join(storeDir, "oci-layout")
+		if err := os.WriteFile(ociLayoutPath, []byte(`{"imageLayoutVersion": "1.0.0"}`), 0o644); err != nil {
+			t.Fatalf("Failed to create oci-layout file: %v", err)
+		}
+		indexPath := filepath.Join(storeDir, "index.json")
+		if err := os.WriteFile(indexPath, []byte(`{"schemaVersion": 2, "manifests": []}`), 0o644); err != nil {
+			t.Fatalf("Failed to create index.json file: %v", err)
+		}
+		if err := os.MkdirAll(filepath.Join(storeDir, "blobs", "sha256"), 0o755); err != nil {
+			t.Fatalf("Failed to create blobs directory: %v", err)
+		}
+
+		_, err := PushFromStore(ctx, storeDir, PushOptions{
+			Registry:   "localhost:5000",
+			Repository: "test/repo",
+			Tag:        "v1.0.0",
+			PlainHTTP:  true, // Use plainHTTP to avoid TLS issues in test
+		})
+		// This should fail because the tag doesn't exist in the store
+		if err == nil {
+			t.Error("PushFromStore() expected error for missing tag, got nil")
+		}
+	})
+}
+
+// TestPackage_MorePaths tests additional paths in Package function.
+func TestPackage_MorePaths(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("with ReproducibleTimestamp annotation", func(t *testing.T) {
+		sourceDir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(sourceDir, "test.yaml"), []byte("test: data"), 0o644); err != nil {
+			t.Fatalf("Failed to create test file: %v", err)
+		}
+
+		result, err := Package(ctx, PackageOptions{
+			SourceDir:             sourceDir,
+			OutputDir:             t.TempDir(),
+			Registry:              "ghcr.io",
+			Repository:            "test/repo",
+			Tag:                   "v1.0.0",
+			ReproducibleTimestamp: "2025-01-01T00:00:00Z",
+		})
+		if err != nil {
+			t.Fatalf("Package() error = %v", err)
+		}
+		if result.Digest == "" {
+			t.Error("Package() result has empty digest")
+		}
+	})
+
+	t.Run("nonexistent source directory", func(t *testing.T) {
+		_, err := Package(ctx, PackageOptions{
+			SourceDir:  "/nonexistent/source/dir",
+			OutputDir:  t.TempDir(),
+			Registry:   "ghcr.io",
+			Repository: "test/repo",
+			Tag:        "v1.0.0",
+		})
+		if err == nil {
+			t.Error("Package() expected error for nonexistent source dir, got nil")
+		}
+	})
+
+	t.Run("invalid output directory", func(t *testing.T) {
+		sourceDir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(sourceDir, "test.yaml"), []byte("test: data"), 0o644); err != nil {
+			t.Fatalf("Failed to create test file: %v", err)
+		}
+
+		_, err := Package(ctx, PackageOptions{
+			SourceDir:  sourceDir,
+			OutputDir:  "/nonexistent/output/dir",
+			Registry:   "ghcr.io",
+			Repository: "test/repo",
+			Tag:        "v1.0.0",
+		})
+		if err == nil {
+			t.Error("Package() expected error for invalid output dir, got nil")
+		}
+	})
 }

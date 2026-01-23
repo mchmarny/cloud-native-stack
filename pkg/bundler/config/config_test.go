@@ -1,6 +1,13 @@
 package config
 
-import "testing"
+import (
+	"testing"
+
+	corev1 "k8s.io/api/core/v1"
+)
+
+// testValueTrue is used as a consistent value string for test assertions.
+const testValueTrue = "true"
 
 func TestConfigImmutability(t *testing.T) {
 	cfg := NewConfig()
@@ -176,7 +183,7 @@ func TestValueOverridesOption(t *testing.T) {
 	}
 
 	// Verify gpuoperator overrides
-	if got["gpuoperator"]["gds.enabled"] != "true" {
+	if got["gpuoperator"]["gds.enabled"] != testValueTrue {
 		t.Errorf("gpuoperator gds.enabled = %s, want true", got["gpuoperator"]["gds.enabled"])
 	}
 	if got["gpuoperator"]["driver.version"] != "570.86.16" {
@@ -184,7 +191,7 @@ func TestValueOverridesOption(t *testing.T) {
 	}
 
 	// Verify networkoperator overrides
-	if got["networkoperator"]["rdma.enabled"] != "true" {
+	if got["networkoperator"]["rdma.enabled"] != testValueTrue {
 		t.Errorf("networkoperator rdma.enabled = %s, want true", got["networkoperator"]["rdma.enabled"])
 	}
 }
@@ -251,4 +258,250 @@ func TestValidateErrorMessages(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNodeSelectorOptions(t *testing.T) {
+	t.Run("SystemNodeSelector with valid values", func(t *testing.T) {
+		selectors := map[string]string{
+			"nodeGroup":        "system-pool",
+			"kubernetes.io/os": "linux",
+		}
+		cfg := NewConfig(WithSystemNodeSelector(selectors))
+
+		got := cfg.SystemNodeSelector()
+		if got == nil {
+			t.Fatal("SystemNodeSelector() returned nil")
+		}
+		if got["nodeGroup"] != "system-pool" {
+			t.Errorf("SystemNodeSelector()[nodeGroup] = %s, want system-pool", got["nodeGroup"])
+		}
+		if got["kubernetes.io/os"] != "linux" {
+			t.Errorf("SystemNodeSelector()[kubernetes.io/os] = %s, want linux", got["kubernetes.io/os"])
+		}
+	})
+
+	t.Run("SystemNodeSelector returns nil for nil config", func(t *testing.T) {
+		cfg := NewConfig()
+		got := cfg.SystemNodeSelector()
+		if got != nil {
+			t.Errorf("SystemNodeSelector() = %v, want nil", got)
+		}
+	})
+
+	t.Run("SystemNodeSelector immutability", func(t *testing.T) {
+		selectors := map[string]string{"key": "value"}
+		cfg := NewConfig(WithSystemNodeSelector(selectors))
+
+		got := cfg.SystemNodeSelector()
+		got["key"] = "modified"
+		got["new"] = "added"
+
+		fresh := cfg.SystemNodeSelector()
+		if fresh["key"] != "value" {
+			t.Error("modifying returned map affected config - not immutable")
+		}
+		if _, exists := fresh["new"]; exists {
+			t.Error("adding key to returned map affected config - not immutable")
+		}
+	})
+
+	t.Run("AcceleratedNodeSelector with valid values", func(t *testing.T) {
+		selectors := map[string]string{
+			"nvidia.com/gpu.present": "true",
+			"accelerator":            "nvidia-gb200",
+		}
+		cfg := NewConfig(WithAcceleratedNodeSelector(selectors))
+
+		got := cfg.AcceleratedNodeSelector()
+		if got == nil {
+			t.Fatal("AcceleratedNodeSelector() returned nil")
+		}
+		if got["nvidia.com/gpu.present"] != testValueTrue {
+			t.Errorf("AcceleratedNodeSelector()[nvidia.com/gpu.present] = %s, want true", got["nvidia.com/gpu.present"])
+		}
+	})
+
+	t.Run("AcceleratedNodeSelector returns nil for nil config", func(t *testing.T) {
+		cfg := NewConfig()
+		got := cfg.AcceleratedNodeSelector()
+		if got != nil {
+			t.Errorf("AcceleratedNodeSelector() = %v, want nil", got)
+		}
+	})
+}
+
+func TestNodeTolerationOptions(t *testing.T) {
+	t.Run("SystemNodeTolerations with valid values", func(t *testing.T) {
+		tolerations := []corev1.Toleration{
+			{Key: "dedicated", Value: "system", Effect: corev1.TaintEffectNoSchedule},
+		}
+		cfg := NewConfig(WithSystemNodeTolerations(tolerations))
+
+		got := cfg.SystemNodeTolerations()
+		if got == nil {
+			t.Fatal("SystemNodeTolerations() returned nil")
+		}
+		if len(got) != 1 {
+			t.Fatalf("SystemNodeTolerations() len = %d, want 1", len(got))
+		}
+		if got[0].Key != "dedicated" {
+			t.Errorf("SystemNodeTolerations()[0].Key = %s, want dedicated", got[0].Key)
+		}
+	})
+
+	t.Run("SystemNodeTolerations returns nil for nil config", func(t *testing.T) {
+		cfg := NewConfig()
+		got := cfg.SystemNodeTolerations()
+		if got != nil {
+			t.Errorf("SystemNodeTolerations() = %v, want nil", got)
+		}
+	})
+
+	t.Run("AcceleratedNodeTolerations with valid values", func(t *testing.T) {
+		tolerations := []corev1.Toleration{
+			{Key: "nvidia.com/gpu", Value: "present", Effect: corev1.TaintEffectNoSchedule},
+		}
+		cfg := NewConfig(WithAcceleratedNodeTolerations(tolerations))
+
+		got := cfg.AcceleratedNodeTolerations()
+		if got == nil {
+			t.Fatal("AcceleratedNodeTolerations() returned nil")
+		}
+		if len(got) != 1 {
+			t.Fatalf("AcceleratedNodeTolerations() len = %d, want 1", len(got))
+		}
+		if got[0].Key != "nvidia.com/gpu" {
+			t.Errorf("AcceleratedNodeTolerations()[0].Key = %s, want nvidia.com/gpu", got[0].Key)
+		}
+	})
+
+	t.Run("AcceleratedNodeTolerations returns nil for nil config", func(t *testing.T) {
+		cfg := NewConfig()
+		got := cfg.AcceleratedNodeTolerations()
+		if got != nil {
+			t.Errorf("AcceleratedNodeTolerations() = %v, want nil", got)
+		}
+	})
+}
+
+func TestDeployerOptions(t *testing.T) {
+	t.Run("default deployer is helm", func(t *testing.T) {
+		cfg := NewConfig()
+		if cfg.Deployer() != "helm" {
+			t.Errorf("Deployer() = %s, want helm", cfg.Deployer())
+		}
+	})
+
+	t.Run("WithDeployer sets argocd", func(t *testing.T) {
+		cfg := NewConfig(WithDeployer("argocd"))
+		if cfg.Deployer() != "argocd" {
+			t.Errorf("Deployer() = %s, want argocd", cfg.Deployer())
+		}
+	})
+
+	t.Run("WithRepoURL sets repository URL", func(t *testing.T) {
+		cfg := NewConfig(WithRepoURL("https://github.com/org/repo.git"))
+		if cfg.RepoURL() != "https://github.com/org/repo.git" {
+			t.Errorf("RepoURL() = %s, want https://github.com/org/repo.git", cfg.RepoURL())
+		}
+	})
+
+	t.Run("default RepoURL is empty", func(t *testing.T) {
+		cfg := NewConfig()
+		if cfg.RepoURL() != "" {
+			t.Errorf("RepoURL() = %s, want empty string", cfg.RepoURL())
+		}
+	})
+}
+
+func TestParseValueOverrides(t *testing.T) {
+	t.Run("valid single override", func(t *testing.T) {
+		result, err := ParseValueOverrides([]string{"gpuoperator:gds.enabled=true"})
+		if err != nil {
+			t.Fatalf("ParseValueOverrides() error = %v", err)
+		}
+		if result["gpuoperator"]["gds.enabled"] != testValueTrue {
+			t.Errorf("result[gpuoperator][gds.enabled] = %s, want true", result["gpuoperator"]["gds.enabled"])
+		}
+	})
+
+	t.Run("valid multiple overrides same bundler", func(t *testing.T) {
+		result, err := ParseValueOverrides([]string{
+			"gpuoperator:gds.enabled=true",
+			"gpuoperator:driver.version=570.86.16",
+		})
+		if err != nil {
+			t.Fatalf("ParseValueOverrides() error = %v", err)
+		}
+		if result["gpuoperator"]["gds.enabled"] != testValueTrue {
+			t.Errorf("result[gpuoperator][gds.enabled] = %s, want true", result["gpuoperator"]["gds.enabled"])
+		}
+		if result["gpuoperator"]["driver.version"] != "570.86.16" {
+			t.Errorf("result[gpuoperator][driver.version] = %s, want 570.86.16", result["gpuoperator"]["driver.version"])
+		}
+	})
+
+	t.Run("valid multiple bundlers", func(t *testing.T) {
+		result, err := ParseValueOverrides([]string{
+			"gpuoperator:gds.enabled=true",
+			"networkoperator:rdma.enabled=false",
+		})
+		if err != nil {
+			t.Fatalf("ParseValueOverrides() error = %v", err)
+		}
+		if result["gpuoperator"]["gds.enabled"] != testValueTrue {
+			t.Errorf("result[gpuoperator][gds.enabled] = %s, want true", result["gpuoperator"]["gds.enabled"])
+		}
+		if result["networkoperator"]["rdma.enabled"] != "false" {
+			t.Errorf("result[networkoperator][rdma.enabled] = %s, want false", result["networkoperator"]["rdma.enabled"])
+		}
+	})
+
+	t.Run("empty input", func(t *testing.T) {
+		result, err := ParseValueOverrides([]string{})
+		if err != nil {
+			t.Fatalf("ParseValueOverrides() error = %v", err)
+		}
+		if len(result) != 0 {
+			t.Errorf("ParseValueOverrides([]) len = %d, want 0", len(result))
+		}
+	})
+
+	t.Run("missing colon separator", func(t *testing.T) {
+		_, err := ParseValueOverrides([]string{"invalid-no-colon"})
+		if err == nil {
+			t.Error("ParseValueOverrides() expected error for missing colon, got nil")
+		}
+	})
+
+	t.Run("missing equals sign", func(t *testing.T) {
+		_, err := ParseValueOverrides([]string{"bundler:path-no-equals"})
+		if err == nil {
+			t.Error("ParseValueOverrides() expected error for missing equals, got nil")
+		}
+	})
+
+	t.Run("empty path", func(t *testing.T) {
+		_, err := ParseValueOverrides([]string{"bundler:=value"})
+		if err == nil {
+			t.Error("ParseValueOverrides() expected error for empty path, got nil")
+		}
+	})
+
+	t.Run("empty value", func(t *testing.T) {
+		_, err := ParseValueOverrides([]string{"bundler:path="})
+		if err == nil {
+			t.Error("ParseValueOverrides() expected error for empty value, got nil")
+		}
+	})
+
+	t.Run("value with equals sign", func(t *testing.T) {
+		result, err := ParseValueOverrides([]string{"bundler:path=value=with=equals"})
+		if err != nil {
+			t.Fatalf("ParseValueOverrides() error = %v", err)
+		}
+		if result["bundler"]["path"] != "value=with=equals" {
+			t.Errorf("result[bundler][path] = %s, want value=with=equals", result["bundler"]["path"])
+		}
+	})
 }

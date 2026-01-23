@@ -85,14 +85,13 @@ type PushOptions struct {
 	// Tag is the image tag (e.g., "v1.0.0", "latest").
 	Tag string
 	// SubDir optionally limits the push to a subdirectory within SourceDir.
+	// Note: This field is reserved for future use. When implemented, it will allow
+	// pushing only a specific subdirectory of the source directory.
 	SubDir string
 	// PlainHTTP uses HTTP instead of HTTPS for the registry connection.
 	PlainHTTP bool
 	// InsecureTLS skips TLS certificate verification.
 	InsecureTLS bool
-	// ReproducibleTimestamp sets a fixed timestamp for reproducible builds.
-	// This option is for programmatic use only and is not exposed via CLI flags.
-	ReproducibleTimestamp string
 }
 
 // PushResult contains the result of a successful OCI push.
@@ -149,10 +148,15 @@ func Package(ctx context.Context, opts PackageOptions) (*PackageResult, error) {
 		defer cleanup()
 	}
 
+	// Check for context cancellation before expensive operations
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return nil, apperrors.Wrap(apperrors.ErrCodeUnavailable, "operation canceled", ctxErr)
+	}
+
 	// Convert to absolute path
 	absSourceDir, err := filepath.Abs(packageFromDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get absolute path for source dir: %w", err)
+		return nil, apperrors.Wrap(apperrors.ErrCodeInternal, "failed to get absolute path for source dir", err)
 	}
 
 	// Strip protocol from registry for docker reference compatibility
@@ -161,35 +165,40 @@ func Package(ctx context.Context, opts PackageOptions) (*PackageResult, error) {
 	// Build and validate the image reference
 	refString := fmt.Sprintf("%s/%s:%s", registryHost, opts.Repository, opts.Tag)
 	if _, parseErr := reference.ParseNormalizedNamed(refString); parseErr != nil {
-		return nil, fmt.Errorf("invalid image reference '%s': %w", refString, parseErr)
+		return nil, apperrors.Wrap(apperrors.ErrCodeInvalidRequest, fmt.Sprintf("invalid image reference '%s'", refString), parseErr)
 	}
 
 	// Create OCI Image Layout store at output directory
 	ociStorePath := filepath.Join(opts.OutputDir, "oci-layout")
 	if mkdirErr := os.MkdirAll(ociStorePath, 0o755); mkdirErr != nil {
-		return nil, fmt.Errorf("failed to create OCI store directory: %w", mkdirErr)
+		return nil, apperrors.Wrap(apperrors.ErrCodeInternal, "failed to create OCI store directory", mkdirErr)
 	}
 
 	ociStore, err := oci.New(ociStorePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create OCI store: %w", err)
+		return nil, apperrors.Wrap(apperrors.ErrCodeInternal, "failed to create OCI store", err)
 	}
 	// Note: oci.Store doesn't require explicit closing
 
 	// Create a file store to read from source directory
 	fs, err := file.New(absSourceDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create file store: %w", err)
+		return nil, apperrors.Wrap(apperrors.ErrCodeInternal, "failed to create file store", err)
 	}
 	defer func() { _ = fs.Close() }()
 
 	// Make tars deterministic for reproducible builds
 	fs.TarReproducible = true
 
+	// Check for context cancellation before adding files
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return nil, apperrors.Wrap(apperrors.ErrCodeUnavailable, "operation canceled", ctxErr)
+	}
+
 	// Add all contents from the file store root
 	layerDesc, err := fs.Add(ctx, ".", ociv1.MediaTypeImageLayerGzip, absSourceDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add source directory to store: %w", err)
+		return nil, apperrors.Wrap(apperrors.ErrCodeInternal, "failed to add source directory to store", err)
 	}
 
 	// Pack an OCI 1.1 manifest with our artifact type
@@ -206,18 +215,23 @@ func Package(ctx context.Context, opts PackageOptions) (*PackageResult, error) {
 
 	manifestDesc, err := oras.PackManifest(ctx, fs, oras.PackManifestVersion1_1, ArtifactType, packOpts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to pack manifest: %w", err)
+		return nil, apperrors.Wrap(apperrors.ErrCodeInternal, "failed to pack manifest", err)
 	}
 
 	// Tag the manifest in file store
 	if tagErr := fs.Tag(ctx, manifestDesc, opts.Tag); tagErr != nil {
-		return nil, fmt.Errorf("failed to tag manifest: %w", tagErr)
+		return nil, apperrors.Wrap(apperrors.ErrCodeInternal, "failed to tag manifest", tagErr)
+	}
+
+	// Check for context cancellation before copy operation
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return nil, apperrors.Wrap(apperrors.ErrCodeUnavailable, "operation canceled", ctxErr)
 	}
 
 	// Copy from file store to OCI layout store
 	desc, err := oras.Copy(ctx, fs, opts.Tag, ociStore, opts.Tag, oras.DefaultCopyOptions)
 	if err != nil {
-		return nil, fmt.Errorf("failed to copy to OCI store: %w", err)
+		return nil, apperrors.Wrap(apperrors.ErrCodeInternal, "failed to copy to OCI store", err)
 	}
 
 	return &PackageResult{
@@ -232,12 +246,17 @@ func Package(ctx context.Context, opts PackageOptions) (*PackageResult, error) {
 //nolint:unparam // PushResult is part of the public API, returned for future callers
 func PushFromStore(ctx context.Context, storePath string, opts PushOptions) (*PushResult, error) {
 	if opts.Tag == "" {
-		return nil, fmt.Errorf("tag is required to push OCI image")
+		return nil, apperrors.New(apperrors.ErrCodeInvalidRequest, "tag is required to push OCI image")
 	}
 
 	// Validate registry and repository format
 	if err := ValidateRegistryReference(opts.Registry, opts.Repository); err != nil {
 		return nil, err
+	}
+
+	// Check for context cancellation
+	if err := ctx.Err(); err != nil {
+		return nil, apperrors.Wrap(apperrors.ErrCodeUnavailable, "operation canceled", err)
 	}
 
 	// Strip protocol from registry for docker reference compatibility
@@ -249,14 +268,14 @@ func PushFromStore(ctx context.Context, storePath string, opts PushOptions) (*Pu
 	// Open existing OCI store
 	ociStore, err := oci.New(storePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open OCI store: %w", err)
+		return nil, apperrors.Wrap(apperrors.ErrCodeInternal, "failed to open OCI store", err)
 	}
 	// Note: oci.Store doesn't require explicit closing
 
 	// Prepare remote repository
 	repo, err := remote.NewRepository(fmt.Sprintf("%s/%s", registryHost, opts.Repository))
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize remote repository: %w", err)
+		return nil, apperrors.Wrap(apperrors.ErrCodeInternal, "failed to initialize remote repository", err)
 	}
 	repo.PlainHTTP = opts.PlainHTTP
 
