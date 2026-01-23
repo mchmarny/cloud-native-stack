@@ -106,6 +106,19 @@ View bundle README:
 grip --browser --quiet ./bundles/README.md
 ```
 
+Review Bundle and validate chart dependencies:
+
+```shell
+cd ./bundles && tree .
+```
+
+Prep the deployment: 
+
+```shell
+helm dependency update
+tree .
+```
+
 ## Links
 
 Top 3 for each audience
