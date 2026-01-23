@@ -324,6 +324,7 @@ Package and push bundle to OCI registry:
 					registry:    opts.ociRegistry,
 					repository:  opts.ociRepository,
 					tag:         opts.ociTag,
+					version:     version,
 					plainHTTP:   opts.plainHTTP,
 					insecureTLS: opts.insecureTLS,
 				}, out.Results); ociErr != nil {
@@ -369,6 +370,7 @@ type ociConfig struct {
 	registry    string
 	repository  string
 	tag         string
+	version     string
 	plainHTTP   bool
 	insecureTLS bool
 }
@@ -405,6 +407,12 @@ func handleOCIOutput(ctx context.Context, cfg ociConfig, results []*result.Resul
 		Registry:   cfg.registry,
 		Repository: cfg.repository,
 		Tag:        imageTag,
+		Annotations: map[string]string{
+			"org.opencontainers.image.version": cfg.version,
+			"org.opencontainers.image.vendor":  "NVIDIA",
+			"org.opencontainers.image.title":   "CNS Bundle",
+			"org.opencontainers.image.source":  "https://github.com/NVIDIA/cloud-native-stack",
+		},
 	})
 	if err != nil {
 		return fmt.Errorf("failed to package OCI artifact: %w", err)

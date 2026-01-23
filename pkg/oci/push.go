@@ -59,6 +59,9 @@ type PackageOptions struct {
 	Tag string
 	// SubDir optionally limits packaging to a subdirectory within SourceDir.
 	SubDir string
+	// Annotations are additional manifest annotations to include.
+	// Standard OCI annotations (org.opencontainers.image.*) are recommended.
+	Annotations map[string]string
 	// ReproducibleTimestamp sets a fixed timestamp for reproducible builds.
 	// This option is for programmatic use only and is not exposed via CLI flags.
 	ReproducibleTimestamp string
@@ -206,10 +209,15 @@ func Package(ctx context.Context, opts PackageOptions) (*PackageResult, error) {
 		Layers: []ociv1.Descriptor{layerDesc},
 	}
 
-	// Attach reproducible created annotation if provided
-	if opts.ReproducibleTimestamp != "" {
-		packOpts.ManifestAnnotations = map[string]string{
-			ociv1.AnnotationCreated: opts.ReproducibleTimestamp,
+	// Build manifest annotations from user-provided annotations
+	if len(opts.Annotations) > 0 || opts.ReproducibleTimestamp != "" {
+		packOpts.ManifestAnnotations = make(map[string]string)
+		for k, v := range opts.Annotations {
+			packOpts.ManifestAnnotations[k] = v
+		}
+		// ReproducibleTimestamp overrides any user-provided created annotation
+		if opts.ReproducibleTimestamp != "" {
+			packOpts.ManifestAnnotations[ociv1.AnnotationCreated] = opts.ReproducibleTimestamp
 		}
 	}
 
