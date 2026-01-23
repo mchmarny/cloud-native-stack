@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	Name = "dra-driver"
+	Name = "nvidia-dra-driver-gpu"
 )
 
 // Bundler creates Nvidia DRA Driver bundles based on recipes.
@@ -40,7 +40,7 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
 		"namespace", Name,
 	)
 
-	// Get component reference for dra-driver
+	// Get component reference for nvidia-dra-driver-gpu
 	componentRef := input.GetComponentRef(Name)
 	if componentRef == nil {
 		return nil, errors.New(errors.ErrCodeInvalidRequest,
@@ -51,7 +51,7 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
 	values, err := input.GetValuesForComponent(Name)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrCodeInternal,
-			"failed to get values for dra-driver", err)
+			"failed to get values for nvidia-dra-driver-gpu", err)
 	}
 
 	// Apply user value overrides from --set flags to values map
@@ -61,14 +61,14 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
 		}
 	}
 
-	// Apply system node tolerations (for dra-driver controller)
+	// Apply system node tolerations (for nvidia-dra-driver-gpu controller)
 	if tolerations := b.Config.SystemNodeTolerations(); len(tolerations) > 0 {
 		common.ApplyTolerationsOverrides(values, tolerations,
 			"controller.tolerations",
 		)
 	}
 
-	// Apply accelerated node tolerations (for dra-driver kubelet plugins)
+	// Apply accelerated node tolerations (for nvidia-dra-driver-gpu kubelet plugins)
 	if tolerations := b.Config.AcceleratedNodeTolerations(); len(tolerations) > 0 {
 		common.ApplyTolerationsOverrides(values, tolerations,
 			"kubeletPlugin.tolerations",
@@ -179,8 +179,8 @@ func (b *Bundler) getValueOverrides() map[string]string {
 	if allOverrides == nil {
 		return nil
 	}
-	// Return overrides for "dra-driver" or "dradriver"
-	if overrides, ok := allOverrides["dra-driver"]; ok {
+	// Return overrides for "nvidia-dra-driver-gpu" or "dradriver"
+	if overrides, ok := allOverrides["nvidia-dra-driver-gpu"]; ok {
 		return overrides
 	}
 	if overrides, ok := allOverrides["dradriver"]; ok {

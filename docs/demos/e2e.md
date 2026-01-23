@@ -24,7 +24,7 @@ cnsctl recipe \
   --intent training
 ```
 
-Metadata overlays: `components=4 overlays=4`
+Metadata overlays: `components=5 overlays=5`
 
 ![data flow](images/recipe.png)
 
@@ -62,7 +62,7 @@ cnsctl recipe \
 Recipe Constraints:
 
 ```shell
-cat recipe.yaml | yq .constraints
+yq .constraints recipe.yaml
 ```
 
 Validate Recipe: 
@@ -83,9 +83,7 @@ cnsctl bundle \
   --output ./bundles \
   --system-node-selector nodeGroup=system-pool \
   --accelerated-node-selector nodeGroup=customer-gpu \
-  --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule \
-  --deployer argocd \
-  --repo https://github.com/my-org/my-gitops-repo.git
+  --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule
 ```
 
 Check bundle content: 
@@ -106,12 +104,6 @@ View bundle README:
 
 ```shell
 grip --browser --quiet ./bundles/README.md
-```
-
-View component README in a bundle (e.g. gpu-operator):
-
-```shell
-grip --browser --quiet ./bundles/gpu-operator/README.md
 ```
 
 ## Links

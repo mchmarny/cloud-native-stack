@@ -28,7 +28,7 @@ spec:
   componentRefs:
 
     # Override with Ubuntu customization for Skyhook
-    - name: skyhook
+    - name: skyhook-operator
       type: Helm
       overrides:
         customization: ubuntu

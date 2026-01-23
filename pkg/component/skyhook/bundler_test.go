@@ -47,11 +47,11 @@ func TestBundler_Make(t *testing.T) {
 		verifyFunc func(t *testing.T, outputDir string)
 	}{
 		{
-			name:    "valid recipe with skyhook component",
+			name:    "valid recipe with skyhook-operator component",
 			recipe:  createTestRecipeResult(),
 			wantErr: false,
 			verifyFunc: func(t *testing.T, outputDir string) {
-				bundleDir := filepath.Join(outputDir, "skyhook")
+				bundleDir := filepath.Join(outputDir, "skyhook-operator")
 
 				// Verify values.yaml exists
 				valuesPath := filepath.Join(bundleDir, "values.yaml")
@@ -87,7 +87,7 @@ func TestBundler_Make(t *testing.T) {
 			}),
 			wantErr: false,
 			verifyFunc: func(t *testing.T, outputDir string) {
-				bundleDir := filepath.Join(outputDir, "skyhook")
+				bundleDir := filepath.Join(outputDir, "skyhook-operator")
 				valuesPath := filepath.Join(bundleDir, "values.yaml")
 
 				data, err := os.ReadFile(valuesPath)
@@ -102,7 +102,7 @@ func TestBundler_Make(t *testing.T) {
 			},
 		},
 		{
-			name:    "missing skyhook component",
+			name:    "missing skyhook-operator component",
 			recipe:  createRecipeResultWithoutGPUOperator(),
 			wantErr: true,
 		},
@@ -113,7 +113,7 @@ func TestBundler_Make(t *testing.T) {
 			}),
 			wantErr: false,
 			verifyFunc: func(t *testing.T, outputDir string) {
-				bundleDir := filepath.Join(outputDir, "skyhook")
+				bundleDir := filepath.Join(outputDir, "skyhook-operator")
 
 				// Verify customization manifest exists
 				manifestPath := filepath.Join(bundleDir, "manifests/ubuntu.yaml")
@@ -249,7 +249,7 @@ func createTestRecipeResult() *recipe.RecipeResult {
 		APIVersion: recipe.FullAPIVersion,
 		ComponentRefs: []recipe.ComponentRef{
 			{
-				Name:    "skyhook",
+				Name:    "skyhook-operator",
 				Type:    "Helm",
 				Source:  "https://helm.ngc.nvidia.com/nvidia",
 				Version: "v25.3.4",
@@ -301,7 +301,7 @@ func createTestRecipeResultWithOverrides(overrides map[string]interface{}) *reci
 		APIVersion: recipe.FullAPIVersion,
 		ComponentRefs: []recipe.ComponentRef{
 			{
-				Name:    "skyhook",
+				Name:    "skyhook-operator",
 				Type:    "Helm",
 				Source:  "https://helm.ngc.nvidia.com/nvidia",
 				Version: "v25.3.4",
@@ -312,7 +312,7 @@ func createTestRecipeResultWithOverrides(overrides map[string]interface{}) *reci
 	}
 }
 
-// Helper function to create a RecipeResult without skyhook
+// Helper function to create a RecipeResult without skyhook-operator
 func createRecipeResultWithoutGPUOperator() *recipe.RecipeResult {
 	return &recipe.RecipeResult{
 		Kind:       "recipeResult",

@@ -422,12 +422,12 @@ generate_recipe() {
   fi
   test_pass "recipe/has-gpu-operator"
   
-  # Verify recipe contains skyhook component
-  if ! grep -q "skyhook" "$RECIPE_FILE"; then
-    test_fail "recipe/has-skyhook" "Recipe does not contain skyhook component"
+  # Verify recipe contains skyhook-operator component
+  if ! grep -q "skyhook-operator" "$RECIPE_FILE"; then
+    test_fail "recipe/has-skyhook-operator" "Recipe does not contain skyhook-operator component"
     return 1
   fi
-  test_pass "recipe/has-skyhook"
+  test_pass "recipe/has-skyhook-operator"
   
   msg "Recipe saved to: ${RECIPE_FILE}"
 }
@@ -465,7 +465,7 @@ run_bundle_tests() {
     verify_pattern_in_values "${basic_dir}/Chart.yaml" \
       "gpu-operator" "bundle/basic/has-gpu-operator-dep"
     verify_pattern_in_values "${basic_dir}/Chart.yaml" \
-      "skyhook" "bundle/basic/has-skyhook-dep"
+      "skyhook-operator" "bundle/basic/has-skyhook-operator-dep"
   fi
   
   # -------------------------------------------------------------------------

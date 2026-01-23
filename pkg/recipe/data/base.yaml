@@ -27,14 +27,14 @@ spec:
 
     - name: nvsentinel
       type: Helm
-      source: oci://ghcr.io/nvidia/nvsentinel
+      source: oci://ghcr.io/nvidia
       version: v0.6.0
       valuesFile: components/nvsentinel/values.yaml
       dependencyRefs:
         - cert-manager
 
-    - name: skyhook
+    - name: skyhook-operator
       type: Helm
-      source: oci://ghcr.io/nvidia/skyhook
-      version: v0.4.0
-      valuesFile: components/skyhook/values.yaml
+      source: https://helm.ngc.nvidia.com/nvidia/skyhook
+      version: 0.11.1
+      valuesFile: components/skyhook-operator/values.yaml

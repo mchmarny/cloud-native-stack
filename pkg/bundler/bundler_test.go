@@ -374,7 +374,7 @@ func TestRemoveHyphens(t *testing.T) {
 		{"gpu-operator", "gpuoperator"},
 		{"network-operator", "networkoperator"},
 		{"cert-manager", "certmanager"},
-		{"skyhook", "skyhook"},
+		{"skyhook-operator", "skyhookoperator"},
 		{"", ""},
 		{"a-b-c-d", "abcd"},
 	}

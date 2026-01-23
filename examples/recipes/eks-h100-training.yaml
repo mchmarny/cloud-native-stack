@@ -41,13 +41,13 @@ componentRefs:
     version: v0.6.0
     dependencyRefs:
       - cert-manager
-  - name: skyhook
+  - name: skyhook-operator
     type: Helm
     source: oci://ghcr.io/nvidia/skyhook
     version: v0.4.0
-    valuesFile: components/skyhook/values.yaml
+    valuesFile: components/skyhook-operator/values.yaml
 deploymentOrder:
   - cert-manager
   - gpu-operator
   - nvsentinel
-  - skyhook
+  - skyhook-operator

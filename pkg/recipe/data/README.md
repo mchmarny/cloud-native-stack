@@ -23,7 +23,7 @@ pkg/recipe/data/
 ├── h100-ubuntu-inference.yaml     # H100 inference overlay
 └── components/                    # Component value configurations
     ├── cert-manager/
-    ├── dra-driver/
+    ├── nvidia-dra-driver-gpu/
     ├── gpu-operator/
     ├── ...
 ```

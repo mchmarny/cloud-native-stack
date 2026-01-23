@@ -21,7 +21,7 @@
 //   - gpuoperator/: GPU Operator component for GPU workload management
 //   - networkoperator/: Network Operator component for RDMA and SR-IOV
 //   - nvsentinel/: NVIDIA Sentinel component for monitoring
-//   - skyhook/: Skyhook component for node optimization
+//   - skyhook/: Skyhook Operator component for node optimization (skyhook-operator)
 //
 // # Usage
 //

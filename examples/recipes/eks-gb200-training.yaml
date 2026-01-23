@@ -22,11 +22,11 @@ componentRefs:
     source: https://charts.jetstack.io
     version: v1.17.2
     valuesFile: components/cert-manager/values.yaml
-  - name: dra-driver
+  - name: nvidia-dra-driver-gpu
     type: Helm
     source: https://helm.ngc.nvidia.com/nvidia
     version: v25.8.1
-    valuesFile: components/dra-driver/values.yaml
+    valuesFile: components/nvidia-dra-driver-gpu/values.yaml
     dependencyRefs:
       - gpu-operator
   - name: gpu-operator
@@ -53,16 +53,16 @@ componentRefs:
     valuesFile: components/nvsentinel/values.yaml
     dependencyRefs:
       - cert-manager
-  - name: skyhook
+  - name: skyhook-operator
     type: Helm
     source: oci://ghcr.io/nvidia/skyhook
     version: v0.4.0
-    valuesFile: components/skyhook/values.yaml
+    valuesFile: components/skyhook-operator/values.yaml
     overrides:
       customization: training
 deploymentOrder:
   - cert-manager
   - gpu-operator
-  - dra-driver
+  - nvidia-dra-driver-gpu
   - nvsentinel
-  - skyhook
+  - skyhook-operator

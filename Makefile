@@ -138,6 +138,10 @@ clean: ## Cleans directories
 	go mod tidy; \
 	echo "Cleaned directories"
 
+.PHONY: demos
+demos: ## Creates demos GIF using VHS tool
+	vhs docs/demos/videos/e2e.tape -o docs/demos/videos/e2e.gif
+
 .PHONY: help
 help: ## Displays available commands
 	@echo "Available make targets:"; \

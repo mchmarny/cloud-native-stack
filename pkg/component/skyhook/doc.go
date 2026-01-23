@@ -28,7 +28,7 @@
 //
 // Or through the bundler framework:
 //
-//	cnsctl bundle --recipe recipe.yaml --bundlers skyhook --output ./bundles
+//	cnsctl bundle --recipe recipe.yaml --bundlers skyhook-operator --output ./bundles
 //
 // # Configuration Extraction
 //

@@ -481,8 +481,8 @@ cnsctl bundle [flags]
 - `network-operator` - NVIDIA Network Operator deployment bundle
 - `cert-manager` - cert-manager deployment bundle
 - `nvsentinel` - NVSentinel deployment bundle
-- `skyhook` - Skyhook node optimization deployment bundle
-- `dra-driver` - NVIDIA DRA (Dynamic Resource Allocation) Driver deployment bundle
+- `skyhook-operator` - Skyhook node optimization deployment bundle
+- `nvidia-dra-driver-gpu` - NVIDIA DRA (Dynamic Resource Allocation) Driver deployment bundle
 
 **Behavior:**
 - If `--bundlers` is omitted, **all registered bundlers** execute
@@ -517,7 +517,7 @@ Override any value in the generated bundle files using dot notation:
 ```
 
 **Format:** `bundler:path=value` where:
-- `bundler` - Bundler name (e.g., `gpuoperator`, `networkoperator`, `certmanager`, `skyhook`, `nvsentinel`)
+- `bundler` - Bundler name (e.g., `gpuoperator`, `networkoperator`, `certmanager`, `skyhook-operator`, `nvsentinel`)
 - `path` - Dot-separated path to the field
 - `value` - New value to set
 
@@ -562,9 +562,9 @@ cnsctl bundle -r recipe.yaml -b certmanager \
   -o ./bundles
 
 # Override Skyhook manager resources
-cnsctl bundle -r recipe.yaml -b skyhook \
-  --set skyhook:manager.resources.cpu.limit=500m \
-  --set skyhook:manager.resources.memory.limit=256Mi \
+cnsctl bundle -r recipe.yaml -b skyhook-operator \
+  --set skyhook-operator:manager.resources.cpu.limit=500m \
+  --set skyhook-operator:manager.resources.memory.limit=256Mi \
   -o ./bundles
 
 # Schedule system components on specific node pool

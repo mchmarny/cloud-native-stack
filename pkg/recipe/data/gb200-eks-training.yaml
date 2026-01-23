@@ -36,16 +36,16 @@ spec:
           enabled: true
 
     # Override with basic Linux training customization for Skyhook
-    - name: skyhook
+    - name: skyhook-operator
       type: Helm
       overrides:
         customization: training
 
-    # Add dra-driver for GB200
-    - name: dra-driver
+    # Add nvidia-dra-driver-gpu for GB200
+    - name: nvidia-dra-driver-gpu
       type: Helm
       source: https://helm.ngc.nvidia.com/nvidia
-      version: v25.8.1
-      valuesFile: components/dra-driver/values.yaml
+      version: "25.8.1"
+      valuesFile: components/nvidia-dra-driver-gpu/values.yaml
       dependencyRefs:
         - gpu-operator

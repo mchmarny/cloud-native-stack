@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	Name = "skyhook"
+	Name = "skyhook-operator"
 )
 
 // Bundler creates Skyhook Operator application bundles based on recipes.
@@ -45,7 +45,7 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 		"namespace", Name,
 	)
 
-	// Get component reference for skyhook
+	// Get component reference for skyhook-operator
 	componentRef := input.GetComponentRef(Name)
 	if componentRef == nil {
 		return nil, errors.New(errors.ErrCodeInvalidRequest,
@@ -184,7 +184,11 @@ func (b *Bundler) generateScriptsFromData(ctx context.Context, scriptData *Scrip
 func (b *Bundler) getValueOverrides() map[string]string {
 	allOverrides := b.Config.ValueOverrides()
 
-	// Check "skyhook" key
+	// Check "skyhook-operator" key (also accept "skyhook" for backward compatibility)
+	if overrides, ok := allOverrides["skyhook-operator"]; ok {
+		return overrides
+	}
+	// Backward compatibility: also check "skyhook" key
 	if overrides, ok := allOverrides["skyhook"]; ok {
 		return overrides
 	}

@@ -47,11 +47,11 @@ func TestBundler_Make(t *testing.T) {
 		verifyFunc func(t *testing.T, outputDir string)
 	}{
 		{
-			name:    "valid recipe with dra-driver component",
+			name:    "valid recipe with nvidia-dra-driver-gpu component",
 			recipe:  createTestRecipeResult(),
 			wantErr: false,
 			verifyFunc: func(t *testing.T, outputDir string) {
-				bundleDir := filepath.Join(outputDir, "dra-driver")
+				bundleDir := filepath.Join(outputDir, "nvidia-dra-driver-gpu")
 
 				// Verify values.yaml exists
 				valuesPath := filepath.Join(bundleDir, "values.yaml")
@@ -87,7 +87,7 @@ func TestBundler_Make(t *testing.T) {
 			}),
 			wantErr: false,
 			verifyFunc: func(t *testing.T, outputDir string) {
-				bundleDir := filepath.Join(outputDir, "dra-driver")
+				bundleDir := filepath.Join(outputDir, "nvidia-dra-driver-gpu")
 				valuesPath := filepath.Join(bundleDir, "values.yaml")
 
 				data, err := os.ReadFile(valuesPath)
@@ -173,7 +173,7 @@ func createTestRecipeResult() *recipe.RecipeResult {
 		APIVersion: recipe.FullAPIVersion,
 		ComponentRefs: []recipe.ComponentRef{
 			{
-				Name:    "dra-driver",
+				Name:    "nvidia-dra-driver-gpu",
 				Type:    "Helm",
 				Source:  "https://helm.ngc.nvidia.com/nvidia",
 				Version: "v25.8.1",
@@ -211,7 +211,7 @@ func createTestRecipeResultWithOverrides(overrides map[string]interface{}) *reci
 		APIVersion: recipe.FullAPIVersion,
 		ComponentRefs: []recipe.ComponentRef{
 			{
-				Name:    "dra-driver",
+				Name:    "nvidia-dra-driver-gpu",
 				Type:    "Helm",
 				Source:  "https://helm.ngc.nvidia.com/nvidia",
 				Version: "v25.8.1",
@@ -222,7 +222,7 @@ func createTestRecipeResultWithOverrides(overrides map[string]interface{}) *reci
 	}
 }
 
-// Helper function to create a RecipeResult without dra-driver
+// Helper function to create a RecipeResult without nvidia-dra-driver-gpu
 func createRecipeResultWithoutDraDriver() *recipe.RecipeResult {
 	return &recipe.RecipeResult{
 		Kind:       "recipeResult",

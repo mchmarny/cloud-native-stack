@@ -832,11 +832,11 @@ curl "http://localhost:8080/v1/recipe?os=ubuntu&service=eks&accelerator=gb200&in
       "dependencyRefs": ["cert-manager"]
     },
     {
-      "name": "skyhook",
+      "name": "skyhook-operator",
       "type": "Helm",
       "source": "oci://ghcr.io/nvidia/skyhook",
       "version": "v0.4.0",
-      "valuesFile": "components/skyhook/values.yaml",
+      "valuesFile": "components/skyhook-operator/values.yaml",
       "overrides": {
         "customization": "ubuntu"
       }
@@ -846,7 +846,7 @@ curl "http://localhost:8080/v1/recipe?os=ubuntu&service=eks&accelerator=gb200&in
     "cert-manager",
     "gpu-operator",
     "nvsentinel",
-    "skyhook"
+    "skyhook-operator"
   ]
 }
 ```

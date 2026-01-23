@@ -14,10 +14,10 @@ type BundleType string
 const (
 	BundleTypeGpuOperator     BundleType = "gpu-operator"
 	BundleTypeNetworkOperator BundleType = "network-operator"
-	BundleTypeSkyhook         BundleType = "skyhook"
+	BundleTypeSkyhook         BundleType = "skyhook-operator"
 	BundleTypeNVSentinel      BundleType = "nvsentinel"
 	BundleTypeCertManager     BundleType = "cert-manager"
-	BundleTypeDraDriver       BundleType = "dra-driver"
+	BundleTypeDraDriver       BundleType = "nvidia-dra-driver-gpu"
 )
 
 // String returns the string representation of the bundle type.

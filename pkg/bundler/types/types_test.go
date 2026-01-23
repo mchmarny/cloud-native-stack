@@ -187,10 +187,10 @@ func TestSupportedBundleTypesAsStrings(t *testing.T) {
 	expectedStrings := []string{
 		"gpu-operator",
 		"network-operator",
-		"skyhook",
+		"skyhook-operator",
 		"nvsentinel",
 		"cert-manager",
-		"dra-driver",
+		"nvidia-dra-driver-gpu",
 	}
 
 	if len(strings) != len(expectedStrings) {
@@ -432,16 +432,16 @@ func TestParseType_CaseInsensitive(t *testing.T) {
 		{"gPu-OpErAtOr", BundleTypeGpuOperator},
 		{"NETWORK-OPERATOR", BundleTypeNetworkOperator},
 		{"Network-Operator", BundleTypeNetworkOperator},
-		{"SKYHOOK", BundleTypeSkyhook},
-		{"Skyhook", BundleTypeSkyhook},
+		{"SKYHOOK-OPERATOR", BundleTypeSkyhook},
+		{"Skyhook-Operator", BundleTypeSkyhook},
 		{"NVSENTINEL", BundleTypeNVSentinel},
 		{"NvSentinel", BundleTypeNVSentinel},
 		{"CERT-MANAGER", BundleTypeCertManager},
 		{"Cert-Manager", BundleTypeCertManager},
-		{"DRA-DRIVER", BundleTypeDraDriver},
-		{"Dra-Driver", BundleTypeDraDriver},
-		{"dra-driver", BundleTypeDraDriver},
-		{"DRA-driver", BundleTypeDraDriver},
+		{"NVIDIA-DRA-DRIVER-GPU", BundleTypeDraDriver},
+		{"Nvidia-Dra-Driver-Gpu", BundleTypeDraDriver},
+		{"nvidia-dra-driver-gpu", BundleTypeDraDriver},
+		{"NVIDIA-dra-driver-gpu", BundleTypeDraDriver},
 	}
 
 	for _, tt := range tests {
@@ -481,9 +481,9 @@ func TestParseType_LevenshteinSuggestions(t *testing.T) {
 			wantSuggest: "gpu-operator",
 		},
 		{
-			name:        "typo in skyhook",
-			input:       "skyhok",
-			wantSuggest: "skyhook",
+			name:        "typo in skyhook-operator",
+			input:       "skyhok-operator",
+			wantSuggest: "skyhook-operator",
 		},
 		{
 			name:        "typo in cert-manager",

@@ -22,7 +22,7 @@
 //
 // Or through the bundler framework:
 //
-//	cnsctl bundle --recipe recipe.yaml --bundlers dra-driver --output ./bundles
+//	cnsctl bundle --recipe recipe.yaml --bundlers nvidia-dra-driver-gpu --output ./bundles
 //
 // # Configuration Extraction
 //

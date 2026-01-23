@@ -184,8 +184,8 @@ The request body is the recipe (RecipeResult) directly. No wrapper object needed
 | `network-operator` | NVIDIA Network Operator |
 | `cert-manager` | Certificate Manager |
 | `nvsentinel` | NVSentinel monitoring |
-| `skyhook` | Skyhook node optimization |
-| `dra-driver` | NVIDIA DRA (Dynamic Resource Allocation) Driver |
+| `skyhook-operator` | Skyhook node optimization |
+| `nvidia-dra-driver-gpu` | NVIDIA DRA (Dynamic Resource Allocation) Driver |
 
 **Examples:**
 
