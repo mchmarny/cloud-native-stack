@@ -170,7 +170,7 @@ Generate deployment bundles from a recipe.
 | `system-node-toleration` | string[] | | Tolerations for system components (format: `key=value:effect`). Repeat for multiple. |
 | `accelerated-node-selector` | string[] | | Node selectors for GPU nodes (format: `key=value`). Repeat for multiple. |
 | `accelerated-node-toleration` | string[] | | Tolerations for GPU nodes (format: `key=value:effect`). Repeat for multiple. |
-| `deployer` | string | script | Deployment method: `script`, `argocd`, or `flux` |
+| `deployer` | string | helm | Deployment method: `helm` or `argocd` |
 
 **Request Body:**
 

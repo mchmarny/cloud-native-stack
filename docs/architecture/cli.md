@@ -2699,9 +2699,8 @@ The bundle command integrates with GitOps tools through the **Deployer Framework
 **Supported Deployers**:
 | Type | Description | Output |
 |------|-------------|--------|
-| `script` | (Default) Shell scripts for manual deployment | `scripts/install.sh`, `scripts/uninstall.sh` |
-| `argocd` | ArgoCD Application manifests | `argocd/*.yaml` |
-| `flux` | Flux HelmRelease resources | `flux/*.yaml` |
+| `helm` | (Default) Helm umbrella chart with dependencies | `Chart.yaml`, `values.yaml` |
+| `argocd` | ArgoCD Application manifests | `app-of-apps.yaml`, `<component>/application.yaml` |
 
 **Key Feature: Deployment Order**
 
@@ -2721,21 +2720,17 @@ deploymentOrder:
 flowchart TD
     A[Bundle Command] --> B[Parse --deployer flag]
     B --> C{Deployer Type}
-    C -->|script| D[Script Deployer]
+    C -->|helm| D[Helm Deployer]
     C -->|argocd| E[ArgoCD Deployer]
-    C -->|flux| F[Flux Deployer]
     
-    D --> G[Generate Shell Scripts]
+    D --> G[Generate Umbrella Chart]
     E --> H[Generate Applications]
-    F --> I[Generate HelmReleases]
     
-    G --> J[Order: README listing]
-    H --> K[Order: sync-wave annotations]
-    I --> L[Order: dependsOn chain]
+    G --> J[Output: Chart.yaml + values.yaml]
+    H --> K[Output: sync-wave annotations]
     
     J --> M[Bundle Output]
     K --> M
-    L --> M
 ```
 
 ### ArgoCD Deployer
@@ -2806,60 +2801,20 @@ bundles/
 └── README.md                      # ArgoCD deployment guide
 ```
 
-### Flux Deployer
+### Helm Deployer (Default)
 
-Generates Flux HelmRelease resources with dependency chains.
+Generates a Helm umbrella chart with component dependencies.
 
-**Ordering Mechanism**: Uses `spec.dependsOn` field to create a dependency chain.
-
-```yaml
-# network-operator-release.yaml (depends on gpu-operator)
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
-metadata:
-  name: network-operator
-  namespace: flux-system
-spec:
-  interval: 5m
-  chart:
-    spec:
-      chart: network-operator
-      version: "v25.4.0"
-      sourceRef:
-        kind: HelmRepository
-        name: nvidia
-  dependsOn:
-    - name: gpu-operator
-      namespace: flux-system
-  install:
-    remediation:
-      retries: 3
-  upgrade:
-    remediation:
-      retries: 3
-```
+**Ordering Mechanism**: Dependencies listed in `Chart.yaml` are deployed in order by Helm.
 
 **Output Structure**:
 ```
-bundles/flux/
-├── kustomization.yaml              # Parent Kustomization
-├── gpu-operator-release.yaml       # First in chain (no dependsOn)
-├── network-operator-release.yaml   # dependsOn: gpu-operator
-├── nvsentinel-release.yaml         # dependsOn: network-operator
-└── README.md                       # Flux deployment guide
-```
-
-### Script Deployer (Default)
-
-Generates shell scripts for manual deployment with components listed in order.
-
-**Ordering Mechanism**: Components listed in deployment order in README and install scripts.
-
-**Output Structure**:
-```
-bundles/gpu-operator/scripts/
-├── install.sh     # Deploys components in order
-└── uninstall.sh   # Removes components in reverse order
+bundles/
+├── Chart.yaml       # Umbrella chart with dependencies
+├── values.yaml      # Combined values for all components
+├── README.md        # Deployment instructions
+├── recipe.yaml      # Input recipe reference
+└── checksums.txt    # SHA256 checksums
 ```
 
 ### Deployer Data Flow
@@ -2890,6 +2845,9 @@ sequenceDiagram
 ### Usage Examples
 
 ```bash
+# Default: Helm umbrella chart
+cnsctl bundle -r recipe.yaml -o ./bundles
+
 # Generate bundle with ArgoCD Applications
 cnsctl bundle -r recipe.yaml --deployer argocd -o ./bundles
 
@@ -2897,12 +2855,6 @@ cnsctl bundle -r recipe.yaml --deployer argocd -o ./bundles
 cnsctl bundle -r recipe.yaml --deployer argocd \
   --repo https://github.com/my-org/my-gitops-repo.git \
   -o ./bundles
-
-# Generate bundle with Flux HelmReleases
-cnsctl bundle -r recipe.yaml --deployer flux -o ./bundles
-
-# Default: script-based deployment
-cnsctl bundle -r recipe.yaml -o ./bundles
 
 # Combine with specific bundlers
 cnsctl bundle -r recipe.yaml \

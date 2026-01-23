@@ -20,10 +20,10 @@ This directory contains architecture documentation for the Cloud Native Stack (C
   - Value overrides: CLI `--set` flag allows runtime customization of bundle values
   - Node scheduling: `--system-node-selector`, `--accelerated-node-selector`, `--*-toleration` flags for workload placement
 - **Deployer Framework**: GitOps integration for deployment artifacts
-  - Deployment methods: `script` (default), `argocd`, `flux`
+  - Deployment methods: `helm` (default), `argocd`
   - Deployment ordering: Respects `deploymentOrder` from recipe for correct component installation sequence
+  - Helm: Generates Helm umbrella chart with dependencies
   - ArgoCD: Uses `sync-wave` annotations for ordered deployment
-  - Flux: Uses `dependsOn` fields for dependency chains between HelmReleases
 
 ## Overview
 
@@ -75,9 +75,8 @@ Generates deployment-ready bundles (Helm values, Kubernetes manifests, installat
 - **Parallel execution** of multiple bundlers by default
 - **Available bundlers**: GPU Operator, Network Operator, Skyhook, Cert-Manager, NVSentinel, DRA Driver
 - **Deployment methods** (`--deployer` flag):
-  - `script` (default): Shell scripts for manual deployment
+  - `helm` (default): Helm umbrella chart with dependencies
   - `argocd`: ArgoCD Application manifests with sync-wave ordering (use `--repo` to set Git repository URL)
-  - `flux`: Flux HelmRelease resources with dependsOn chains
 - **Deployment ordering**: Components deployed in sequence defined by recipe's `deploymentOrder` field
 - **Value Overrides**: Use `--set bundler:path.to.field=value` to customize generated bundles (CLI only)
 - **Node Scheduling**: Use `--system-node-selector`, `--accelerated-node-selector`, and toleration flags for workload placement (CLI only)

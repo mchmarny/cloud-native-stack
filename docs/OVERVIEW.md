@@ -12,7 +12,7 @@ NVIDIA Cloud Native Stack (CNS) is a suite of tooling designed to automate the c
 | **Overlay** | A recipe metadata file that extends the base recipe for specific environments. Overlays are matched against criteria using asymmetric matching. |
 | **Bundle** | Deployment artifacts generated from a recipe: Helm values files, Kubernetes manifests, installation scripts, and checksums. |
 | **Bundler** | A plugin that generates bundle artifacts for a specific component (e.g., GPU Operator bundler, Network Operator bundler). |
-| **Deployer** | A plugin that transforms bundle artifacts into deployment-specific formats: `script` (shell scripts), `argocd` (Applications with sync-waves), `flux` (HelmReleases with dependsOn). |
+| **Deployer** | A plugin that transforms bundle artifacts into deployment-specific formats: `helm` (Helm umbrella charts, default), `argocd` (Applications with sync-waves). |
 | **Component** | A deployable software package (e.g., GPU Operator, Network Operator, cert-manager). Components have versions, Helm sources, and configuration values. |
 | **ComponentRef** | A reference to a component in a recipe, including version, source repository, values file, and dependency references. |
 | **Constraint** | A validation rule in a recipe specifying required system conditions (e.g., `K8s.server.version >= 1.31`, `OS.release.ID == ubuntu`). |
@@ -73,7 +73,7 @@ Before deploying, CNS can validate that a target cluster meets the recipe requir
 
 Finally, CNS converts the abstract Recipe into concrete deployment files.
 *   **What it does:** It generates a "Bundle" containing Helm values, Kubernetes manifests, installation scripts, and a custom README.
-*   **Deployer Options:** Supports multiple deployment methods: `script` (default shell scripts), `argocd` (Applications with sync-wave ordering), `flux` (HelmReleases with dependsOn chains).
+*   **Deployer Options:** Supports multiple deployment methods: `helm` (Helm umbrella chart, default), `argocd` (Applications with sync-wave ordering).
 *   **How it helps:** Users receive ready-to-run scripts and manifests. For example, it generates a custom `install.sh` script that pre-validates the environment before running Helm commands.
 *   **Parallel Execution:** Multiple "Bundlers" (e.g., GPU Operator, Network Operator) can run simultaneously to generate a full stack configuration in seconds.
 

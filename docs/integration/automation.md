@@ -359,68 +359,7 @@ spec:
       - CreateNamespace=true
 ```
 
-### Pattern 6: GitOps Deployment with Flux
-
-Use Flux for GitOps deployments with dependency-based ordering.
-
-**Use case:** Multi-component deployment with Flux
-
-```yaml
-# GitLab CI
-stages:
-  - generate
-  - commit
-  - sync
-
-generate_flux_bundles:
-  stage: generate
-  image: ghcr.io/nvidia/cns:latest
-  script:
-    - cnsctl recipe --service gke --accelerator gb200 --intent training -o recipe.yaml
-    - cnsctl bundle -r recipe.yaml -b gpu-operator,network-operator,cert-manager --deployer flux -o ./bundles
-  artifacts:
-    paths:
-      - bundles/
-
-commit_to_gitops:
-  stage: commit
-  script:
-    - cp -r bundles/*/flux/* gitops-repo/clusters/production/
-    - cd gitops-repo && git add . && git commit -m "Update GPU stack" && git push
-
-flux_sync:
-  stage: sync
-  script:
-    - flux reconcile source git flux-system
-    - flux reconcile kustomization apps
-```
-
-**Generated Flux HelmRelease with dependencies:**
-```yaml
-# bundles/gpu-operator/flux/helmrelease.yaml
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
-metadata:
-  name: gpu-operator
-  namespace: gpu-operator
-spec:
-  interval: 5m
-  chart:
-    spec:
-      chart: gpu-operator
-      version: v25.3.3
-      sourceRef:
-        kind: HelmRepository
-        name: nvidia
-        namespace: flux-system
-  dependsOn:
-    - name: cert-manager
-      namespace: cert-manager
-  values:
-    # Values from bundle
-```
-
-### Pattern 7: Multi-Environment GitOps
+### Pattern 6: Multi-Environment GitOps
 
 Deploy to multiple environments with environment-specific deployers.
 
@@ -429,9 +368,8 @@ Deploy to multiple environments with environment-specific deployers.
 # multi-env-gitops.sh
 
 ENVIRONMENTS=(
-  "staging:script"     # Staging uses shell scripts
+  "staging:helm"       # Staging uses Helm umbrella chart
   "production:argocd"  # Production uses ArgoCD
-  "dr-site:flux"       # DR site uses Flux
 )
 
 for env_config in "${ENVIRONMENTS[@]}"; do

@@ -468,7 +468,7 @@ cnsctl bundle [flags]
 | `--recipe` | `-r` | string | Path to recipe file (required) |
 | `--bundlers` | `-b` | string[] | Bundler types to execute (repeatable) |
 | `--output` | `-o` | string | Output directory (default: current dir) |
-| `--deployer` | | string | Deployment method: script (default), argocd, flux |
+| `--deployer` | | string | Deployment method: helm (default), argocd |
 | `--repo` | | string | Git repository URL for ArgoCD applications (only used with `--deployer argocd`) |
 | `--set` | | string[] | Override values in bundle files (repeatable) |
 | `--system-node-selector` | | string[] | Node selector for system components (format: key=value, repeatable) |
@@ -595,9 +595,6 @@ cnsctl bundle -r recipe.yaml --deployer argocd \
   --repo https://github.com/my-org/my-gitops-repo.git \
   -o ./bundles
 
-# Generate Flux HelmRelease resources for GitOps
-cnsctl bundle -r recipe.yaml --deployer flux -o ./bundles
-
 # Combine deployer with specific bundlers
 cnsctl bundle -r recipe.yaml \
   -b gpu-operator \
@@ -606,16 +603,13 @@ cnsctl bundle -r recipe.yaml \
   -o ./bundles
 ```
 
-**Bundle structure** (GPU Operator example):
+**Bundle structure** (GPU Operator example with default Helm deployer):
 ```
-gpu-operator/
-├── values.yaml                    # Helm chart configuration
-├── manifests/
-│   └── clusterpolicy.yaml        # ClusterPolicy CR
-├── scripts/
-│   ├── install.sh                # Installation script
-│   └── uninstall.sh              # Cleanup script
+bundles/
+├── Chart.yaml                     # Helm umbrella chart
+├── values.yaml                    # Combined values for all components
 ├── README.md                      # Deployment guide
+├── recipe.yaml                    # Recipe used to generate bundle
 └── checksums.txt                  # SHA256 checksums
 ```
 
@@ -640,20 +634,6 @@ ArgoCD Applications use multi-source to:
 1. Pull Helm charts from upstream repositories
 2. Apply values.yaml from your GitOps repository
 3. Deploy additional manifests from component's manifests/ directory (if present)
-
-**Flux bundle structure** (with `--deployer flux`):
-```
-bundles/
-├── gpu-operator/
-│   └── ...                        # Component-specific files
-├── network-operator/
-│   └── ...
-└── flux/
-    ├── kustomization.yaml         # Parent Kustomization
-    ├── gpu-operator-release.yaml  # HelmRelease (first in chain)
-    ├── network-operator-release.yaml # HelmRelease (dependsOn: gpu-operator)
-    └── README.md                  # Flux deployment guide
-```
 
 **Deploying a bundle:**
 ```shell

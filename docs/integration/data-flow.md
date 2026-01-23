@@ -621,33 +621,33 @@ The `deploymentOrder` field in recipes specifies component deployment sequence. 
 │  │   Returns: []orderedComponent{Name, Order}       │   │
 │  └───────────────────────┬──────────────────────────┘   │
 │                          │                              │
-│         ┌────────────────┼────────────────┐             │
-│         ▼                ▼                ▼             │
-│  ┌────────────┐   ┌────────────┐   ┌────────────┐       │
-│  │  Script    │   │  ArgoCD    │   │   Flux     │       │
-│  │  Deployer  │   │  Deployer  │   │  Deployer  │       │
-│  └──────┬─────┘   └──────┬─────┘   └──────┬─────┘       │
-│         │                │                │             │
-│         ▼                ▼                ▼             │
-│  README order:    sync-wave:       dependsOn:           │
-│  1. cert-manager  - cert-manager:0  - none              │
-│  2. gpu-operator  - gpu-operator:1  - cert-manager      │
-│  3. network-op    - network-op:2    - gpu-operator      │
+│         ┌────────────────┴────────────────┐             │
+│         ▼                                 ▼             │
+│  ┌────────────┐                    ┌────────────┐       │
+│  │    Helm    │                    │  ArgoCD    │       │
+│  │  Deployer  │                    │  Deployer  │       │
+│  │ (default)  │                    │            │       │
+│  └──────┬─────┘                    └──────┬─────┘       │
+│         │                                 │             │
+│         ▼                                 ▼             │
+│  Chart.yaml with                   sync-wave:           │
+│  dependencies                      - cert-manager:0     │
+│                                    - gpu-operator:1     │
+│                                    - network-op:2       │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ### Deployer-Specific Output
 
-**Script Deployer** (default):
+**Helm Deployer** (default):
 ```
-bundle-output/gpu-operator/
-├── values.yaml
-├── manifests/
-├── scripts/
-│   ├── install.sh
-│   └── uninstall.sh
-└── README.md              # Lists components in order
+bundle-output/
+├── Chart.yaml             # Umbrella chart with dependencies
+├── values.yaml            # Combined values for all components
+├── recipe.yaml            # Recipe used to generate bundle
+├── README.md              # Deployment instructions
+└── checksums.txt          # SHA256 checksums
 ```
 
 **ArgoCD Deployer**:
@@ -691,30 +691,6 @@ spec:
     - repoURL: <YOUR_GIT_REPO>
       targetRevision: main
       path: gpu-operator/manifests
-```
-
-**Flux Deployer**:
-```
-bundle-output/gpu-operator/
-├── values.yaml
-├── manifests/
-└── flux/
-    └── helmrelease.yaml   # With dependsOn field
-```
-
-Flux HelmRelease with dependsOn:
-```yaml
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
-metadata:
-  name: gpu-operator
-spec:
-  dependsOn:
-    - name: cert-manager
-      namespace: cert-manager
-  chart:
-    spec:
-      chart: gpu-operator
 ```
 
 ### Deployer Data Flow

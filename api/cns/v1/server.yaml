@@ -347,11 +347,11 @@ paths:
           required: false
           description: >
             Deployment method for generated components.
-            Supported values: script (default), argocd, flux.
+            Supported values: helm (default), argocd.
           schema:
             type: string
-            enum: [script, argocd, flux]
-            default: script
+            enum: [helm, argocd]
+            default: helm
         - name: repo
           in: query
           required: false

@@ -218,7 +218,7 @@ This design enables a simple workflow: pipe the output from GET /v1/recipe direc
 | `system-node-toleration` | string[] | No | Tolerations for system components (format: `key=value:effect` or `key:effect`). Can be repeated. |
 | `accelerated-node-selector` | string[] | No | Node selectors for GPU nodes (format: `key=value`). Can be repeated. |
 | `accelerated-node-toleration` | string[] | No | Tolerations for GPU nodes (format: `key=value:effect` or `key:effect`). Can be repeated. |
-| `deployer` | string | No | Deployment method: `script` (default), `argocd`, `flux`. |
+| `deployer` | string | No | Deployment method: `helm` (default), `argocd`. |
 | `repo` | string | No | Git repository URL for GitOps deployments (used with `deployer=argocd`). Sets the repository URL in the generated `app-of-apps.yaml`. |
 
 **Request Body:**

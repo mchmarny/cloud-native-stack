@@ -525,34 +525,28 @@ deploymentOrder:
 
 When the `--deployer` flag is set, bundlers generate standard artifacts that deployers then transform:
 
+**For Helm** (`--deployer helm`, default):
+- Generates Helm umbrella chart with Chart.yaml and values.yaml
+- Creates combined values with all component configurations
+- Includes dependency references to component charts
+
 **For ArgoCD** (`--deployer argocd`):
 - Bundler generates `values.yaml` and `manifests/`
 - Deployer creates `<component>/argocd/application.yaml` with sync-wave annotations
 - Deployer creates `app-of-apps.yaml` at bundle root
 - Applications use multi-source to reference values.yaml and manifests from GitOps repo
 
-**For Flux** (`--deployer flux`):
-- Bundler generates `values.yaml` and `manifests/`
-- Deployer creates `flux/helmrelease.yaml` with dependsOn chains
-
-**For Script** (`--deployer script`, default):
-- Bundler generates `values.yaml`, `manifests/`, and `scripts/`
-- Deployer creates README with deployment instructions in order
-
 ### Using Deployers with Bundlers
 
 The deployer is specified at bundle generation time:
 
 ```bash
+# Default: Helm umbrella chart
+cnsctl bundle -r recipe.yaml -o ./bundles
+
 # Generate bundles with ArgoCD deployer (use --repo to set Git repository URL)
 cnsctl bundle -r recipe.yaml -o ./bundles --deployer argocd \
   --repo https://github.com/my-org/my-gitops-repo.git
-
-# Generate bundles with Flux deployer
-cnsctl bundle -r recipe.yaml -o ./bundles --deployer flux
-
-# Generate bundles with Script deployer (default)
-cnsctl bundle -r recipe.yaml -o ./bundles --deployer script
 ```
 
 See [CLI Architecture](cli.md#deployer-framework-gitops-integration) for detailed deployer documentation.
