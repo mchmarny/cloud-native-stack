@@ -189,6 +189,7 @@ The request body is the recipe (RecipeResult) directly. No wrapper object needed
 | `cert-manager` | Certificate Manager |
 | `nvsentinel` | NVSentinel monitoring |
 | `skyhook` | Skyhook node optimization |
+| `dra-driver` | NVIDIA DRA (Dynamic Resource Allocation) Driver |
 
 **Examples:**
 

@@ -110,6 +110,7 @@ Each bundle scenario generates these components:
 - **gpu-operator** – NVIDIA GPU Operator
 - **nvsentinel** – NVSentinel monitoring
 - **skyhook** – Node optimization
+- **dra-driver** – NVIDIA DRA (Dynamic Resource Allocation) Driver (GB200 only)
 
 ### Bundle Contents
 

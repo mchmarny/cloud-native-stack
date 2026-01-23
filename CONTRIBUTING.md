@@ -227,6 +227,10 @@ cloud-native-stack/
   - **Skyhook**: Generates Skyhook node optimization bundle
     - Helm values.yaml
     - Skyhook CR manifest
+  - **DRA Driver**: Generates NVIDIA DRA (Dynamic Resource Allocation) Driver deployment bundle
+    - Helm values.yaml with DRA configuration
+    - Installation/uninstallation scripts
+    - README with deployment instructions
 - **Features**:
   - Template-based generation with go:embed
   - Functional options pattern for configuration (WithBundlerTypes, WithFailFast, WithConfig, WithRegistry)

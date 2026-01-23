@@ -45,7 +45,7 @@ measurements:
             gpu-operator-validator: v25.3.3
             gpuid: latest
             k8s-device-plugin: v0.17.4
-            k8s-dra-driver-gpu: v25.8.0
+            dra-driver: v25.8.0
             k8s-driver-manager: v0.8.1
             k8s-mig-manager: v0.12.3-ubuntu20.04
             kratos-fluent-bit: v7.0.2-dev-cf642b0-multiarch

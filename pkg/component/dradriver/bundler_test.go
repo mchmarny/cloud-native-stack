@@ -1,4 +1,4 @@
-package k8sdradrivergpu
+package dradriver
 
 import (
 	"context"
@@ -47,11 +47,11 @@ func TestBundler_Make(t *testing.T) {
 		verifyFunc func(t *testing.T, outputDir string)
 	}{
 		{
-			name:    "valid recipe with k8s-dra-driver-gpu component",
+			name:    "valid recipe with dra-driver component",
 			recipe:  createTestRecipeResult(),
 			wantErr: false,
 			verifyFunc: func(t *testing.T, outputDir string) {
-				bundleDir := filepath.Join(outputDir, "k8s-dra-driver-gpu")
+				bundleDir := filepath.Join(outputDir, "dra-driver")
 
 				// Verify values.yaml exists
 				valuesPath := filepath.Join(bundleDir, "values.yaml")
@@ -87,7 +87,7 @@ func TestBundler_Make(t *testing.T) {
 			}),
 			wantErr: false,
 			verifyFunc: func(t *testing.T, outputDir string) {
-				bundleDir := filepath.Join(outputDir, "k8s-dra-driver-gpu")
+				bundleDir := filepath.Join(outputDir, "dra-driver")
 				valuesPath := filepath.Join(bundleDir, "values.yaml")
 
 				data, err := os.ReadFile(valuesPath)
@@ -173,7 +173,7 @@ func createTestRecipeResult() *recipe.RecipeResult {
 		APIVersion: recipe.FullAPIVersion,
 		ComponentRefs: []recipe.ComponentRef{
 			{
-				Name:    "k8s-dra-driver-gpu",
+				Name:    "dra-driver",
 				Type:    "Helm",
 				Source:  "https://helm.ngc.nvidia.com/nvidia",
 				Version: "v25.8.1",
@@ -211,7 +211,7 @@ func createTestRecipeResultWithOverrides(overrides map[string]interface{}) *reci
 		APIVersion: recipe.FullAPIVersion,
 		ComponentRefs: []recipe.ComponentRef{
 			{
-				Name:    "k8s-dra-driver-gpu",
+				Name:    "dra-driver",
 				Type:    "Helm",
 				Source:  "https://helm.ngc.nvidia.com/nvidia",
 				Version: "v25.8.1",

@@ -79,9 +79,9 @@ apply_manifests() {
 }
 
 install_dra_driver() {
-    log_info "Installing k8s DRA Driver..."
+    log_info "Installing DRA Driver..."
     
-    helm upgrade --install k8s-dra-driver-gpu "$HELM_CHART" \
+    helm upgrade --install dra-driver "$HELM_CHART" \
         --namespace "$NAMESPACE" \
         {{- if .HelmChartVersion }}
         --version "$CHART_VERSION" \

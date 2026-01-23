@@ -1,4 +1,4 @@
-package k8sdradrivergpu
+package dradriver
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	Name = "k8s-dra-driver-gpu"
+	Name = "dra-driver"
 )
 
 // Bundler creates Nvidia DRA Driver bundles based on recipes.
@@ -26,7 +26,7 @@ type Bundler struct {
 // NewBundler creates a new Nvidia DRA Driver bundler instance.
 func NewBundler(conf *config.Config) *Bundler {
 	return &Bundler{
-		BaseBundler: common.NewBaseBundler(conf, types.BundleTypeK8sDraDriverGpu),
+		BaseBundler: common.NewBaseBundler(conf, types.BundleTypeDraDriver),
 	}
 }
 
@@ -35,12 +35,12 @@ func NewBundler(conf *config.Config) *Bundler {
 func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string) (*result.Result, error) {
 	start := time.Now()
 
-	slog.Debug("generating NVIDIA k8s DRA Driver bundle",
+	slog.Debug("generating NVIDIA DRA Driver bundle",
 		"output_dir", dir,
 		"namespace", Name,
 	)
 
-	// Get component reference for k8s-dra-driver-gpu
+	// Get component reference for dra-driver
 	componentRef := input.GetComponentRef(Name)
 	if componentRef == nil {
 		return nil, errors.New(errors.ErrCodeInvalidRequest,
@@ -51,7 +51,7 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
 	values, err := input.GetValuesForComponent(Name)
 	if err != nil {
 		return nil, errors.Wrap(errors.ErrCodeInternal,
-			"failed to get values for k8s-dra-driver-gpu", err)
+			"failed to get values for dra-driver", err)
 	}
 
 	// Apply user value overrides from --set flags to values map
@@ -179,11 +179,11 @@ func (b *Bundler) getValueOverrides() map[string]string {
 	if allOverrides == nil {
 		return nil
 	}
-	// Return overrides for "k8sdradrivergpu" or "k8s-dra-driver"
-	if overrides, ok := allOverrides["k8s-dra-driver-gpu"]; ok {
+	// Return overrides for "dra-driver" or "dradriver"
+	if overrides, ok := allOverrides["dra-driver"]; ok {
 		return overrides
 	}
-	if overrides, ok := allOverrides["k8sdradrivergpu"]; ok {
+	if overrides, ok := allOverrides["dradriver"]; ok {
 		return overrides
 	}
 	return nil

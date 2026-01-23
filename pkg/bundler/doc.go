@@ -18,7 +18,7 @@ Component implementations are in pkg/component, which provides:
 
   - BaseBundler: Helper that reduces boilerplate in component implementations
   - internal: Shared utilities (template rendering, file writing, subtype extraction)
-  - Component packages: gpuoperator, networkoperator, certmanager, nvsentinel, skyhook, k8sdradrivergpu
+  - Component packages: gpuoperator, networkoperator, certmanager, nvsentinel, skyhook, dradriver
 
 # Core Components
 
@@ -90,6 +90,11 @@ Currently supported bundlers:
   - network-operator: Generates Network Operator deployment bundles
   - Helm values.yaml
   - NicClusterPolicy manifest
+  - Installation/uninstallation scripts
+  - README documentation
+  - SHA256 checksums
+  - dra-driver: Generates NVIDIA DRA Driver deployment bundles
+  - Helm values.yaml with DRA configuration
   - Installation/uninstallation scripts
   - README documentation
   - SHA256 checksums

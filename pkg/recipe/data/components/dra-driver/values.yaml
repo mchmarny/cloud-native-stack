@@ -2,7 +2,7 @@
 # If the NVIDIA GPU driver is managed using the NVIDIA GPU Driver Container,
 # this is typically /run/nvidia/driver.
 # For driver installed directly on a host, a value of `/` is used.
-# From https://github.com/NVIDIA/k8s-dra-driver-gpu/discussions/249
+# From https://github.com/NVIDIA/k8s-dra-driver/discussions/249
 
 nvidiaDriverRoot: /run/nvidia/driver
 
