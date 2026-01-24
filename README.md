@@ -25,8 +25,9 @@ It **is not**:
 - A replacement for cloud provider or OEM platforms
 
 ---
-### Note on previous versions**  
-> Earlier versions of Cloud Native Stack focused primarily on manual installation guides and playbooks. Those materials remain available under [`/~archive/cns-v1`](/~archive/cns-v1/). The current repository reflects a transition toward structured configuration data and generated artifacts.
+
+> **Note on previous versions:** Earlier versions of Cloud Native Stack focused primarily on manual installation guides and playbooks. Those materials remain available under [`/~archive/cns-v1`](/~archive/cns-v1/). The current repository reflects a transition toward structured configuration data and generated artifacts.
+
 ---
 
 ## How It Works
@@ -36,6 +37,7 @@ Cloud Native Stack separates **validated configuration knowledge** from **how th
 - Human-readable documentation lives under `docs/`.
 - Version-locked configuration definitions (“recipes”) capture known-good system states.
 - Those definitions can be rendered into concrete artifacts such as Helm values, Kubernetes manifests, or install scripts.- Recipes can be validated against actual system configurations to verify compatibility.
+
 This separation allows the same validated configuration to be applied consistently across different environments and automation systems.
 
 *For example, a configuration validated for gb200 on Ubuntu 22.04 with Kubernetes 1.29 can be rendered into Helm values and manifests suitable for use in an existing GitOps pipeline.*
@@ -108,7 +110,7 @@ You are integrating CNS into CI/CD pipelines, GitOps workflows, or a larger prod
 
 - **[Documentation](/docs)** – Documentation, guides, and examples.
 - **[Roadmap](ROADMAP.md)** – Feature priorities and development timeline
-- **[Transition](docs/MIGRATION.md)** - Migration to CLI/API-based bundle generation
+- **[Overview](docs/OVERVIEW.md)** - Detailed system overview and glossary
 - **[Security](SECURITY.md)** - Security-related resources 
 - **[Releases](https://github.com/NVIDIA/cloud-native-stack/releases)** - Binaries, SBOMs, and other artifacts
 - **[Issues](https://github.com/NVIDIA/cloud-native-stack/issues)** - Bugs, feature requests, and questions

@@ -58,10 +58,10 @@ cnsctl --version
 ### Option 3: Build from Source
 
 **Requirements:**
-- Go 1.21 or higher
+- Go 1.25 or higher
 
 ```shell
-go install https://github.com/NVIDIA/cloud-native-stack/cmd/cnsctl
+go install github.com/NVIDIA/cloud-native-stack/cmd/cnsctl@latest
 ```
 
 ## Verify Installation

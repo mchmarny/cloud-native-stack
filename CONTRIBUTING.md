@@ -1821,7 +1821,7 @@ go tool pprof cpu.prof
 
 ### Project Documentation
 - [README.md](README.md) - User documentation and quick start
-- [docs/MIGRATION.md](docs/MIGRATION.md) - Migration guide from v1 to v2
+- [docs/OVERVIEW.md](docs/OVERVIEW.md) - System overview and glossary
 - [~archive/cns-v1/install-guides](~archive/cns-v1/install-guides) - Platform-specific installation (archived)
 - [~archive/cns-v1/playbooks](~archive/cns-v1/playbooks) - Ansible automation guides (archived)
 - [~archive/cns-v1/optimizations](~archive/cns-v1/optimizations) - Performance tuning guides (archived)

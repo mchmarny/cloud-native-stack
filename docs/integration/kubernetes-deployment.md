@@ -315,7 +315,7 @@ spec:
         imagePullPolicy: IfNotPresent
         
         command:
-        - cns
+        - cnsctl
         - snapshot
         - --output
         - cm://gpu-operator/cns-snapshot

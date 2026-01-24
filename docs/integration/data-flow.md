@@ -377,19 +377,19 @@ Constraints use fully qualified paths: `{Type}.{Subtype}.{Key}`
 
 **File-based:**
 ```bash
-cns validate --recipe recipe.yaml --snapshot snapshot.yaml
+cnsctl validate --recipe recipe.yaml --snapshot snapshot.yaml
 ```
 
 **ConfigMap-based:**
 ```bash
-cns validate \
+cnsctl validate \
     --recipe recipe.yaml \
     --snapshot cm://gpu-operator/cns-snapshot
 ```
 
 **HTTP/HTTPS:**
 ```bash
-cns validate \
+cnsctl validate \
     --recipe https://example.com/recipe.yaml \
     --snapshot https://example.com/snapshot.yaml
 ```
