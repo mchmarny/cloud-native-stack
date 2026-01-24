@@ -1106,6 +1106,7 @@ func TestScalar_UnmarshalYAML_Invalid(t *testing.T) {
 }
 
 func TestScalar_isReading(t *testing.T) {
+	t.Helper()
 	// This test verifies that all scalar types implement the isReading interface method
 	readings := []Reading{
 		Int(42),
@@ -1115,6 +1116,10 @@ func TestScalar_isReading(t *testing.T) {
 		Float64(3.14),
 		Bool(true),
 		Str("test"),
+	}
+
+	if len(readings) == 0 {
+		t.Error("expected at least one reading")
 	}
 
 	for _, r := range readings {
