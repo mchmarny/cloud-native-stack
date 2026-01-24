@@ -2,6 +2,44 @@
 
 This directory contains architecture documentation for the Cloud Native Stack (CNS) tooling.
 
+## First Principles
+
+### Metadata Is Separate from How it is Consumed
+
+* Validated configuration exists independent of how it is rendered, packaged, or deployed.  
+* How users consume the artifacts we produce may vary; what is known to be correct does not.
+
+**Why:** This prevents any tight coupling of correctness to a specific tool, workflow, or delivery mechanism.
+
+### Correctness Must Be Reproducible
+
+* Given the same inputs, the same system version must always produce the same result.  
+* Reproducibility is a key prerequisite for debugging, validation, and trust.
+
+**Why:** This rules out hidden state, implicit defaults, and non-deterministic behavior.
+
+### Recipe Specialization Requires Explicit Intent
+
+* More specific recipes must never be matched unless explicitly requested.  
+* Generic intent cannot silently resolve to specialized configurations.
+
+**Why:** This prevents accidental misconfiguration and preserves user control.
+
+### Trust Requires Verifiable Provenance
+
+* Trust is established through evidence, not assertions.  
+* Every released artifact must carry verifiable and non-falsifiable proof of where it came from and how it was produced.
+
+**Why:** This principle underpins supply-chain security, compliance, and confidence.
+
+### Adoption Comes from Value and Idiomatic Experience
+
+* The system must integrate into how users already work.  
+* The system provides validated configuration, not a new operational model.
+
+**Why:** If adoption requires retraining users on “the right way” then our design has failed.
+
+
 ## Components
 
 - **[CLI Architecture](cli.md)**: Command-line tool (`cnsctl`) implementing all four workflow stages
