@@ -91,7 +91,6 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
 	// Serialize values to YAML with header
 	header := common.ValuesHeader{
 		ComponentName:  "NVIDIA k8s DRA Driver",
-		Timestamp:      time.Now().Format(time.RFC3339),
 		BundlerVersion: configMap["bundler_version"],
 		RecipeVersion:  configMap["recipe_version"],
 	}
@@ -108,13 +107,13 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
 			"failed to write values file", err)
 	}
 
-	// Generate ScriptData (metadata only - not in Helm values)
-	scriptData := GenerateScriptDataFromConfig(configMap)
+	// Generate bundle metadata (for README and manifest templates)
+	metadata := GenerateBundleMetadata(configMap)
 
 	// Create combined data for README (values map + metadata)
 	readmeData := map[string]interface{}{
 		"Values": values,
-		"Script": scriptData,
+		"Script": metadata, // "Script" key preserved for template compatibility
 	}
 
 	// Generate README using values map directly

@@ -7,6 +7,19 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/types"
 )
 
+// DeploymentInfo contains structured deployment instructions.
+// Deployers populate this to provide user-facing guidance.
+type DeploymentInfo struct {
+	// Type describes the deployment method (e.g., "Helm umbrella chart", "ArgoCD applications").
+	Type string `json:"type" yaml:"type"`
+
+	// Steps contains ordered deployment instructions (e.g., ["cd ./bundle", "helm install ..."]).
+	Steps []string `json:"steps" yaml:"steps"`
+
+	// Notes contains optional warnings or additional information.
+	Notes []string `json:"notes,omitempty" yaml:"notes,omitempty"`
+}
+
 // Output contains the aggregated results of all bundler executions.
 type Output struct {
 	// Results contains individual bundler results.
@@ -26,6 +39,9 @@ type Output struct {
 
 	// OutputDir is the directory where bundles were generated.
 	OutputDir string `json:"output_dir" yaml:"output_dir"`
+
+	// Deployment contains structured deployment instructions from the deployer.
+	Deployment *DeploymentInfo `json:"deployment,omitempty" yaml:"deployment,omitempty"`
 }
 
 // BundleError represents an error from a specific bundler.

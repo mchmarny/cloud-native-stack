@@ -78,6 +78,9 @@ type GeneratorOutput struct {
 
 	// Duration is the time taken to generate the chart.
 	Duration time.Duration
+
+	// DeploymentSteps contains ordered deployment instructions for the user.
+	DeploymentSteps []string
 }
 
 // Generator creates Helm umbrella charts from recipe results.
@@ -148,6 +151,13 @@ func (g *Generator) Generate(ctx context.Context, input *GeneratorInput, outputD
 	}
 
 	output.Duration = time.Since(start)
+
+	// Populate deployment steps for CLI output
+	output.DeploymentSteps = []string{
+		fmt.Sprintf("cd %s", outputDir),
+		"helm dependency update",
+		"helm install cns-stack .",
+	}
 
 	slog.Debug("umbrella chart generated",
 		"files", len(output.Files),
@@ -230,14 +240,12 @@ func (g *Generator) generateChartYAML(ctx context.Context, input *GeneratorInput
 		Version      string
 		AppVersion   string
 		Dependencies []Dependency
-		Timestamp    string
 	}{
 		ChartName:    chartName,
 		Description:  "NVIDIA Cloud Native Stack - GPU-accelerated Kubernetes deployment",
 		Version:      normalizeVersion(input.Version),
 		AppVersion:   input.RecipeResult.Metadata.Version,
 		Dependencies: deps,
-		Timestamp:    time.Now().Format(time.RFC3339),
 	}
 
 	// Render template
@@ -299,18 +307,13 @@ func (g *Generator) generateValuesYAML(ctx context.Context, input *GeneratorInpu
 
 	// Generate YAML with header comment
 	header := fmt.Sprintf(`# Cloud Native Stack - Helm Umbrella Chart Values
-# Generated: %s
 # Recipe Version: %s
 # Bundler Version: %s
 #
 # This file contains configuration for all sub-charts.
 # Each top-level key corresponds to a dependency in Chart.yaml.
 # Set <component>.enabled=false to skip installing a component.
-#
-# Usage:
-#   helm dependency update
-#   helm install cns-stack . -f values.yaml
-`, time.Now().Format(time.RFC3339), input.RecipeResult.Metadata.Version, input.Version)
+`, input.RecipeResult.Metadata.Version, input.Version)
 
 	yamlBytes, err := yaml.Marshal(values)
 	if err != nil {
@@ -379,7 +382,6 @@ func (g *Generator) generateREADME(ctx context.Context, input *GeneratorInput, o
 	constraints := input.RecipeResult.Constraints
 
 	data := struct {
-		Timestamp      string
 		RecipeVersion  string
 		BundlerVersion string
 		Components     []ComponentInfo
@@ -387,7 +389,6 @@ func (g *Generator) generateREADME(ctx context.Context, input *GeneratorInput, o
 		Constraints    []recipe.Constraint
 		ChartName      string
 	}{
-		Timestamp:      time.Now().Format(time.RFC3339),
 		RecipeVersion:  input.RecipeResult.Metadata.Version,
 		BundlerVersion: input.Version,
 		Components:     components,

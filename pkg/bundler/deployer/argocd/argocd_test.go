@@ -240,6 +240,72 @@ func TestGenerate_WithRepoURL(t *testing.T) {
 	}
 }
 
+func TestGenerate_WithChecksums(t *testing.T) {
+	g := NewGenerator()
+	ctx := context.Background()
+	outputDir := t.TempDir()
+
+	recipeResult := &recipe.RecipeResult{}
+	recipeResult.Metadata.Version = testVersion
+	recipeResult.ComponentRefs = []recipe.ComponentRef{
+		{
+			Name:    "cert-manager",
+			Version: "v1.17.2",
+			Type:    "helm",
+			Source:  "https://charts.jetstack.io",
+		},
+		{
+			Name:    "gpu-operator",
+			Version: "v25.3.3",
+			Type:    "helm",
+			Source:  "https://helm.ngc.nvidia.com/nvidia",
+		},
+	}
+	recipeResult.DeploymentOrder = []string{"cert-manager", "gpu-operator"}
+
+	input := &GeneratorInput{
+		RecipeResult:     recipeResult,
+		Version:          "v0.9.0",
+		IncludeChecksums: true,
+	}
+
+	output, err := g.Generate(ctx, input, outputDir)
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Verify checksums.txt was generated
+	checksumPath := filepath.Join(outputDir, "checksums.txt")
+	if _, statErr := os.Stat(checksumPath); os.IsNotExist(statErr) {
+		t.Error("checksums.txt should exist when IncludeChecksums is true")
+	}
+
+	// Verify checksums.txt is in output files list
+	foundChecksum := false
+	for _, f := range output.Files {
+		if strings.HasSuffix(f, "checksums.txt") {
+			foundChecksum = true
+			break
+		}
+	}
+	if !foundChecksum {
+		t.Error("checksums.txt should be in output files list")
+	}
+
+	// Verify checksums.txt contains entries for other files
+	content, err := os.ReadFile(checksumPath)
+	if err != nil {
+		t.Fatalf("Failed to read checksums.txt: %v", err)
+	}
+	checksumContent := string(content)
+	if !strings.Contains(checksumContent, "app-of-apps.yaml") {
+		t.Error("checksums.txt should contain app-of-apps.yaml")
+	}
+	if !strings.Contains(checksumContent, "README.md") {
+		t.Error("checksums.txt should contain README.md")
+	}
+}
+
 func TestGenerate_ContextCancellation(t *testing.T) {
 	g := NewGenerator()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -373,5 +439,170 @@ func TestNormalizeVersion(t *testing.T) {
 				t.Errorf("normalizeVersion(%s) = %s, want %s", tt.input, result, tt.expected)
 			}
 		})
+	}
+}
+
+// TestGenerate_Reproducible verifies that ArgoCD bundle generation is deterministic.
+// Running Generate() twice with the same input should produce identical output files.
+func TestGenerate_Reproducible(t *testing.T) {
+	g := NewGenerator()
+	ctx := context.Background()
+
+	recipeResult := &recipe.RecipeResult{}
+	recipeResult.Metadata.Version = testVersion
+	recipeResult.ComponentRefs = []recipe.ComponentRef{
+		{
+			Name:    "cert-manager",
+			Version: "v1.17.2",
+			Type:    "helm",
+			Source:  "https://charts.jetstack.io",
+		},
+		{
+			Name:    "gpu-operator",
+			Version: "v25.3.3",
+			Type:    "helm",
+			Source:  "https://helm.ngc.nvidia.com/nvidia",
+		},
+	}
+	recipeResult.DeploymentOrder = []string{"cert-manager", "gpu-operator"}
+
+	input := &GeneratorInput{
+		RecipeResult: recipeResult,
+		ComponentValues: map[string]map[string]interface{}{
+			"cert-manager": {
+				"installCRDs": true,
+			},
+			"gpu-operator": {
+				"driver": map[string]interface{}{
+					"enabled": true,
+				},
+			},
+		},
+		Version: "v0.9.0",
+		RepoURL: "https://github.com/test/repo.git",
+	}
+
+	// Generate twice in different directories
+	var fileContents [2]map[string]string
+
+	for i := 0; i < 2; i++ {
+		outputDir := t.TempDir()
+
+		_, err := g.Generate(ctx, input, outputDir)
+		if err != nil {
+			t.Fatalf("iteration %d: Generate() error = %v", i, err)
+		}
+
+		// Read all generated files
+		fileContents[i] = make(map[string]string)
+		err = filepath.Walk(outputDir, func(path string, info os.FileInfo, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if info.IsDir() {
+				return nil
+			}
+
+			content, readErr := os.ReadFile(path)
+			if readErr != nil {
+				return readErr
+			}
+
+			relPath, _ := filepath.Rel(outputDir, path)
+			fileContents[i][relPath] = string(content)
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("iteration %d: failed to walk directory: %v", i, err)
+		}
+	}
+
+	// Verify same files were generated
+	if len(fileContents[0]) != len(fileContents[1]) {
+		t.Errorf("different number of files: iteration 1 has %d, iteration 2 has %d",
+			len(fileContents[0]), len(fileContents[1]))
+	}
+
+	// Verify file contents are identical
+	for filename, content1 := range fileContents[0] {
+		content2, exists := fileContents[1][filename]
+		if !exists {
+			t.Errorf("file %s exists in iteration 1 but not iteration 2", filename)
+			continue
+		}
+		if content1 != content2 {
+			t.Errorf("file %s has different content between iterations:\n--- iteration 1 ---\n%s\n--- iteration 2 ---\n%s",
+				filename, content1, content2)
+		}
+	}
+
+	t.Logf("ArgoCD reproducibility verified: both iterations produced %d identical files", len(fileContents[0]))
+}
+
+// TestGenerate_NoTimestampInOutput verifies that generated files don't contain timestamps.
+func TestGenerate_NoTimestampInOutput(t *testing.T) {
+	g := NewGenerator()
+	ctx := context.Background()
+	outputDir := t.TempDir()
+
+	recipeResult := &recipe.RecipeResult{}
+	recipeResult.Metadata.Version = testVersion
+	recipeResult.ComponentRefs = []recipe.ComponentRef{
+		{
+			Name:    "gpu-operator",
+			Version: "v25.3.3",
+			Type:    "helm",
+			Source:  "https://helm.ngc.nvidia.com/nvidia",
+		},
+	}
+	recipeResult.DeploymentOrder = []string{"gpu-operator"}
+
+	input := &GeneratorInput{
+		RecipeResult: recipeResult,
+		ComponentValues: map[string]map[string]interface{}{
+			"gpu-operator": {},
+		},
+		Version: "v0.9.0",
+		RepoURL: "https://github.com/test/repo.git",
+	}
+
+	_, err := g.Generate(ctx, input, outputDir)
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check that no files contain obvious timestamp patterns
+	timestampPatterns := []string{
+		"GeneratedAt:",
+		"generated_at:",
+		"timestamp:",
+		"Timestamp:",
+	}
+
+	err = filepath.Walk(outputDir, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		content, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+
+		contentStr := string(content)
+		relPath, _ := filepath.Rel(outputDir, path)
+
+		for _, pattern := range timestampPatterns {
+			if strings.Contains(contentStr, pattern) {
+				t.Errorf("file %s contains timestamp pattern %q", relPath, pattern)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("failed to walk directory: %v", err)
 	}
 }

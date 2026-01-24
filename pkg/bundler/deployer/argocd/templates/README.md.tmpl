@@ -1,6 +1,5 @@
 # ArgoCD Deployment Bundle
 
-Generated: {{ .Timestamp }}
 Bundler Version: {{ .BundlerVersion }}
 Recipe Version: {{ .RecipeVersion }}
 
@@ -32,7 +31,7 @@ The following components are included in deployment order:
 Push this bundle to your GitOps repository:
 
 ```bash
-cd {{ .OutputDir }}
+cd <bundle-directory>
 git init
 git add .
 git commit -m "Add NVIDIA Cloud Native Stack manifests"
@@ -71,7 +70,7 @@ argocd app sync nvidia-stack --watch
 ## Directory Structure
 
 ```
-{{ .OutputDir }}/
+<bundle-directory>/
 ├── app-of-apps.yaml           # Parent application
 ├── README.md                  # This file
 {{- range .Components }}

@@ -5,29 +5,21 @@ SPDX-License-Identifier: Apache-2.0
 
 // Package helm generates Helm umbrella charts from recipe results.
 //
-// An umbrella chart is a Helm chart that uses dependencies to deploy multiple
-// sub-charts in a single release. This approach provides:
+// Generates umbrella charts with dependencies for deploying multiple components:
 //
-//   - Single deployment point with `helm install`
-//   - Automatic dependency resolution with `helm dependency update`
-//   - Shared configuration through values.yaml
-//   - Consistent versioning across all components
-//
-// Output Structure:
-//
-//	output-dir/
-//	├── Chart.yaml    # Chart metadata with dependencies
-//	├── values.yaml   # Combined values for all components
-//	├── README.md     # Deployment instructions
-//	└── checksums.txt # SHA256 checksums (optional)
+//   - Chart.yaml with component dependencies
+//   - Combined values.yaml for all components
+//   - README.md with deployment instructions
+//   - checksums.txt for verification (optional)
 //
 // Usage:
 //
 //	generator := helm.NewGenerator()
 //	input := &helm.GeneratorInput{
-//	    RecipeResult:    recipeResult,
-//	    ComponentValues: componentValues,
-//	    Version:         "1.0.0",
+//	    RecipeResult:     recipeResult,
+//	    ComponentValues:  componentValues,
+//	    Version:          "1.0.0",
+//	    IncludeChecksums: true,
 //	}
 //	output, err := generator.Generate(ctx, input, "/path/to/output")
 package helm

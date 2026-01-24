@@ -170,8 +170,7 @@ func NewChecksumGenerator(result *result.Result) *ChecksumGenerator {
 // Generate generates a checksums file for all files in the result.
 func (g *ChecksumGenerator) Generate(outputDir, title string) (string, error) {
 	var content bytes.Buffer
-	content.WriteString(fmt.Sprintf("# %s Bundle Checksums (SHA256)\n", title))
-	content.WriteString(fmt.Sprintf("# Generated: %s\n\n", g.result.GeneratedAt()))
+	content.WriteString(fmt.Sprintf("# %s Bundle Checksums (SHA256)\n\n", title))
 
 	for _, file := range g.result.Files {
 		// Skip checksums file itself
@@ -214,7 +213,6 @@ func MarshalYAML(v interface{}) ([]byte, error) {
 // ValuesHeader contains metadata for values.yaml file headers.
 type ValuesHeader struct {
 	ComponentName  string
-	Timestamp      string
 	BundlerVersion string
 	RecipeVersion  string
 }
@@ -226,7 +224,6 @@ func MarshalYAMLWithHeader(v interface{}, header ValuesHeader) ([]byte, error) {
 	// Write header comments
 	buf.WriteString(fmt.Sprintf("# %s Helm Values\n", header.ComponentName))
 	buf.WriteString("# Generated from Cloud Native Stack Recipe\n")
-	buf.WriteString(fmt.Sprintf("# Timestamp: %s\n", header.Timestamp))
 	buf.WriteString(fmt.Sprintf("# Bundler Version: %s\n", header.BundlerVersion))
 	buf.WriteString(fmt.Sprintf("# Recipe Version: %s\n", header.RecipeVersion))
 	buf.WriteString("\n")

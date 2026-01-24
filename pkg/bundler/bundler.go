@@ -194,6 +194,12 @@ func (b *DefaultBundler) makeUmbrellaChart(ctx context.Context, recipeResult *re
 	}
 	resultOutput.Results = append(resultOutput.Results, umbrellaResult)
 
+	// Populate deployment info from generator output
+	resultOutput.Deployment = &result.DeploymentInfo{
+		Type:  "Helm umbrella chart",
+		Steps: output.DeploymentSteps,
+	}
+
 	slog.Debug("umbrella chart generation complete",
 		"files", len(output.Files),
 		"size_bytes", output.TotalSize,
@@ -213,10 +219,11 @@ func (b *DefaultBundler) makeArgoCD(ctx context.Context, recipeResult *recipe.Re
 	// Generate ArgoCD applications
 	generator := argocd.NewGenerator()
 	generatorInput := &argocd.GeneratorInput{
-		RecipeResult:    recipeResult,
-		ComponentValues: componentValues,
-		Version:         b.Config.Version(),
-		RepoURL:         b.Config.RepoURL(),
+		RecipeResult:     recipeResult,
+		ComponentValues:  componentValues,
+		Version:          b.Config.Version(),
+		RepoURL:          b.Config.RepoURL(),
+		IncludeChecksums: b.Config.IncludeChecksums(),
 	}
 
 	output, err := generator.Generate(ctx, generatorInput, dir)
@@ -244,6 +251,13 @@ func (b *DefaultBundler) makeArgoCD(ctx context.Context, recipeResult *recipe.Re
 		Duration: output.Duration,
 	}
 	resultOutput.Results = append(resultOutput.Results, argocdResult)
+
+	// Populate deployment info from generator output
+	resultOutput.Deployment = &result.DeploymentInfo{
+		Type:  "ArgoCD applications",
+		Steps: output.DeploymentSteps,
+		Notes: output.DeploymentNotes,
+	}
 
 	slog.Debug("argocd applications generation complete",
 		"files", len(output.Files),

@@ -1,6 +1,5 @@
 # Cloud Native Stack Deployment
 
-Generated: {{ .Timestamp }}
 Recipe Version: {{ .RecipeVersion }}
 Bundler Version: {{ .BundlerVersion }}
 
@@ -63,7 +62,7 @@ vim values.yaml
 4. **Install the chart**:
 
 ```bash
-helm install {{ .ChartName }} . -f values.yaml --namespace nvidia-operators --create-namespace
+helm install {{ .ChartName }} . -f values.yaml
 ```
 
 ## Customization
@@ -100,7 +99,7 @@ helm install {{ .ChartName }} . -f values.yaml -f custom-values.yaml
 To upgrade an existing installation:
 
 ```bash
-helm upgrade {{ .ChartName }} . -f values.yaml --namespace nvidia-operators
+helm upgrade {{ .ChartName }} . -f values.yaml
 ```
 
 ## Uninstall
@@ -108,7 +107,7 @@ helm upgrade {{ .ChartName }} . -f values.yaml --namespace nvidia-operators
 To remove the deployment:
 
 ```bash
-helm uninstall {{ .ChartName }} --namespace nvidia-operators
+helm uninstall {{ .ChartName }}
 ```
 
 ## Troubleshooting
@@ -116,7 +115,7 @@ helm uninstall {{ .ChartName }} --namespace nvidia-operators
 ### Check deployment status
 
 ```bash
-helm status {{ .ChartName }} --namespace nvidia-operators
+helm status {{ .ChartName }}
 kubectl get pods -n nvidia-operators
 ```
 

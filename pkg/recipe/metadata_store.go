@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	cnserrors "github.com/NVIDIA/cloud-native-stack/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -307,7 +306,6 @@ func (s *MetadataStore) BuildRecipeResult(ctx context.Context, criteria *Criteri
 		ComponentRefs:   mergedSpec.ComponentRefs,
 		DeploymentOrder: deployOrder,
 	}
-	result.Metadata.GeneratedAt = time.Now().UTC()
 	result.Metadata.AppliedOverlays = appliedOverlays
 
 	return result, nil
@@ -453,7 +451,6 @@ func (s *MetadataStore) BuildRecipeResultWithEvaluator(ctx context.Context, crit
 		ComponentRefs:   mergedSpec.ComponentRefs,
 		DeploymentOrder: deployOrder,
 	}
-	result.Metadata.GeneratedAt = time.Now().UTC()
 	result.Metadata.AppliedOverlays = appliedOverlays
 	result.Metadata.ExcludedOverlays = excludedOverlays
 	result.Metadata.ConstraintWarnings = constraintWarnings

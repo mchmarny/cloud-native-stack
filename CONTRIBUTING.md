@@ -931,17 +931,18 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input *result.Recipe
     values := input.GetValuesForComponent(Name)
     
     // 3. Create bundle directory structure
-    if err := b.CreateBundleDir(outputDir, "scripts"); err != nil {
+    if err := b.CreateBundleDir(outputDir); err != nil {
         return nil, err
     }
     
-    // 4. Generate script metadata
-    scriptData := generateScriptData(component, values)
+    // 4. Generate bundle metadata
+    metadata := generateBundleMetadata(component, values)
     
     // 5. Combine values and metadata for README
+    // The "Script" key is preserved for template compatibility
     readmeData := map[string]interface{}{
         "Values": values,
-        "Script": scriptData,
+        "Script": metadata, // "Script" key preserved for template compatibility
     }
     
     // 6. Generate files from templates
@@ -952,7 +953,6 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input *result.Recipe
         perm     os.FileMode
     }{
         {filepath.Join(outputDir, "values.yaml"), "values.yaml", values, 0644},
-        {filepath.Join(outputDir, "scripts/install.sh"), "install.sh", scriptData, 0755},
         {filepath.Join(outputDir, "README.md"), "README.md", readmeData, 0644},
     }
     
@@ -970,28 +970,26 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input *result.Recipe
 }
 ```
 
-2. Create script metadata generator in `scripts.go`:
+2. Create bundle metadata generator in `scripts.go`:
 ```go
 // pkg/component/networkoperator/scripts.go
 package networkoperator
 
 import (
-    "time"
-    
     "github.com/NVIDIA/cloud-native-stack/pkg/bundler/result"
 )
 
-// ScriptData contains metadata for shell scripts and README.
-type ScriptData struct {
-    Timestamp     string
+// BundleMetadata contains metadata for README and manifests.
+// Note: Named "scripts.go" for historical reasons but no longer generates shell scripts.
+type BundleMetadata struct {
     Namespace     string
     Version       string
     Repository    string
     ComponentName string
 }
 
-// generateScriptData creates metadata from component reference.
-func generateScriptData(component *result.ComponentRef, values map[string]interface{}) *ScriptData {
+// generateBundleMetadata creates metadata from component reference.
+func generateBundleMetadata(component *result.ComponentRef, values map[string]interface{}) *BundleMetadata {
     namespace := "default"
     if ns, ok := values["namespace"].(string); ok {
         namespace = ns
@@ -1002,8 +1000,7 @@ func generateScriptData(component *result.ComponentRef, values map[string]interf
         repository = repo
     }
     
-    return &ScriptData{
-        Timestamp:     time.Now().Format(time.RFC3339),
+    return &BundleMetadata{
         Namespace:     namespace,
         Version:       component.Version,
         Repository:    repository,
@@ -1016,8 +1013,6 @@ func generateScriptData(component *result.ComponentRef, values map[string]interf
 ```
 pkg/component/networkoperator/templates/
 ├── values.yaml.tmpl               # Helm chart values
-├── install.sh.tmpl                # Installation script
-├── uninstall.sh.tmpl              # Cleanup script
 └── README.md.tmpl                 # Documentation
 ```
 
@@ -1155,19 +1150,20 @@ test-bundles/network-operator/
 - Values map already has CLI --set overrides applied
 - No measurement extraction needed
 
-**ScriptData for Metadata:**
-- Contains namespace, version, repository, timestamp
+**BundleMetadata for Metadata:**
+- Contains namespace, version, repository info
 - Separate from values map
-- Used for shell scripts and README metadata
+- Used for README templates and manifest generation
+- Named "scripts.go" for historical reasons but no longer generates scripts
 
 **Template Data:**
 - values.yaml: receives values map directly
-- scripts: receive ScriptData struct
-- README.md: receives combined map with Values + Script
+- README.md: receives combined map with Values + Script (metadata)
+- The "Script" key is preserved for template compatibility
 
 **File Structure per Component:**
 - bundler.go: Main bundler logic with makeFromRecipeResult()
-- scripts.go: ScriptData generation
+- scripts.go: BundleMetadata generation
 - bundler_test.go: Tests using RecipeResult
 - templates/*.tmpl: Embedded templates
 
@@ -1203,7 +1199,7 @@ test-bundles/network-operator/
 - ✅ Single `makeFromRecipeResult()` method - no dual paths
 - ✅ Get values via `input.GetValuesForComponent(Name)`
 - ✅ Pass values map directly to templates
-- ✅ Use `ScriptData` for metadata (namespace, version, timestamps)
+- ✅ Use `BundleMetadata` for metadata (namespace, version, helm info)
 - ✅ Use `go:embed` for template portability
 - ✅ Keep bundlers stateless (thread-safe by default)
 - ✅ Check context cancellation for long operations

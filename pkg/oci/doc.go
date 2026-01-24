@@ -6,22 +6,52 @@
 //
 // # Overview
 //
-// The package provides two main operations:
+// The package provides three main operations:
+//   - ParseOutputTarget: Parses output targets (file paths or OCI URIs) into Reference
 //   - Package: Creates a local OCI artifact in OCI Image Layout format
 //   - PushFromStore: Pushes a previously packaged artifact to a remote registry
+//   - PackageAndPush: High-level workflow combining Package and PushFromStore
 //
-// These can be combined for a package-then-push workflow, or used independently.
+// The Reference type encapsulates parsed output target information, making it easy to
+// determine if output is destined for the local filesystem or an OCI registry.
 //
 // # Core Types
 //
+//   - Reference: Parsed output target (file path or OCI URI with registry/repository/tag)
+//   - OutputConfig: Configuration for PackageAndPush workflow
+//   - PackageAndPushResult: Combined result of package and push operations
 //   - PackageOptions: Configuration for local OCI packaging
 //   - PackageResult: Result of local packaging (digest, reference, store path)
 //   - PushOptions: Configuration for pushing to remote registries
 //   - PushResult: Result of a successful push (digest, reference)
 //
+// # URI Scheme
+//
+// OCI output targets use the "oci://" URI scheme:
+//
+//	oci://registry/repository:tag
+//	oci://ghcr.io/nvidia/bundles:v1.0.0
+//	oci://localhost:5000/test/bundle:latest
+//
+// Local file paths are detected by absence of the oci:// scheme.
+//
 // # Usage
 //
-// Package and push in two steps:
+// Parse output target and use high-level workflow:
+//
+//	ref, err := oci.ParseOutputTarget("oci://ghcr.io/nvidia/bundle:v1.0.0")
+//	if err != nil {
+//	    return err
+//	}
+//
+//	if ref.IsOCI {
+//	    result, err := oci.PackageAndPush(ctx, oci.OutputConfig{
+//	        Ref:       ref,
+//	        SourceDir: "/path/to/bundle",
+//	    })
+//	}
+//
+// Or use low-level Package and PushFromStore separately:
 //
 //	pkgResult, err := oci.Package(ctx, oci.PackageOptions{
 //	    SourceDir:  "/path/to/bundle",
@@ -39,6 +69,19 @@
 //	    Repository: "nvidia/bundle",
 //	    Tag:        "v1.0.0",
 //	})
+//
+// # Reference Type
+//
+// The Reference type represents a parsed output target:
+//
+//   - IsOCI: True if target is an OCI registry (oci:// scheme)
+//   - Registry: OCI registry hostname (e.g., "ghcr.io")
+//   - Repository: Image repository path (e.g., "nvidia/bundle")
+//   - Tag: Image tag (e.g., "v1.0.0")
+//   - LocalPath: File system path for non-OCI targets
+//
+// The Reference.WithTag() method returns a copy with the tag modified, useful for
+// applying a default tag when none was specified.
 //
 // # PackageOptions
 //

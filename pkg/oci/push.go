@@ -29,15 +29,17 @@ import (
 	apperrors "github.com/NVIDIA/cloud-native-stack/pkg/errors"
 )
 
-// ArtifactType is the OCI media type for CNS bundle artifacts.
-//
-// Artifacts with this type package a directory tree into an OCI artifact using ORAS.
-// The artifact contains standard OCI layout (manifest, config, layers) but is not
-// a runnable container image - it's an opaque bundle of files.
-//
-// Use cases: distributing CNS bundles (configs, assets) via OCI registries.
-// Consumers that don't understand this type should treat it as a non-executable blob.
-const ArtifactType = "application/vnd.nvidia.cns.artifact"
+const (
+	// ArtifactType is the OCI media type for CNS bundle artifacts.
+	//
+	// Artifacts with this type package a directory tree into an OCI artifact using ORAS.
+	// The artifact contains standard OCI layout (manifest, config, layers) but is not
+	// a runnable container image - it's an opaque bundle of files.
+	//
+	// Use cases: distributing CNS bundles (configs, assets) via OCI registries.
+	// Consumers that don't understand this type should treat it as a non-executable blob.
+	ArtifactType = "application/vnd.nvidia.cns.artifact"
+)
 
 // registryHostPattern validates registry host format (host:port or host).
 var registryHostPattern = regexp.MustCompile(`^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*(:[0-9]+)?$`)
@@ -209,16 +211,14 @@ func Package(ctx context.Context, opts PackageOptions) (*PackageResult, error) {
 		Layers: []ociv1.Descriptor{layerDesc},
 	}
 
-	// Build manifest annotations from user-provided annotations
-	if len(opts.Annotations) > 0 || opts.ReproducibleTimestamp != "" {
-		packOpts.ManifestAnnotations = make(map[string]string)
-		for k, v := range opts.Annotations {
-			packOpts.ManifestAnnotations[k] = v
-		}
-		// ReproducibleTimestamp overrides any user-provided created annotation
-		if opts.ReproducibleTimestamp != "" {
-			packOpts.ManifestAnnotations[ociv1.AnnotationCreated] = opts.ReproducibleTimestamp
-		}
+	// Build manifest annotations - always set a fixed timestamp for reproducibility
+	packOpts.ManifestAnnotations = make(map[string]string)
+	for k, v := range opts.Annotations {
+		packOpts.ManifestAnnotations[k] = v
+	}
+	// Use provided timestamp, or skip by default to ensure reproducible builds
+	if opts.ReproducibleTimestamp != "" {
+		packOpts.ManifestAnnotations[ociv1.AnnotationCreated] = opts.ReproducibleTimestamp
 	}
 
 	manifestDesc, err := oras.PackManifest(ctx, fs, oras.PackManifestVersion1_1, ArtifactType, packOpts)

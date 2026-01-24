@@ -92,6 +92,45 @@ Generates deployment-ready bundles (Helm values, Kubernetes manifests, installat
 **Rationale**: Maximizes code reuse while maintaining deployment flexibility  
 **Reference**: [Go Project Layout](https://go.dev/doc/modules/layout)
 
+**Critical Sub-Principle: UI vs Functional Packages**
+
+User interaction packages (`pkg/cli`, `pkg/api`) and functional packages (`pkg/oci`, `pkg/bundler`, `pkg/recipe`, `pkg/collector`) have distinct responsibilities:
+
+| Package Type | Responsibility | Examples |
+|--------------|----------------|----------|
+| **User Interaction** | Capture user intent, validate input, format output | `pkg/cli` (CLI flags/output), `pkg/api` (HTTP handlers) |
+| **Functional** | Self-contained business logic, reusable across entry points | `pkg/oci` (OCI packaging), `pkg/bundler` (artifact generation) |
+
+**Rules:**
+1. User interaction packages should **never** contain business logic
+2. Functional packages should be **usable independently** without CLI/API
+3. Functional packages return **structured data** (not formatted strings)
+4. User interaction packages **format and present** structured data from functional packages
+
+**Example - OCI Workflow:**
+```go
+// pkg/oci/reference.go - Functional package
+type Reference struct { ... }
+func ParseOutputTarget(target string) (*Reference, error) { ... }
+func PackageAndPush(ctx, cfg) (*PackageAndPushResult, error) { ... }
+
+// pkg/cli/bundle.go - User interaction package
+ref, err := oci.ParseOutputTarget(output)  // Capture intent
+result, err := oci.PackageAndPush(ctx, cfg) // Delegate to functional package
+fmt.Printf("Pushed to %s\n", result.Digest) // Format output
+```
+
+**Example - Deployment Instructions:**
+```go
+// pkg/bundler/deployer/helm/helm.go - Returns structured data
+out.DeploymentSteps = []string{"helm install...", "kubectl get pods..."}
+
+// pkg/cli/bundle.go - Formats for display
+for _, step := range out.Deployment.Steps {
+    fmt.Println(step)
+}
+```
+
 ### 2. Concurrent Collection with Bounded Parallelism
 **Pattern**: `errgroup.WithContext` for fail-fast concurrent operations  
 **Rationale**: Parallel collection reduces latency; context propagation enables cancellation  
@@ -650,7 +689,7 @@ The Bundler Framework provides an extensible system for generating deployment bu
 **6. Direct Struct-to-Template Pattern**  
 **Pattern**: Pass typed Go structs or maps directly to text/template  
 **Rationale**: Type safety (for structs), simplicity, eliminates data conversion layer  
-**Implementation**: Values maps or ScriptData structs render directly in templates  
+**Implementation**: Values maps or BundleMetadata structs render directly in templates  
 **Reference**: [text/template](https://pkg.go.dev/text/template)
 
 **Data Flow (RecipeResult-only architecture):**
@@ -658,14 +697,17 @@ The Bundler Framework provides an extensible system for generating deployment bu
 // RecipeResult → Component Values → Templates (Direct)
 component := input.GetComponentRef(Name)         // Get component reference
 values := input.GetValuesForComponent(Name)      // Extract values map
-scriptData := generateScriptData(component, values)  // Build metadata struct
+metadata := generateBundleMetadata(component, values)  // Build metadata struct
 b.GenerateFileFromTemplate(ctx, getter, "values.yaml", path, values, 0644)
-b.GenerateFileFromTemplate(ctx, getter, "install.sh", path, scriptData, 0755)
-// Templates: {{ index . "key" }} for maps, {{ .Version }} for structs
+b.GenerateFileFromTemplate(ctx, getter, "README.md", path, map[string]interface{}{
+    "Values": values,
+    "Script": metadata, // "Script" key preserved for template compatibility
+}, 0644)
+// Templates: {{ index . "key" }} for maps, {{ .Script.Version }} for metadata
 ```
 
 **Architecture Benefits:**
-- Type safety for struct-based templates (ScriptData)
+- Type safety for struct-based templates (BundleMetadata)
 - Direct map access for values.yaml
 - ~200 lines of conversion code eliminated
 - Templates are self-documenting

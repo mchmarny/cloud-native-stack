@@ -9,10 +9,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"path/filepath"
+	"os"
 	"strings"
 
-	"github.com/distribution/reference"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler"
@@ -23,13 +22,6 @@ import (
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 	"github.com/NVIDIA/cloud-native-stack/pkg/snapshotter"
 	"github.com/urfave/cli/v3"
-)
-
-// OCI output constants.
-const (
-	defaultOCITag = "latest"
-	// OCIURIScheme is the URI scheme for OCI registry output.
-	OCIURIScheme = "oci://"
 )
 
 // bundleCmdOptions holds parsed options for the bundle command.
@@ -44,40 +36,12 @@ type bundleCmdOptions struct {
 	systemNodeTolerations      []corev1.Toleration
 	acceleratedNodeSelector    map[string]string
 	acceleratedNodeTolerations []corev1.Toleration
-	// Output target fields (parsed from --output flag)
-	outputIsOCI   bool   // true if oci:// scheme detected
-	ociRegistry   string // parsed from oci:// URI
-	ociRepository string // parsed from oci:// URI
-	ociTag        string // parsed from oci:// URI (default: "latest")
+
+	// OCI output reference (nil if outputting to local directory)
+	ociRef        *oci.Reference
 	plainHTTP     bool
 	insecureTLS   bool
-}
-
-// parseOutputTarget parses the --output flag value to detect OCI URI or local directory.
-// For OCI URIs (oci://registry/repository:tag), it extracts the components.
-// For plain paths, it treats them as local directories.
-func parseOutputTarget(target string) (isOCI bool, registry, repository, tag, dirPath string, err error) {
-	if !strings.HasPrefix(target, OCIURIScheme) {
-		return false, "", "", "", target, nil
-	}
-
-	// Strip oci:// and parse as standard image reference
-	ref, err := reference.ParseNormalizedNamed(strings.TrimPrefix(target, OCIURIScheme))
-	if err != nil {
-		return false, "", "", "", "", fmt.Errorf("invalid OCI reference: %w", err)
-	}
-
-	// Extract components using the reference package
-	registry = reference.Domain(ref)
-	repository = reference.Path(ref)
-
-	if tagged, ok := ref.(reference.Tagged); ok {
-		tag = tagged.Tag()
-	} else {
-		tag = defaultOCITag
-	}
-
-	return true, registry, repository, tag, "", nil
+	imageRefsPath string // Path to write published image references (like ko --image-refs)
 }
 
 // parseBundleCmdOptions parses and validates command options.
@@ -88,6 +52,7 @@ func parseBundleCmdOptions(cmd *cli.Command) (*bundleCmdOptions, error) {
 		repoURL:        cmd.String("repo"),
 		insecureTLS:    cmd.Bool("insecure-tls"),
 		plainHTTP:      cmd.Bool("plain-http"),
+		imageRefsPath:  cmd.String("image-refs"),
 	}
 
 	// Parse and validate deployer flag using strongly-typed parser
@@ -104,24 +69,22 @@ func parseBundleCmdOptions(cmd *cli.Command) (*bundleCmdOptions, error) {
 
 	// Parse output target (detects oci:// URI or local directory)
 	outputTarget := cmd.String("output")
-	isOCI, registry, repository, tag, dirPath, err := parseOutputTarget(outputTarget)
+	ref, err := oci.ParseOutputTarget(outputTarget)
 	if err != nil {
 		return nil, fmt.Errorf("invalid --output value: %w", err)
 	}
 
-	opts.outputIsOCI = isOCI
-	if isOCI {
-		opts.ociRegistry = registry
-		opts.ociRepository = repository
-		opts.ociTag = tag
-		// For OCI output, we still need a temp directory for bundle generation
-		opts.outputDir = "."
-		// Validate registry and repository format
-		if valErr := oci.ValidateRegistryReference(registry, repository); valErr != nil {
-			return nil, fmt.Errorf("invalid --output OCI URI: %w", valErr)
+	if ref.IsOCI {
+		// Use CLI version as default tag when not specified in URI
+		if ref.Tag == "" {
+			opts.ociRef = ref.WithTag(version)
+		} else {
+			opts.ociRef = ref
 		}
+		// For OCI output, use current directory for bundle generation
+		opts.outputDir = "./bundle"
 	} else {
-		opts.outputDir = dirPath
+		opts.outputDir = ref.LocalPath
 	}
 
 	// Parse value overrides from --set flags
@@ -192,7 +155,10 @@ Set node selectors for GPU workloads:
     --accelerated-node-selector nodeGroup=gpu-nodes \
     --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule
 
-Package and push bundle to OCI registry:
+Package and push bundle to OCI registry (uses CLI version as tag):
+  cnsctl bundle --recipe recipe.yaml --output oci://ghcr.io/nvidia/cns-bundle
+
+Package with explicit tag (overrides CLI version):
   cnsctl bundle --recipe recipe.yaml --output oci://ghcr.io/nvidia/cns-bundle:v1.0.0
 `,
 		Flags: []cli.Flag{
@@ -209,11 +175,13 @@ Package and push bundle to OCI registry:
 				Value:   ".",
 				Usage: `Output target: local directory path or OCI registry URI.
 	For local output: ./my-bundle or /tmp/bundle
-	For OCI registry: oci://ghcr.io/nvidia/bundle:v1.0.0`,
+	For OCI registry: oci://ghcr.io/nvidia/bundle:v1.0.0
+	If no tag specified, CLI version is used (e.g., oci://ghcr.io/nvidia/bundle)`,
 			},
 			&cli.StringSliceFlag{
-				Name:  "set",
-				Usage: "Override values in generated bundle files (format: bundler:path.to.field=value, e.g., --set gpuoperator:gds.enabled=true)",
+				Name: "set",
+				Usage: `Override values in generated bundle files 
+	(format: bundler:path.to.field=value, e.g., --set gpuoperator:gds.enabled=true)`,
 			},
 			&cli.StringSliceFlag{
 				Name:  "system-node-selector",
@@ -235,7 +203,7 @@ Package and push bundle to OCI registry:
 				Name:    "deployer",
 				Aliases: []string{"d"},
 				Value:   string(config.DeployerHelm),
-				Usage:   fmt.Sprintf("Deployment method: %v", config.GetDeployerTypes()),
+				Usage:   fmt.Sprintf("Deployment method (e.g. %s)", strings.Join(config.GetDeployerTypes(), ", ")),
 			},
 			&cli.StringFlag{
 				Name:  "repo",
@@ -251,6 +219,10 @@ Package and push bundle to OCI registry:
 			&cli.BoolFlag{
 				Name:  "plain-http",
 				Usage: "Use HTTP instead of HTTPS for OCI registry (for local development)",
+			},
+			&cli.StringFlag{
+				Name:  "image-refs",
+				Usage: "Path to file where the published image reference will be written (only used with OCI output)",
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -268,7 +240,7 @@ Package and push bundle to OCI registry:
 				slog.String("type", outputType),
 				slog.String("recipe", opts.recipeFilePath),
 				slog.String("output", opts.outputDir),
-				slog.Bool("oci", opts.outputIsOCI),
+				slog.Bool("oci", opts.ociRef != nil),
 			)
 
 			// Load recipe from file/URL/ConfigMap
@@ -312,23 +284,40 @@ Package and push bundle to OCI registry:
 			)
 
 			// Print deployment instructions (only for dir output)
-			if !opts.outputIsOCI {
-				printBundleDeploymentInstructions(opts.deployer, opts.repoURL, out)
+			if opts.ociRef == nil && out.Deployment != nil {
+				printDeploymentInstructions(out)
 			}
 
 			// Package and push as OCI artifact when output is oci://
-			if opts.outputIsOCI {
-				if ociErr := handleOCIOutput(ctx, ociConfig{
-					sourceDir:   opts.outputDir,
-					outputDir:   opts.outputDir,
-					registry:    opts.ociRegistry,
-					repository:  opts.ociRepository,
-					tag:         opts.ociTag,
-					version:     version,
-					plainHTTP:   opts.plainHTTP,
-					insecureTLS: opts.insecureTLS,
-				}, out.Results); ociErr != nil {
+			if opts.ociRef != nil {
+				pushResult, ociErr := oci.PackageAndPush(ctx, oci.OutputConfig{
+					SourceDir:             opts.outputDir,
+					OutputDir:             opts.outputDir,
+					Reference:             opts.ociRef,
+					Version:               version,
+					PlainHTTP:             opts.plainHTTP,
+					InsecureTLS:           opts.insecureTLS,
+					ReproducibleTimestamp: "2000-01-01T00:00:00Z",
+				})
+				if ociErr != nil {
 					return ociErr
+				}
+
+				// Update results with OCI metadata
+				for i := range out.Results {
+					if out.Results[i].Success {
+						out.Results[i].SetOCIMetadata(pushResult.Digest, pushResult.Reference, true)
+					}
+				}
+
+				// Write image reference to file if --image-refs specified
+				if opts.imageRefsPath != "" {
+					// Write digest reference (e.g., ghcr.io/nvidia/bundle@sha256:abc123...)
+					if err := os.WriteFile(opts.imageRefsPath, []byte(pushResult.Digest+"\n"), 0600); err != nil {
+						slog.Error("failed to write image refs file", "error", err, "path", opts.imageRefsPath)
+						return fmt.Errorf("failed to write image refs: %w", err)
+					}
+					slog.Info("wrote image reference", "path", opts.imageRefsPath, "ref", pushResult.Digest)
 				}
 			}
 
@@ -337,122 +326,23 @@ Package and push bundle to OCI registry:
 	}
 }
 
-// printBundleDeploymentInstructions prints user-friendly deployment instructions.
-func printBundleDeploymentInstructions(deployer config.DeployerType, repoURL string, out *result.Output) {
-	if deployer == config.DeployerArgoCD {
-		fmt.Printf("\nArgoCD applications generated successfully!\n")
-		fmt.Printf("Output directory: %s\n", out.OutputDir)
-		fmt.Printf("Files generated: %d\n", out.TotalFiles)
-		fmt.Printf("\nTo deploy:\n")
-		fmt.Printf("  1. Push the generated files to your GitOps repository\n")
-		if repoURL == "" {
-			fmt.Printf("  2. Update app-of-apps.yaml with your repository URL\n")
-			fmt.Printf("  3. Apply to your cluster:\n")
-		} else {
-			fmt.Printf("  2. Apply to your cluster:\n")
-		}
-		fmt.Printf("     kubectl apply -f %s/app-of-apps.yaml\n", out.OutputDir)
-	} else {
-		fmt.Printf("\nUmbrella chart generated successfully!\n")
-		fmt.Printf("Output directory: %s\n", out.OutputDir)
-		fmt.Printf("Files generated: %d\n", out.TotalFiles)
-		fmt.Printf("\nTo deploy:\n")
-		fmt.Printf("  cd %s\n", out.OutputDir)
-		fmt.Printf("  helm dependency update\n")
-		fmt.Printf("  helm install cns-stack .\n")
-	}
-}
+// printDeploymentInstructions prints user-friendly deployment instructions from the deployer.
+func printDeploymentInstructions(out *result.Output) {
+	fmt.Printf("\n%s generated successfully!\n", out.Deployment.Type)
+	fmt.Printf("Output directory: %s\n", out.OutputDir)
+	fmt.Printf("Files generated: %d\n", out.TotalFiles)
 
-// ociConfig holds configuration for OCI operations.
-type ociConfig struct {
-	sourceDir   string
-	outputDir   string
-	registry    string
-	repository  string
-	tag         string
-	version     string
-	plainHTTP   bool
-	insecureTLS bool
-}
-
-// handleOCIOutput packages the bundle as an OCI artifact and pushes it to the registry.
-// OCI metadata (digest, reference) is populated on results when --output=oci://... is used.
-func handleOCIOutput(ctx context.Context, cfg ociConfig, results []*result.Result) error {
-	absSourceDir, err := filepath.Abs(cfg.sourceDir)
-	if err != nil {
-		return fmt.Errorf("failed to resolve source directory: %w", err)
-	}
-
-	absOutputDir, err := filepath.Abs(cfg.outputDir)
-	if err != nil {
-		return fmt.Errorf("failed to resolve output directory: %w", err)
-	}
-
-	// Default tag if not provided
-	imageTag := cfg.tag
-	if imageTag == "" {
-		imageTag = defaultOCITag
-	}
-
-	slog.Info("packaging and pushing bundle as OCI artifact",
-		"registry", cfg.registry,
-		"repository", cfg.repository,
-		"tag", imageTag,
-	)
-
-	// Package locally first
-	packageResult, err := oci.Package(ctx, oci.PackageOptions{
-		SourceDir:  absSourceDir,
-		OutputDir:  absOutputDir,
-		Registry:   cfg.registry,
-		Repository: cfg.repository,
-		Tag:        imageTag,
-		Annotations: map[string]string{
-			"org.opencontainers.image.version": cfg.version,
-			"org.opencontainers.image.vendor":  "NVIDIA",
-			"org.opencontainers.image.title":   "CNS Bundle",
-			"org.opencontainers.image.source":  "https://github.com/NVIDIA/cloud-native-stack",
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("failed to package OCI artifact: %w", err)
-	}
-
-	slog.Info("OCI artifact packaged locally",
-		"reference", packageResult.Reference,
-		"digest", packageResult.Digest,
-		"store_path", packageResult.StorePath,
-	)
-
-	// Push to remote registry
-	slog.Info("pushing OCI artifact to remote registry",
-		"registry", cfg.registry,
-		"repository", cfg.repository,
-		"tag", imageTag,
-	)
-
-	pushResult, pushErr := oci.PushFromStore(ctx, packageResult.StorePath, oci.PushOptions{
-		Registry:    cfg.registry,
-		Repository:  cfg.repository,
-		Tag:         imageTag,
-		PlainHTTP:   cfg.plainHTTP,
-		InsecureTLS: cfg.insecureTLS,
-	})
-	if pushErr != nil {
-		return fmt.Errorf("failed to push OCI artifact to registry: %w", pushErr)
-	}
-
-	slog.Info("OCI artifact pushed successfully",
-		"reference", pushResult.Reference,
-		"digest", pushResult.Digest,
-	)
-
-	// Update results with OCI metadata
-	for i := range results {
-		if results[i].Success {
-			results[i].SetOCIMetadata(pushResult.Digest, pushResult.Reference, true)
+	if len(out.Deployment.Notes) > 0 {
+		fmt.Println("\nNote:")
+		for _, note := range out.Deployment.Notes {
+			fmt.Printf("  ⚠ %s\n", note)
 		}
 	}
 
-	return nil
+	if len(out.Deployment.Steps) > 0 {
+		fmt.Println("\nTo deploy:")
+		for i, step := range out.Deployment.Steps {
+			fmt.Printf("  %d. %s\n", i+1, step)
+		}
+	}
 }

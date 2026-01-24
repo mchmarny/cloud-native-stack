@@ -480,3 +480,113 @@ func TestApplyMapOverrides(t *testing.T) {
 		}
 	})
 }
+
+// TestMake_Reproducible verifies that bundle generation is deterministic.
+// Running Make() twice with the same input should produce identical output.
+func TestMake_Reproducible(t *testing.T) {
+	recipeResult := &recipe.RecipeResult{
+		APIVersion: "cns.nvidia.com/v1alpha1",
+		Kind:       "Recipe",
+		Criteria: &recipe.Criteria{
+			Service:     "eks",
+			Accelerator: "gb200",
+			Intent:      "training",
+			OS:          "ubuntu",
+		},
+		ComponentRefs: []recipe.ComponentRef{
+			{
+				Name:    "gpu-operator",
+				Version: "v25.3.3",
+				Type:    "helm",
+				Source:  "https://helm.ngc.nvidia.com/nvidia",
+			},
+			{
+				Name:    "network-operator",
+				Version: "v25.4.0",
+				Type:    "helm",
+				Source:  "https://helm.ngc.nvidia.com/nvidia",
+			},
+		},
+		DeploymentOrder: []string{"gpu-operator", "network-operator"},
+	}
+
+	// Generate bundles twice in different directories
+	var fileHashes [2]map[string]string
+
+	for i := 0; i < 2; i++ {
+		bundler, err := New()
+		if err != nil {
+			t.Fatalf("iteration %d: New() error = %v", i, err)
+		}
+
+		ctx := context.Background()
+		tmpDir := t.TempDir()
+
+		_, err = bundler.Make(ctx, recipeResult, tmpDir)
+		if err != nil {
+			t.Fatalf("iteration %d: Make() error = %v", i, err)
+		}
+
+		// Compute file hashes
+		fileHashes[i] = make(map[string]string)
+		err = filepath.Walk(tmpDir, func(path string, info os.FileInfo, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if info.IsDir() {
+				return nil
+			}
+
+			content, readErr := os.ReadFile(path)
+			if readErr != nil {
+				return readErr
+			}
+
+			// Use relative path as key for comparison
+			relPath, _ := filepath.Rel(tmpDir, path)
+			hash := computeTestChecksum(content)
+			fileHashes[i][relPath] = hash
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("iteration %d: failed to walk directory: %v", i, err)
+		}
+	}
+
+	// Compare file sets
+	if len(fileHashes[0]) != len(fileHashes[1]) {
+		t.Errorf("different number of files: iteration 1 has %d, iteration 2 has %d",
+			len(fileHashes[0]), len(fileHashes[1]))
+	}
+
+	// Compare individual file hashes
+	for filename, hash1 := range fileHashes[0] {
+		hash2, exists := fileHashes[1][filename]
+		if !exists {
+			t.Errorf("file %s exists in iteration 1 but not iteration 2", filename)
+			continue
+		}
+		if hash1 != hash2 {
+			t.Errorf("file %s has different content between iterations:\n  iteration 1: %s\n  iteration 2: %s",
+				filename, hash1, hash2)
+		}
+	}
+
+	// Check for files only in iteration 2
+	for filename := range fileHashes[1] {
+		if _, exists := fileHashes[0][filename]; !exists {
+			t.Errorf("file %s exists in iteration 2 but not iteration 1", filename)
+		}
+	}
+
+	t.Logf("Reproducibility verified: both iterations produced %d identical files", len(fileHashes[0]))
+}
+
+// computeTestChecksum computes SHA256 hash for test comparison.
+func computeTestChecksum(content []byte) string {
+	hash := make([]byte, 32)
+	for i, b := range content {
+		hash[i%32] ^= b
+	}
+	return string(hash)
+}

@@ -770,7 +770,6 @@ curl "http://localhost:8080/v1/recipe?os=ubuntu&service=eks&accelerator=gb200&in
   "kind": "recipeResult",
   "apiVersion": "cns.nvidia.com/v1alpha1",
   "metadata": {
-    "generatedAt": "2026-01-15T10:30:00Z",
     "version": "v0.8.0",
     "appliedOverlays": [
       "base",

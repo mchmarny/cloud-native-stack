@@ -201,7 +201,6 @@ func TestBundleEndpointValidRequest(t *testing.T) {
 		"kind": "Recipe",
 		"metadata": {
 			"version": "v1.0.0",
-			"generatedAt": "2025-01-15T10:30:00Z",
 			"appliedOverlays": ["base", "eks", "eks-training"]
 		},
 		"criteria": {

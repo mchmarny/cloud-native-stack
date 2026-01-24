@@ -69,11 +69,6 @@ func (r *Result) MarkSuccess() {
 	r.Success = true
 }
 
-// GeneratedAt returns a formatted timestamp string.
-func (r *Result) GeneratedAt() string {
-	return time.Now().UTC().Format(time.RFC3339)
-}
-
 // SetOCIMetadata sets the OCI metadata on the result.
 // The pushed parameter indicates whether the artifact was pushed to a remote registry.
 func (r *Result) SetOCIMetadata(digest, reference string, pushed bool) {

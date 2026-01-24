@@ -12,9 +12,7 @@
 //
 // Generated bundles include:
 //   - values.yaml: Helm chart configuration
-//   - manifests/skyhook-cr.yaml: Skyhook custom resource definition
-//   - scripts/install.sh: Automated installation script
-//   - scripts/uninstall.sh: Cleanup script
+//   - manifests/<customization>.yaml: Optional customization manifest (if specified)
 //   - README.md: Deployment documentation with prerequisites
 //   - checksums.txt: SHA256 checksums for verification
 //

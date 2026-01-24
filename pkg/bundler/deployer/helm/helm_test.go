@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 )
@@ -239,14 +238,12 @@ func createTestRecipeResult() *recipe.RecipeResult {
 		Kind:       "RecipeResult",
 		APIVersion: "cns.nvidia.com/v1alpha1",
 		Metadata: struct {
-			GeneratedAt        time.Time                  `json:"generatedAt" yaml:"generatedAt"`
 			Version            string                     `json:"version,omitempty" yaml:"version,omitempty"`
 			AppliedOverlays    []string                   `json:"appliedOverlays,omitempty" yaml:"appliedOverlays,omitempty"`
 			ExcludedOverlays   []string                   `json:"excludedOverlays,omitempty" yaml:"excludedOverlays,omitempty"`
 			ConstraintWarnings []recipe.ConstraintWarning `json:"constraintWarnings,omitempty" yaml:"constraintWarnings,omitempty"`
 		}{
-			GeneratedAt: time.Now(),
-			Version:     "v0.1.0",
+			Version: "v0.1.0",
 		},
 		Criteria: &recipe.Criteria{
 			Service:     "eks",
@@ -274,16 +271,148 @@ func createEmptyRecipeResult() *recipe.RecipeResult {
 		Kind:       "RecipeResult",
 		APIVersion: "cns.nvidia.com/v1alpha1",
 		Metadata: struct {
-			GeneratedAt        time.Time                  `json:"generatedAt" yaml:"generatedAt"`
 			Version            string                     `json:"version,omitempty" yaml:"version,omitempty"`
 			AppliedOverlays    []string                   `json:"appliedOverlays,omitempty" yaml:"appliedOverlays,omitempty"`
 			ExcludedOverlays   []string                   `json:"excludedOverlays,omitempty" yaml:"excludedOverlays,omitempty"`
 			ConstraintWarnings []recipe.ConstraintWarning `json:"constraintWarnings,omitempty" yaml:"constraintWarnings,omitempty"`
 		}{
-			GeneratedAt: time.Now(),
-			Version:     "v0.1.0",
+			Version: "v0.1.0",
 		},
 		ComponentRefs:   []recipe.ComponentRef{},
 		DeploymentOrder: []string{},
+	}
+}
+
+// TestGenerate_Reproducible verifies that Helm bundle generation is deterministic.
+// Running Generate() twice with the same input should produce identical output files.
+func TestGenerate_Reproducible(t *testing.T) {
+	g := NewGenerator()
+	ctx := context.Background()
+
+	input := &GeneratorInput{
+		RecipeResult: createTestRecipeResult(),
+		ComponentValues: map[string]map[string]interface{}{
+			"cert-manager": {
+				"installCRDs": true,
+			},
+			"gpu-operator": {
+				"driver": map[string]interface{}{
+					"enabled": true,
+				},
+			},
+		},
+		Version: "v1.0.0",
+	}
+
+	// Generate twice in different directories
+	var fileContents [2]map[string]string
+
+	for i := 0; i < 2; i++ {
+		outputDir := t.TempDir()
+
+		_, err := g.Generate(ctx, input, outputDir)
+		if err != nil {
+			t.Fatalf("iteration %d: Generate() error = %v", i, err)
+		}
+
+		// Read all generated files
+		fileContents[i] = make(map[string]string)
+		err = filepath.Walk(outputDir, func(path string, info os.FileInfo, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if info.IsDir() {
+				return nil
+			}
+
+			content, readErr := os.ReadFile(path)
+			if readErr != nil {
+				return readErr
+			}
+
+			relPath, _ := filepath.Rel(outputDir, path)
+			fileContents[i][relPath] = string(content)
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("iteration %d: failed to walk directory: %v", i, err)
+		}
+	}
+
+	// Verify same files were generated
+	if len(fileContents[0]) != len(fileContents[1]) {
+		t.Errorf("different number of files: iteration 1 has %d, iteration 2 has %d",
+			len(fileContents[0]), len(fileContents[1]))
+	}
+
+	// Verify file contents are identical
+	for filename, content1 := range fileContents[0] {
+		content2, exists := fileContents[1][filename]
+		if !exists {
+			t.Errorf("file %s exists in iteration 1 but not iteration 2", filename)
+			continue
+		}
+		if content1 != content2 {
+			t.Errorf("file %s has different content between iterations:\n--- iteration 1 ---\n%s\n--- iteration 2 ---\n%s",
+				filename, content1, content2)
+		}
+	}
+
+	t.Logf("Helm reproducibility verified: both iterations produced %d identical files", len(fileContents[0]))
+}
+
+// TestGenerate_NoTimestampInOutput verifies that generated files don't contain timestamps.
+func TestGenerate_NoTimestampInOutput(t *testing.T) {
+	g := NewGenerator()
+	ctx := context.Background()
+	outputDir := t.TempDir()
+
+	input := &GeneratorInput{
+		RecipeResult: createTestRecipeResult(),
+		ComponentValues: map[string]map[string]interface{}{
+			"cert-manager": {},
+			"gpu-operator": {},
+		},
+		Version: "v1.0.0",
+	}
+
+	_, err := g.Generate(ctx, input, outputDir)
+	if err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	// Check that no files contain obvious timestamp patterns
+	timestampPatterns := []string{
+		"GeneratedAt:",
+		"generated_at:",
+		"timestamp:",
+		"Timestamp:",
+	}
+
+	err = filepath.Walk(outputDir, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		content, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+
+		contentStr := string(content)
+		relPath, _ := filepath.Rel(outputDir, path)
+
+		for _, pattern := range timestampPatterns {
+			if strings.Contains(contentStr, pattern) {
+				t.Errorf("file %s contains timestamp pattern %q", relPath, pattern)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("failed to walk directory: %v", err)
 	}
 }

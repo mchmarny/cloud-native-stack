@@ -4,7 +4,6 @@ package recipe
 import (
 	"fmt"
 	"sort"
-	"time"
 )
 
 // ComponentType represents the type of component deployment.
@@ -126,9 +125,6 @@ type RecipeResult struct {
 
 	// Metadata contains result metadata.
 	Metadata struct {
-		// GeneratedAt is the timestamp when this result was generated.
-		GeneratedAt time.Time `json:"generatedAt" yaml:"generatedAt"`
-
 		// Version is the recipe version (CLI version that generated this recipe).
 		Version string `json:"version,omitempty" yaml:"version,omitempty"`
 

@@ -85,7 +85,6 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 	// Serialize values to YAML with header
 	header := internal.ValuesHeader{
 		ComponentName:  "Network Operator",
-		Timestamp:      time.Now().Format(time.RFC3339),
 		BundlerVersion: configMap["bundler_version"],
 		RecipeVersion:  configMap["recipe_version"],
 	}
@@ -102,13 +101,13 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 			"failed to write values file", err)
 	}
 
-	// Generate ScriptData (metadata only - not in Helm values)
-	scriptData := GenerateScriptDataFromConfig(configMap)
+	// Generate bundle metadata (for README and manifest templates)
+	metadata := GenerateBundleMetadata(configMap)
 
 	// Create combined data for README (values map + metadata)
 	readmeData := map[string]interface{}{
 		"Values": values,
-		"Script": scriptData,
+		"Script": metadata, // "Script" key preserved for template compatibility
 	}
 
 	// Generate README using values map directly

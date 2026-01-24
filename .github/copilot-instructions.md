@@ -46,6 +46,11 @@ NVIDIA Cloud Native Stack (CNS) provides validated GPU-accelerated Kubernetes co
 
 **Tech Stack:** Go 1.25, Kubernetes 1.33+, golangci-lint v2.6, Container images via Ko
 
+**Package Architecture (Critical Principle):**
+- **User Interaction Packages** (`pkg/cli`, `pkg/api`): Focus solely on capturing user intent, validating input, and formatting output. No business logic.
+- **Functional Packages** (`pkg/oci`, `pkg/bundler`, `pkg/recipe`, `pkg/collector`): Self-contained, reusable business logic. Should be usable independently without CLI/API.
+- **Example**: OCI packaging logic lives in `pkg/oci` (not `pkg/cli`), so both CLI and API can use it. Deployers return structured `DeploymentInfo` so the CLI just formats output.
+
 **Quick Start:**
 ```bash
 make qualify  # Run tests + lint + scan (full check)
@@ -653,12 +658,12 @@ func (b *Bundler) Make(ctx context.Context, input *result.RecipeResult,
     values := input.GetValuesForComponent(Name)
     
     // 3. Create bundle directory structure
-    if err := b.CreateBundleDir(outputDir, "scripts"); err != nil {
+    if err := b.CreateBundleDir(outputDir); err != nil {
         return nil, err
     }
     
-    // 4. Generate script metadata
-    scriptData := generateScriptData(component, values)
+    // 4. Generate bundle metadata
+    metadata := generateBundleMetadata(component, values)
     
     // 5. Generate files from templates
     filePath := filepath.Join(outputDir, "values.yaml")
@@ -667,16 +672,22 @@ func (b *Bundler) Make(ctx context.Context, input *result.RecipeResult,
         return nil, err
     }
     
-    filePath = filepath.Join(outputDir, "scripts/install.sh")
-    if err := b.GenerateFileFromTemplate(ctx, GetTemplate, "install.sh",
-        filePath, scriptData, 0755); err != nil {
+    // 6. Generate README with combined data
+    // The "Script" key is preserved for template compatibility
+    readmeData := map[string]interface{}{
+        "Values": values,
+        "Script": metadata, // "Script" key preserved for template compatibility
+    }
+    filePath = filepath.Join(outputDir, "README.md")
+    if err := b.GenerateFileFromTemplate(ctx, GetTemplate, "README.md",
+        filePath, readmeData, 0644); err != nil {
         return nil, err
     }
     
     var generatedFiles []string
     // ... collect file paths
     
-    // 6. Generate checksums and return result
+    // 7. Generate checksums and return result
     return b.GenerateResult(outputDir, generatedFiles)
 }
 ```
@@ -685,8 +696,6 @@ func (b *Bundler) Make(ctx context.Context, input *result.RecipeResult,
 ```
 pkg/component/networkoperator/templates/
 ├── values.yaml.tmpl               # Helm chart values
-├── install.sh.tmpl                # Installation script
-├── uninstall.sh.tmpl              # Cleanup script
 └── README.md.tmpl                 # Documentation
 ```
 
@@ -755,7 +764,7 @@ func TestBundler_Make(t *testing.T) {
 **Key Components:**
 - **BaseBundler** provides: `CreateBundleDir`, `WriteFile`, `GenerateFileFromTemplate`, `GenerateResult`, `Validate`
 - **RecipeResult methods**: `GetComponentRef(name)`, `GetValuesForComponent(name)`
-- **ScriptData struct**: Contains metadata like `Timestamp`, `Namespace`, `Version`, `HelmRepository`
+- **BundleMetadata struct**: Contains metadata like `Namespace`, `Version`, `HelmRepository`
 - **TestHarness**: `NewTestHarness`, `RunTest`, `AssertFileContains`
 
 **Best Practices:**

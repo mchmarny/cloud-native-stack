@@ -6,10 +6,6 @@
 # This file contains configuration for all sub-charts.
 # Each top-level key corresponds to a dependency in Chart.yaml.
 # Set <component>.enabled=false to skip installing a component.
-#
-# Usage:
-#   helm dependency update
-#   helm install cns-stack . -f values.yaml
 cert-manager:
     cainjector:
         resources:

@@ -130,14 +130,15 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
             "failed to write values file", err)
     }
     
-    // 9. Generate ScriptData for install scripts
-    scriptData := GenerateScriptDataFromConfig(configMap)
+    // 9. Generate bundle metadata for README
+    metadata := GenerateBundleMetadata(configMap)
     
     // 10. Generate README
     if b.Config.IncludeReadme() {
+        // The "Script" key is preserved for template compatibility
         readmeData := map[string]interface{}{
             "Values": values,
-            "Script": scriptData,
+            "Script": metadata, // "Script" key preserved for template compatibility
         }
         readmePath := filepath.Join(dirs.Root, "README.md")
         if err := b.GenerateFileFromTemplate(ctx, GetTemplate, "README.md",
@@ -183,7 +184,7 @@ func init() {
 }
 ```
 
-### Script Metadata Generation (scripts.go)
+### Bundle Metadata Generation (scripts.go)
 
 Create a separate file for metadata generation:
 
@@ -192,15 +193,13 @@ Create a separate file for metadata generation:
 package mybundler
 
 import (
-    "time"
-    
     common "github.com/NVIDIA/cloud-native-stack/pkg/component/internal"
 )
 
-// ScriptData represents metadata for generating installation scripts.
-// This contains information not present in the Helm values map.
-type ScriptData struct {
-    Timestamp        string
+// BundleMetadata represents metadata for bundle generation (README, manifests).
+// This struct provides deployment metadata used in README templates and manifest generation.
+// Note: Named "scripts.go" for historical reasons but no longer generates shell scripts.
+type BundleMetadata struct {
     Namespace        string
     HelmRepository   string
     HelmChart        string
@@ -209,10 +208,9 @@ type ScriptData struct {
     RecipeVersion    string
 }
 
-// GenerateScriptDataFromConfig creates script data from config map.
-func GenerateScriptDataFromConfig(config map[string]string) *ScriptData {
-    return &ScriptData{
-        Timestamp:        time.Now().UTC().Format(time.RFC3339),
+// GenerateBundleMetadata creates bundle metadata from config map.
+func GenerateBundleMetadata(config map[string]string) *BundleMetadata {
+    return &BundleMetadata{
         Namespace:        common.GetConfigValue(config, "namespace", "my-bundler"),
         HelmRepository:   common.GetConfigValue(config, "helm_repository", "https://helm.ngc.nvidia.com/nvidia"),
         HelmChart:        "nvidia/my-bundler",
@@ -235,21 +233,13 @@ import (
     _ "embed"
 )
 
-//go:embed templates/install.sh.tmpl
-var installScriptTemplate string
-
-//go:embed templates/uninstall.sh.tmpl
-var uninstallScriptTemplate string
-
 //go:embed templates/README.md.tmpl
 var readmeTemplate string
 
 // GetTemplate returns the named template content.
 func GetTemplate(name string) (string, bool) {
     templates := map[string]string{
-        "install.sh":   installScriptTemplate,
-        "uninstall.sh": uninstallScriptTemplate,
-        "README.md":    readmeTemplate,
+        "README.md": readmeTemplate,
     }
     tmpl, ok := templates[name]
     return tmpl, ok
@@ -258,32 +248,10 @@ func GetTemplate(name string) (string, bool) {
 
 **Template files** in `templates/` directory:
 
-```bash
-# templates/install.sh.tmpl - Receives ScriptData
-#!/bin/bash
-# Generated: {{ .Timestamp }}
-# Bundler Version: {{ .Version }}
-
-set -euo pipefail
-
-NAMESPACE="{{ .Namespace }}"
-HELM_CHART="{{ .HelmChart }}"
-CHART_VERSION="{{ .HelmChartVersion }}"
-REPO="{{ .HelmRepository }}"
-
-helm repo add nvidia "$REPO" --force-update
-helm install my-bundler "$HELM_CHART" \
-  --version "$CHART_VERSION" \
-  --namespace "$NAMESPACE" \
-  --create-namespace \
-  --values ../values.yaml
-```
-
 ```markdown
-# templates/README.md.tmpl - Receives combined map with Values + Script
+# templates/README.md.tmpl - Receives combined map with Values + Script (metadata)
 # My Bundler Deployment
 
-Generated: {{ .Script.Timestamp }}
 Bundler Version: {{ .Script.Version }}
 Recipe Version: {{ .Script.RecipeVersion }}
 
@@ -296,7 +264,6 @@ Recipe Version: {{ .Script.RecipeVersion }}
 ## Installation
 
 \```bash
-cd scripts
 chmod +x install.sh
 ./install.sh
 \```
@@ -308,7 +275,7 @@ kubectl get pods -n {{ .Script.Namespace }}
 \```
 ```
 
-**Note:** Values are written directly to `values.yaml` using `common.MarshalYAMLWithHeader()`, not via templates. Templates are used for scripts and documentation.
+**Note:** Values are written directly to `values.yaml` using `common.MarshalYAMLWithHeader()`, not via templates. Templates are used for README documentation.
 
 ## Best Practices
 
@@ -318,8 +285,8 @@ kubectl get pods -n {{ .Script.Namespace }}
 - ✅ Implement `registry.Bundler` interface with correct signature
 - ✅ Get values via `input.GetValuesForComponent(Name)` (returns error)
 - ✅ Use `common.MarshalYAMLWithHeader()` for values.yaml (not templates)
-- ✅ Use `ScriptData` for script metadata (namespace, version, timestamps)
-- ✅ Combine values + ScriptData for README templates
+- ✅ Use `BundleMetadata` for metadata (namespace, version, helm info)
+- ✅ Combine values + BundleMetadata for README templates
 - ✅ Use `go:embed` for template portability
 - ✅ Use structured errors from `pkg/errors`
 - ✅ Apply value overrides via `common.ApplyMapOverrides()`
@@ -340,9 +307,9 @@ kubectl get pods -n {{ .Script.Namespace }}
 ### Templates
 
 - ✅ Use `GetTemplate(name)` function pattern (returns `(string, bool)`)
-- ✅ For scripts, pass `ScriptData` struct to templates
-- ✅ For README, pass combined map: `{"Values": values, "Script": scriptData}`
-- ✅ Access ScriptData fields directly: `{{ .Timestamp }}`, `{{ .Namespace }}`
+- ✅ For README, pass combined map: `{"Values": values, "Script": metadata}`
+- ✅ The "Script" key is preserved for template compatibility
+- ✅ Access BundleMetadata fields directly: `{{ .Script.Namespace }}`, `{{ .Script.Version }}`
 - ✅ Access values in README: `{{ index .Values "key" }}`
 - ✅ Handle missing values gracefully with `{{- if }}`
 - ✅ Validate template rendering in tests
@@ -407,19 +374,12 @@ if err := b.WriteFile(valuesPath, valuesYAML, 0644); err != nil {
 
 ### Accessing Values in Templates
 
-```bash
-# install.sh receives ScriptData struct
-NAMESPACE="{{ .Namespace }}"
-HELM_CHART="{{ .HelmChart }}"
-CHART_VERSION="{{ .HelmChartVersion }}"
-REPO="{{ .HelmRepository }}"
-```
-
 ```markdown
 # README.md receives combined map: {"Values": ..., "Script": ...}
-Generated: {{ .Script.Timestamp }}
+# Note: "Script" key preserved for template compatibility
 Version: {{ .Script.Version }}
 Recipe: {{ .Script.RecipeVersion }}
+Namespace: {{ .Script.Namespace }}
 ```
 
 ### Error Handling

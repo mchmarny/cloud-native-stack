@@ -11,8 +11,6 @@
 //
 // Generated bundles include:
 //   - values.yaml: Helm chart configuration
-//   - scripts/install.sh: Automated installation script
-//   - scripts/uninstall.sh: Cleanup script
 //   - README.md: Deployment documentation with prerequisites
 //   - checksums.txt: SHA256 checksums for verification
 //

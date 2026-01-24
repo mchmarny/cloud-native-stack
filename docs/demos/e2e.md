@@ -80,7 +80,7 @@ Bundle from Recipe:
 ```shell
 cnsctl bundle \
   --recipe recipe.yaml \
-  --output ./bundles \
+  --output ./bundle \
   --system-node-selector nodeGroup=system-pool \
   --accelerated-node-selector nodeGroup=customer-gpu \
   --accelerated-node-toleration nvidia.com/gpu=present:NoSchedule
@@ -89,7 +89,7 @@ cnsctl bundle \
 Check bundle content: 
 
 ```shell
-tree ./bundles
+tree ./bundle
 ```
 
 Bundle from Recipe using API: 
@@ -97,19 +97,19 @@ Bundle from Recipe using API:
 ```shell
 curl -s "https://cns.dgxc.io/v1/recipe?service=eks&accelerator=h100&intent=training" | \
   curl -X POST "https://cns.dgxc.io/v1/bundle?deployer=argocd" \
-    -H "Content-Type: application/json" -d @- -o bundles.zip
+    -H "Content-Type: application/json" -d @- -o bundle.zip
 ```
 
 View bundle README: 
 
 ```shell
-grip --browser --quiet ./bundles/README.md
+grip --browser --quiet ./bundle/README.md
 ```
 
 Review Bundle and validate chart dependencies:
 
 ```shell
-cd ./bundles && tree .
+cd ./bundle && tree .
 ```
 
 Prep the deployment: 
@@ -119,21 +119,25 @@ helm dependency update
 tree .
 ```
 
+Bundle as an OCI image:
+
+```shell
+cnsctl bundle \
+  --recipe recipe.yaml \
+  --output oci://ghcr.io/mchmarny/cns-bundle \
+  --image-refs .digest \
+  --deployer argocd \
+  --repo https://github.com/mchmarny/cluster.git
+```
+
+Review manifest: 
+
+```shell
+crane manifest "ghcr.io/mchmarny/cns-bundle@$(cat .digest)" | jq .
+```
+
 ## Links
 
-Top 3 for each audience
-
-### [For Users](https://github.com/mchmarny/cloud-native-stack/tree/main/docs/user-guide)
 * [Installation Guide](https://github.com/mchmarny/cloud-native-stack/blob/main/docs/user-guide/installation.md)
 * [CLI Reference](https://github.com/mchmarny/cloud-native-stack/blob/main/docs/user-guide/cli-reference.md)
 * [API Reference](https://github.com/mchmarny/cloud-native-stack/blob/main/docs/user-guide/api-reference.md)
-
-### [For Integrators](https://github.com/mchmarny/cloud-native-stack/tree/main/docs/integration) (use CNS in their own solution)
-* [Recipe Development Guide](https://github.com/mchmarny/cloud-native-stack/blob/main/docs/integration/recipe-development.md)
-* [Automation and CI/CD Integration](https://github.com/mchmarny/cloud-native-stack/blob/main/docs/integration/automation.md)
-* [Data Flow Architecture](https://github.com/mchmarny/cloud-native-stack/blob/main/docs/integration/data-flow.md)
-
-### [For Contributors](https://github.com/mchmarny/cloud-native-stack/tree/main/docs/architecture) (develop CNS itself)
-* [Code of Conduct](https://github.com/mchmarny/cloud-native-stack/blob/main/CODE_OF_CONDUCT.md)
-* [How to Contribute](https://github.com/mchmarny/cloud-native-stack/blob/main/CONTRIBUTING.md)
-* [Metadata Concepts](https://github.com/mchmarny/cloud-native-stack/blob/main/docs/architecture/data.md)

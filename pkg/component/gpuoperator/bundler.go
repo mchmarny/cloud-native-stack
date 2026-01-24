@@ -112,7 +112,6 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
 	// Serialize values to YAML with header
 	header := common.ValuesHeader{
 		ComponentName:  "GPU Operator",
-		Timestamp:      time.Now().Format(time.RFC3339),
 		BundlerVersion: configMap["bundler_version"],
 		RecipeVersion:  configMap["recipe_version"],
 	}
@@ -129,13 +128,13 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
 			"failed to write values file", err)
 	}
 
-	// Generate ScriptData (metadata only - not in Helm values)
-	scriptData := GenerateScriptDataFromConfig(configMap)
+	// Generate bundle metadata (for README and manifest templates)
+	metadata := GenerateBundleMetadata(configMap)
 
 	// Create combined data for README (values map + metadata)
 	readmeData := map[string]interface{}{
 		"Values": values,
-		"Script": scriptData,
+		"Script": metadata, // "Script" key preserved for template compatibility
 	}
 
 	// Generate README using values map directly
@@ -149,7 +148,7 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, dir string
 	criteria := input.GetCriteria()
 
 	// Generate manifests using values map directly
-	if err := b.generateManifestsFromData(ctx, values, scriptData, criteria, dirs.Root); err != nil {
+	if err := b.generateManifestsFromData(ctx, values, metadata, criteria, dirs.Root); err != nil {
 		return b.Result, err
 	}
 
@@ -181,11 +180,11 @@ func (b *Bundler) generateReadmeFromData(ctx context.Context, data map[string]in
 }
 
 // generateManifestsFromData generates manifests from pre-built data.
-func (b *Bundler) generateManifestsFromData(ctx context.Context, values map[string]interface{}, scriptData *ScriptData, criteria *recipe.Criteria, dir string) error {
-	// Combine values map with script metadata for template
+func (b *Bundler) generateManifestsFromData(ctx context.Context, values map[string]interface{}, metadata *BundleMetadata, criteria *recipe.Criteria, dir string) error {
+	// Combine values map with bundle metadata for template
 	manifestData := map[string]interface{}{
 		"Values": values,
-		"Script": scriptData,
+		"Script": metadata, // "Script" key preserved for template compatibility
 	}
 
 	// Generate DCGM Exporter ConfigMap if enabled

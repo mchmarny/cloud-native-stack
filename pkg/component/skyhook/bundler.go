@@ -93,7 +93,6 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 	// Serialize values to YAML with header
 	header := common.ValuesHeader{
 		ComponentName:  "Skyhook",
-		Timestamp:      time.Now().Format(time.RFC3339),
 		BundlerVersion: configMap["bundler_version"],
 		RecipeVersion:  configMap["recipe_version"],
 	}
@@ -110,13 +109,14 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 			"failed to write values file", err)
 	}
 
-	// Generate ScriptData (metadata only - not in Helm values)
-	scriptData := GenerateScriptDataFromConfig(configMap)
+	// Generate bundle metadata (for README and manifests - not in Helm values)
+	metadata := GenerateBundleMetadata(configMap)
 
 	// Create combined data for README (values map + metadata)
+	// The "Script" key is preserved for template compatibility
 	readmeData := map[string]interface{}{
 		"Values": values,
-		"Script": scriptData,
+		"Script": metadata, // "Script" key preserved for template compatibility
 	}
 
 	// Generate README using values map directly
@@ -127,7 +127,7 @@ func (b *Bundler) makeFromRecipeResult(ctx context.Context, input recipe.RecipeI
 	}
 
 	// Generate customization manifests if specified in values
-	if err := b.generateCustomizationManifests(ctx, values, scriptData, dirs.Root); err != nil {
+	if err := b.generateCustomizationManifests(ctx, values, metadata, dirs.Root); err != nil {
 		return b.Result, err
 	}
 
@@ -176,7 +176,7 @@ func (b *Bundler) getValueOverrides() map[string]string {
 
 // generateCustomizationManifests generates Skyhook customization CR manifests based on values.
 // If customization is specified in values but doesn't exist, returns an error.
-func (b *Bundler) generateCustomizationManifests(ctx context.Context, values map[string]interface{}, scriptData *ScriptData, dir string) error {
+func (b *Bundler) generateCustomizationManifests(ctx context.Context, values map[string]interface{}, metadata *BundleMetadata, dir string) error {
 	// Check if customization is specified in values
 	customizationName, ok := values["customization"].(string)
 	if !ok || customizationName == "" {
@@ -197,10 +197,11 @@ func (b *Bundler) generateCustomizationManifests(ctx context.Context, values map
 				formatCustomizationList(availableCustomizations))
 	}
 
-	// Combine values map with script metadata for template
+	// Combine values map with bundle metadata for template
+	// The "Script" key is preserved for template compatibility
 	manifestData := map[string]interface{}{
 		"Values": values,
-		"Script": scriptData,
+		"Script": metadata, // "Script" key preserved for template compatibility
 	}
 
 	// Add accelerated node tolerations if provided via CLI flags

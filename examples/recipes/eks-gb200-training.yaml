@@ -1,7 +1,6 @@
 kind: recipeResult
 apiVersion: cns.nvidia.com/v1alpha1
 metadata:
-  generatedAt: 2026-01-22T22:47:31.169808Z
   version: v0.0.0-next
   appliedOverlays:
     - base

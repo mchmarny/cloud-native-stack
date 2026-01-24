@@ -194,40 +194,6 @@ func TestResult_MarkSuccess(t *testing.T) {
 	}
 }
 
-// TestResult_GeneratedAt tests timestamp generation
-func TestResult_GeneratedAt(t *testing.T) {
-	result := New(types.BundleTypeGpuOperator)
-
-	before := time.Now().UTC()
-	timestamp := result.GeneratedAt()
-	after := time.Now().UTC()
-
-	// Parse the timestamp
-	parsed, err := time.Parse(time.RFC3339, timestamp)
-	if err != nil {
-		t.Fatalf("Failed to parse timestamp: %v", err)
-	}
-
-	// Verify timestamp is in valid range
-	if parsed.Before(before.Add(-1*time.Second)) || parsed.After(after.Add(1*time.Second)) {
-		t.Errorf("Timestamp %v is not within expected range [%v, %v]", parsed, before, after)
-	}
-
-	// Verify format is RFC3339
-	if len(timestamp) == 0 {
-		t.Error("GeneratedAt() returned empty string")
-	}
-
-	// Call multiple times - should return different timestamps
-	time.Sleep(10 * time.Millisecond)
-	timestamp2 := result.GeneratedAt()
-
-	// Timestamps should be different (or at least not fail)
-	// This is okay - they might be the same if called very quickly
-	// We're mainly testing that it doesn't panic
-	_ = timestamp == timestamp2
-}
-
 // TestResult_Duration tests setting duration
 func TestResult_Duration(t *testing.T) {
 	result := New(types.BundleTypeGpuOperator)
@@ -362,11 +328,5 @@ func TestResult_EmptyState(t *testing.T) {
 
 	if result.Success {
 		t.Error("Empty result should not be marked as successful")
-	}
-
-	// GeneratedAt should still work
-	timestamp := result.GeneratedAt()
-	if timestamp == "" {
-		t.Error("GeneratedAt() should return valid timestamp even for empty result")
 	}
 }

@@ -15,7 +15,6 @@
 //	    Checksums   map[string]string  // SHA256 checksums
 //	    Metadata    map[string]any     // Additional metadata
 //	    Duration    time.Duration      // Execution time
-//	    GeneratedAt time.Time          // Timestamp
 //	    Error       error              // Error if failed
 //	}
 //
@@ -39,7 +38,6 @@
 //	    Files:       []string{"values.yaml", "manifests/clusterpolicy.yaml"},
 //	    Checksums:   map[string]string{"values.yaml": "sha256..."},
 //	    Duration:    2 * time.Second,
-//	    GeneratedAt: time.Now(),
 //	}
 //
 // # Usage - Aggregating Results

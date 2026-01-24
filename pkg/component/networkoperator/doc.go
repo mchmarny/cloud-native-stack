@@ -13,10 +13,7 @@
 //
 // Generated bundles include:
 //   - values.yaml: Helm chart configuration
-//   - manifests/nicclusterpolicy.yaml: NicClusterPolicy custom resource
-//   - scripts/install.sh: Automated installation script
-//   - scripts/uninstall.sh: Cleanup script
-//   - README.md: Deployment documentation
+//   - README.md: Deployment documentation with prerequisites and instructions
 //   - checksums.txt: SHA256 checksums for verification
 //
 // # Usage

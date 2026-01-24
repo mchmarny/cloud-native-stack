@@ -1,15 +1,12 @@
 package dradriver
 
 import (
-	"time"
-
 	common "github.com/NVIDIA/cloud-native-stack/pkg/component/internal"
 )
 
-// ScriptData represents metadata for generating installation scripts.
-// This contains information not present in the Helm values map.
-type ScriptData struct {
-	Timestamp        string
+// BundleMetadata contains metadata used for README and manifest template rendering.
+// This data complements the Helm values map with deployment-specific information.
+type BundleMetadata struct {
 	Namespace        string
 	HelmRepository   string
 	HelmChart        string
@@ -18,10 +15,9 @@ type ScriptData struct {
 	RecipeVersion    string
 }
 
-// GenerateScriptDataFromConfig creates script data from config map.
-func GenerateScriptDataFromConfig(config map[string]string) *ScriptData {
-	data := &ScriptData{
-		Timestamp:        time.Now().UTC().Format(time.RFC3339),
+// GenerateBundleMetadata creates bundle metadata from config map.
+func GenerateBundleMetadata(config map[string]string) *BundleMetadata {
+	data := &BundleMetadata{
 		Namespace:        common.GetConfigValue(config, "namespace", "nvidia-dra-driver"),
 		HelmRepository:   common.GetConfigValue(config, "helm_repository", "https://helm.ngc.nvidia.com/nvidia"),
 		HelmChart:        "nvidia/k8s-dra-driver",
@@ -32,5 +28,3 @@ func GenerateScriptDataFromConfig(config map[string]string) *ScriptData {
 
 	return data
 }
-
-// ToMap converts ScriptData to a map for template rendering.

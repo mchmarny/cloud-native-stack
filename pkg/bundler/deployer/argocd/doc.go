@@ -26,10 +26,11 @@ sync-wave annotations starting from 0.
 	generator := argocd.NewGenerator()
 
 	input := &argocd.GeneratorInput{
-		RecipeResult:    recipeResult,
-		ComponentValues: componentValues,
-		Version:         "v0.9.0",
-		RepoURL:         "https://github.com/my-org/my-gitops-repo.git",
+		RecipeResult:     recipeResult,
+		ComponentValues:  componentValues,
+		Version:          "v0.9.0",
+		RepoURL:          "https://github.com/my-org/my-gitops-repo.git",
+		IncludeChecksums: true,
 	}
 
 	output, err := generator.Generate(ctx, input, "/path/to/output")
@@ -44,6 +45,7 @@ sync-wave annotations starting from 0.
 	output/
 	├── app-of-apps.yaml           # Parent application
 	├── README.md                  # Deployment instructions
+	├── checksums.txt              # SHA256 checksums (optional)
 	├── cert-manager/
 	│   ├── application.yaml       # ArgoCD Application (sync-wave: 0)
 	│   └── values.yaml
