@@ -546,3 +546,127 @@ func createTestRequest(query string) *http.Request {
 	}
 	return req
 }
+
+func TestGetCriteriaServiceTypes(t *testing.T) {
+	types := GetCriteriaServiceTypes()
+
+	// Should return sorted list
+	expected := []string{"aks", "eks", "gke", "oke"}
+	if len(types) != len(expected) {
+		t.Errorf("GetCriteriaServiceTypes() returned %d types, want %d", len(types), len(expected))
+	}
+
+	for i, exp := range expected {
+		if types[i] != exp {
+			t.Errorf("GetCriteriaServiceTypes()[%d] = %s, want %s", i, types[i], exp)
+		}
+	}
+
+	// Verify each type can be parsed
+	for _, st := range types {
+		_, err := ParseCriteriaServiceType(st)
+		if err != nil {
+			t.Errorf("ParseCriteriaServiceType(%s) error = %v", st, err)
+		}
+	}
+}
+
+func TestGetCriteriaAcceleratorTypes(t *testing.T) {
+	types := GetCriteriaAcceleratorTypes()
+
+	// Should return sorted list
+	expected := []string{"a100", "gb200", "h100", "l40"}
+	if len(types) != len(expected) {
+		t.Errorf("GetCriteriaAcceleratorTypes() returned %d types, want %d", len(types), len(expected))
+	}
+
+	for i, exp := range expected {
+		if types[i] != exp {
+			t.Errorf("GetCriteriaAcceleratorTypes()[%d] = %s, want %s", i, types[i], exp)
+		}
+	}
+
+	// Verify each type can be parsed
+	for _, at := range types {
+		_, err := ParseCriteriaAcceleratorType(at)
+		if err != nil {
+			t.Errorf("ParseCriteriaAcceleratorType(%s) error = %v", at, err)
+		}
+	}
+}
+
+func TestGetCriteriaIntentTypes(t *testing.T) {
+	types := GetCriteriaIntentTypes()
+
+	// Should return sorted list
+	expected := []string{"inference", "training"}
+	if len(types) != len(expected) {
+		t.Errorf("GetCriteriaIntentTypes() returned %d types, want %d", len(types), len(expected))
+	}
+
+	for i, exp := range expected {
+		if types[i] != exp {
+			t.Errorf("GetCriteriaIntentTypes()[%d] = %s, want %s", i, types[i], exp)
+		}
+	}
+
+	// Verify each type can be parsed
+	for _, it := range types {
+		_, err := ParseCriteriaIntentType(it)
+		if err != nil {
+			t.Errorf("ParseCriteriaIntentType(%s) error = %v", it, err)
+		}
+	}
+}
+
+func TestGetCriteriaOSTypes(t *testing.T) {
+	types := GetCriteriaOSTypes()
+
+	// Should return sorted list
+	expected := []string{"amazonlinux", "cos", "rhel", "ubuntu"}
+	if len(types) != len(expected) {
+		t.Errorf("GetCriteriaOSTypes() returned %d types, want %d", len(types), len(expected))
+	}
+
+	for i, exp := range expected {
+		if types[i] != exp {
+			t.Errorf("GetCriteriaOSTypes()[%d] = %s, want %s", i, types[i], exp)
+		}
+	}
+
+	// Verify each type can be parsed
+	for _, ot := range types {
+		_, err := ParseCriteriaOSType(ot)
+		if err != nil {
+			t.Errorf("ParseCriteriaOSType(%s) error = %v", ot, err)
+		}
+	}
+}
+
+func TestParseCriteriaOSType_AllAliases(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  CriteriaOSType
+	}{
+		{"amazonlinux", "amazonlinux", CriteriaOSAmazonLinux},
+		{"al2", "al2", CriteriaOSAmazonLinux},
+		{"al2023", "al2023", CriteriaOSAmazonLinux},
+		{"ubuntu", "ubuntu", CriteriaOSUbuntu},
+		{"rhel", "rhel", CriteriaOSRHEL},
+		{"cos", "cos", CriteriaOSCOS},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseCriteriaOSType(tt.input)
+			if err != nil {
+				t.Errorf("ParseCriteriaOSType(%s) error = %v", tt.input, err)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ParseCriteriaOSType(%s) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}

@@ -1015,3 +1015,139 @@ func TestConstants(t *testing.T) {
 		t.Errorf("Expected %d unique constants, got %d", len(constants), len(seen))
 	}
 }
+
+func TestScalar_String(t *testing.T) {
+	tests := []struct {
+		name    string
+		reading Reading
+		want    string
+	}{
+		{"int", Int(42), "42"},
+		{"int negative", Int(-42), "-42"},
+		{"int64", Int64(9223372036854775807), "9223372036854775807"},
+		{"uint", Uint(42), "42"},
+		{"uint64", Uint64(18446744073709551615), "18446744073709551615"},
+		{"float64", Float64(3.14), "3.14"},
+		{"float64 whole", Float64(42.0), "42"},
+		{"bool true", Bool(true), "true"},
+		{"bool false", Bool(false), "false"},
+		{"string", Str("hello"), "hello"},
+		{"string empty", Str(""), ""},
+		{"string with spaces", Str("hello world"), "hello world"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Use type assertion to get the String() method
+			if s, ok := tt.reading.(interface{ String() string }); ok {
+				got := s.String()
+				if got != tt.want {
+					t.Errorf("String() = %q, want %q", got, tt.want)
+				}
+			} else {
+				t.Error("reading does not implement String()")
+			}
+		})
+	}
+}
+
+func TestScalar_UnmarshalYAML(t *testing.T) {
+	tests := []struct {
+		name    string
+		yaml    string
+		scalar  Reading
+		wantVal any
+	}{
+		{"int", "42", &Scalar[int]{}, 42},
+		{"int negative", "-42", &Scalar[int]{}, -42},
+		{"int64", "9223372036854775807", &Scalar[int64]{}, int64(9223372036854775807)},
+		{"uint", "42", &Scalar[uint]{}, uint(42)},
+		{"uint64", "18446744073709551615", &Scalar[uint64]{}, uint64(18446744073709551615)},
+		{"float64", "3.14", &Scalar[float64]{}, float64(3.14)},
+		{"bool true", "true", &Scalar[bool]{}, true},
+		{"bool false", "false", &Scalar[bool]{}, false},
+		{"string", "hello", &Scalar[string]{}, "hello"},
+		{"string quoted", `"hello world"`, &Scalar[string]{}, "hello world"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := yaml.Unmarshal([]byte(tt.yaml), tt.scalar)
+			if err != nil {
+				t.Fatalf("UnmarshalYAML() error = %v", err)
+			}
+			got := tt.scalar.Any()
+			if got != tt.wantVal {
+				t.Errorf("UnmarshalYAML() value = %v (%T), want %v (%T)", got, got, tt.wantVal, tt.wantVal)
+			}
+		})
+	}
+}
+
+func TestScalar_UnmarshalYAML_Invalid(t *testing.T) {
+	tests := []struct {
+		name   string
+		yaml   string
+		scalar Reading
+	}{
+		{"int with string", "not_a_number", &Scalar[int]{}},
+		{"bool with string", "not_a_bool", &Scalar[bool]{}},
+		{"float with string", "not_a_float", &Scalar[float64]{}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := yaml.Unmarshal([]byte(tt.yaml), tt.scalar)
+			if err == nil {
+				t.Error("expected error for invalid YAML value")
+			}
+		})
+	}
+}
+
+func TestScalar_isReading(t *testing.T) {
+	// This test verifies that all scalar types implement the isReading interface method
+	readings := []Reading{
+		Int(42),
+		Int64(42),
+		Uint(42),
+		Uint64(42),
+		Float64(3.14),
+		Bool(true),
+		Str("test"),
+	}
+
+	for _, r := range readings {
+		// The isReading method should exist and be callable
+		r.isReading()
+	}
+}
+
+func TestScalar_MarshalYAML(t *testing.T) {
+	tests := []struct {
+		name    string
+		reading Reading
+		want    string
+	}{
+		{"int", Int(42), "42\n"},
+		{"int64", Int64(100), "100\n"},
+		{"uint", Uint(42), "42\n"},
+		{"uint64", Uint64(100), "100\n"},
+		{"float64", Float64(3.14), "3.14\n"},
+		{"bool true", Bool(true), "true\n"},
+		{"bool false", Bool(false), "false\n"},
+		{"string", Str("hello"), "hello\n"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := yaml.Marshal(tt.reading)
+			if err != nil {
+				t.Fatalf("MarshalYAML() error = %v", err)
+			}
+			if string(got) != tt.want {
+				t.Errorf("MarshalYAML() = %q, want %q", string(got), tt.want)
+			}
+		})
+	}
+}

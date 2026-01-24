@@ -452,3 +452,256 @@ func TestSupportedFormats(t *testing.T) {
 		}
 	}
 }
+
+// Tests for internal serialize functions
+
+func Test_serializeJSON(t *testing.T) {
+	tests := []struct {
+		name    string
+		data    any
+		wantErr bool
+	}{
+		{
+			name:    "simple struct",
+			data:    testConfig{Name: "test", Value: 123},
+			wantErr: false,
+		},
+		{
+			name:    "slice of structs",
+			data:    []testConfig{{Name: "a", Value: 1}, {Name: "b", Value: 2}},
+			wantErr: false,
+		},
+		{
+			name:    "map",
+			data:    map[string]int{"one": 1, "two": 2},
+			wantErr: false,
+		},
+		{
+			name:    "nested struct",
+			data:    struct{ Inner testConfig }{Inner: testConfig{Name: "inner", Value: 42}},
+			wantErr: false,
+		},
+		{
+			name:    "nil",
+			data:    nil,
+			wantErr: false,
+		},
+		{
+			name:    "empty slice",
+			data:    []testConfig{},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := serializeJSON(tt.data)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("serializeJSON() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && len(got) == 0 {
+				t.Error("serializeJSON() returned empty bytes")
+			}
+			// Verify it's valid JSON by unmarshaling
+			if !tt.wantErr && tt.data != nil {
+				var result interface{}
+				if err := json.Unmarshal(got, &result); err != nil {
+					t.Errorf("serializeJSON() produced invalid JSON: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func Test_serializeYAML(t *testing.T) {
+	tests := []struct {
+		name    string
+		data    any
+		wantErr bool
+	}{
+		{
+			name:    "simple struct",
+			data:    testConfig{Name: "test", Value: 123},
+			wantErr: false,
+		},
+		{
+			name:    "slice of structs",
+			data:    []testConfig{{Name: "a", Value: 1}, {Name: "b", Value: 2}},
+			wantErr: false,
+		},
+		{
+			name:    "map",
+			data:    map[string]int{"one": 1, "two": 2},
+			wantErr: false,
+		},
+		{
+			name:    "nested struct",
+			data:    struct{ Inner testConfig }{Inner: testConfig{Name: "inner", Value: 42}},
+			wantErr: false,
+		},
+		{
+			name:    "nil",
+			data:    nil,
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := serializeYAML(tt.data)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("serializeYAML() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && tt.data != nil && len(got) == 0 {
+				t.Error("serializeYAML() returned empty bytes")
+			}
+			// Verify it's valid YAML by unmarshaling
+			if !tt.wantErr && tt.data != nil {
+				var result interface{}
+				if err := yaml.Unmarshal(got, &result); err != nil {
+					t.Errorf("serializeYAML() produced invalid YAML: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func Test_serializeTable(t *testing.T) {
+	tests := []struct {
+		name     string
+		data     any
+		wantErr  bool
+		contains []string
+	}{
+		{
+			name:     "simple struct",
+			data:     testConfig{Name: "test", Value: 123},
+			wantErr:  false,
+			contains: []string{"FIELD", "VALUE", "Name", "test", "Value", "123"},
+		},
+		{
+			name:     "map",
+			data:     map[string]int{"one": 1, "two": 2},
+			wantErr:  false,
+			contains: []string{"FIELD", "VALUE", "one", "1", "two", "2"},
+		},
+		{
+			name:     "empty struct",
+			data:     struct{}{},
+			wantErr:  false,
+			contains: []string{"<empty>"},
+		},
+		{
+			name:     "nil",
+			data:     nil,
+			wantErr:  false,
+			contains: []string{"<empty>"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := serializeTable(tt.data)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("serializeTable() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			output := string(got)
+			for _, want := range tt.contains {
+				if !strings.Contains(output, want) {
+					t.Errorf("serializeTable() output missing %q, got: %s", want, output)
+				}
+			}
+		})
+	}
+}
+
+func TestWriteToFile(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		path := tmpDir + "/test.txt"
+		data := []byte("test content")
+
+		err := WriteToFile(path, data)
+		if err != nil {
+			t.Fatalf("WriteToFile() error = %v", err)
+		}
+
+		// Verify file contents
+		got, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("failed to read file: %v", err)
+		}
+		if string(got) != string(data) {
+			t.Errorf("WriteToFile() wrote %q, want %q", got, data)
+		}
+	})
+
+	t.Run("empty data", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		path := tmpDir + "/empty.txt"
+
+		err := WriteToFile(path, []byte{})
+		if err != nil {
+			t.Fatalf("WriteToFile() error = %v", err)
+		}
+
+		// Verify file exists and is empty
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatalf("file not created: %v", err)
+		}
+		if info.Size() != 0 {
+			t.Errorf("expected empty file, got size %d", info.Size())
+		}
+	})
+
+	t.Run("invalid path", func(t *testing.T) {
+		err := WriteToFile("/nonexistent/directory/file.txt", []byte("data"))
+		if err == nil {
+			t.Error("WriteToFile() expected error for invalid path")
+		}
+		if !strings.Contains(err.Error(), "failed to create file") {
+			t.Errorf("expected 'failed to create file' error, got: %v", err)
+		}
+	})
+
+	t.Run("overwrite existing file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		path := tmpDir + "/overwrite.txt"
+
+		// Write initial content
+		if err := WriteToFile(path, []byte("initial")); err != nil {
+			t.Fatalf("initial write failed: %v", err)
+		}
+
+		// Overwrite with new content
+		if err := WriteToFile(path, []byte("overwritten")); err != nil {
+			t.Fatalf("overwrite failed: %v", err)
+		}
+
+		// Verify new content
+		got, _ := os.ReadFile(path)
+		if string(got) != "overwritten" {
+			t.Errorf("expected 'overwritten', got %q", got)
+		}
+	})
+}
+
+func Test_serializeJSON_Formatting(t *testing.T) {
+	data := testConfig{Name: "test", Value: 123}
+	got, err := serializeJSON(data)
+	if err != nil {
+		t.Fatalf("serializeJSON() error = %v", err)
+	}
+
+	// Should be indented (pretty-printed)
+	if !strings.Contains(string(got), "\n") {
+		t.Error("serializeJSON() should produce indented output")
+	}
+	if !strings.Contains(string(got), "  ") {
+		t.Error("serializeJSON() should use 2-space indentation")
+	}
+}
