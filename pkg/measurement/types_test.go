@@ -1117,9 +1117,10 @@ func TestScalar_isReading(t *testing.T) {
 		Str("test"),
 	}
 
-	for _, r := range readings {
+	for i, r := range readings {
 		// The isReading method should exist and be callable
 		r.isReading()
+		t.Logf("Reading %d implements isReading()", i)
 	}
 }
 

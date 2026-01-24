@@ -3,6 +3,7 @@ package gpu
 import (
 	"context"
 	"encoding/xml"
+	"errors"
 	"os"
 	"os/exec"
 	"testing"
@@ -358,7 +359,7 @@ func TestCollector_ContextTimeout(t *testing.T) {
 	// With graceful degradation, should return valid measurement even when nvidia-smi missing
 	if err != nil {
 		// If we get an error, it could be context canceled
-		if err != context.DeadlineExceeded && err != context.Canceled {
+		if !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
 			t.Logf("Got error: %v", err)
 		}
 	}
