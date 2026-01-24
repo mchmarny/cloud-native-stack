@@ -21,7 +21,7 @@ cnsctl recipe \
   --service eks \
   --accelerator gb200 \
   --os ubuntu \
-  --intent training
+  --intent training | yq .
 ```
 
 Metadata overlays: `components=5 overlays=5`
@@ -100,6 +100,12 @@ curl -s "https://cns.dgxc.io/v1/recipe?service=eks&accelerator=h100&intent=train
     -H "Content-Type: application/json" -d @- -o bundle.zip
 ```
 
+Same content: 
+
+```shell
+unzip -l bundle.zip
+```
+
 View bundle README: 
 
 ```shell
@@ -109,7 +115,7 @@ grip --browser --quiet ./bundle/README.md
 Review Bundle and validate chart dependencies:
 
 ```shell
-cd ./bundle && tree .
+cd ./bundle
 ```
 
 Prep the deployment: 
