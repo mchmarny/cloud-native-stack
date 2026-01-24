@@ -19,9 +19,10 @@ import (
 func snapshotCmd() *cli.Command {
 	return &cli.Command{
 		Name:                  "snapshot",
+		Category:              functionalCategoryName,
 		EnableShellCompletion: true,
-		Usage:                 "Capture system configuration snapshot",
-		Description: `Capture a comprehensive snapshot of system configuration including:
+		Usage:                 "Capture cluster configuration snapshot.",
+		Description: `Generate a comprehensive snapshot of cluster measurements including:
   - CPU and GPU settings
   - GRUB boot parameters
   - Kubernetes cluster configuration
@@ -29,11 +30,10 @@ func snapshotCmd() *cli.Command {
   - Sysctl kernel parameters
   - SystemD service configurations
 
-The snapshot can be output in JSON, YAML, or table format.
+Note: All collection is done locally and no data is egressed out of the cluster.
 
-# Agent Deployment Mode
-
-Use --deploy-agent to deploy a Kubernetes Job that captures the snapshot on GPU nodes:
+Output can be in JSON or YAML format. 
+For a more complete snapshot use --deploy-agent to deploy a Kubernetes Job that captures the snapshot on a GPU node:
 
   cnsctl snapshot --deploy-agent --namespace gpu-operator --output cm://gpu-operator/cns-snapshot
 
@@ -42,10 +42,10 @@ The agent mode will:
   2. Deploy a Job on GPU nodes to capture the snapshot
   3. Wait for the Job to complete
   4. Retrieve the snapshot from the ConfigMap
-  5. Save to file or stdout
+  5. Save it to the target output location
   6. Clean up the Job (optionally keep RBAC for reuse)
 
-# Examples
+Examples:
 
 Basic agent deployment:
   cnsctl snapshot --deploy-agent
@@ -61,7 +61,8 @@ Combined node selector and custom tolerations:
   cnsctl snapshot --deploy-agent \
     --node-selector nodeGroup=customer-gpu \
     --toleration dedicated=user-workload:NoSchedule \
-    --output cm://gpu-operator/cns-snapshot`,
+    --output cm://gpu-operator/cns-snapshot
+`,
 		Flags: []cli.Flag{
 			// Agent deployment flags
 			&cli.BoolFlag{

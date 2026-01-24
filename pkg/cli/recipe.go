@@ -22,19 +22,20 @@ import (
 func recipeCmd() *cli.Command {
 	return &cli.Command{
 		Name:                  "recipe",
+		Category:              functionalCategoryName,
 		EnableShellCompletion: true,
-		Usage:                 "Generate configuration recipe for a given set of environment parameters.",
+		Usage:                 "Create optimized recipe for given intent and environment parameters.",
 		Description: `Generate configuration recipe based on specified environment parameters including:
-  - Kubernetes service type (eks, gke, aks, oke, self-managed)
-  - Accelerator type (h100, gb200, a100, l40)
-  - Workload intent (training, inference)
-  - GPU node operating system (ubuntu, rhel, cos, amazonlinux)
+  - Kubernetes service type (e.g. eks, gke, aks, oke, self-managed)
+  - Accelerator type (e.g. h100, gb200, a100, l40)
+  - Workload intent (e.g. training, inference)
+  - GPU node operating system (e.g. ubuntu, rhel, cos, amazonlinux)
   - Number of GPU nodes in the cluster
 
 The recipe returns a list of components with deployment order based on dependencies.
 Output can be in JSON or YAML format.
 
-# Examples
+Examples:
 
 Generate recipe from explicit criteria:
   cnsctl recipe --service eks --accelerator h100 --os ubuntu --intent training

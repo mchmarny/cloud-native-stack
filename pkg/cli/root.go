@@ -18,8 +18,9 @@ import (
 )
 
 const (
-	name           = "cnsctl"
-	versionDefault = "dev"
+	name                   = "cnsctl"
+	versionDefault         = "dev"
+	functionalCategoryName = "Functional"
 )
 
 var (
@@ -52,12 +53,16 @@ var (
 // This is called by main.main().
 func Execute() {
 	cmd := &cli.Command{
-		Name:                            name,
-		Usage:                           "Cloud Native Stack CLI",
-		Version:                         fmt.Sprintf("%s (commit: %s, date: %s)", version, commit, date),
-		EnableShellCompletion:           true,
-		HideHelpCommand:                 true,
-		ConfigureShellCompletionCommand: func(cmd *cli.Command) { cmd.Hidden = false },
+		Name:                  name,
+		Usage:                 "Cloud Native Stack CLI",
+		Version:               fmt.Sprintf("%s (commit: %s, date: %s)", version, commit, date),
+		EnableShellCompletion: true,
+		HideHelpCommand:       true,
+		ConfigureShellCompletionCommand: func(cmd *cli.Command) {
+			cmd.Hidden = false
+			cmd.Category = "Utilities"
+			cmd.Usage = "Output shell completion script for a given shell."
+		},
 		Metadata: map[string]interface{}{
 			"git-commit": commit,
 			"build-date": date,

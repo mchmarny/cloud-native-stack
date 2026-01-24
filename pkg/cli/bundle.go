@@ -119,27 +119,27 @@ func parseBundleCmdOptions(cmd *cli.Command) (*bundleCmdOptions, error) {
 func bundleCmd() *cli.Command {
 	return &cli.Command{
 		Name:                  "bundle",
+		Category:              functionalCategoryName,
 		EnableShellCompletion: true,
-		Usage:                 "Generate deployment bundle from a given recipe",
-		Description: `Generates a deployment bundle from a given recipe. By default, this creates
-a Helm umbrella chart. Use --deployer argocd to generate ArgoCD Applications.
+		Usage:                 "Generate deployment bundle from a given recipe.",
+		Description: `Generates a deployment bundle from a given recipe. 
+Use --deployer argocd to generate ArgoCD Applications.
 
-# Default Output (Helm Umbrella Chart)
-
+Helm:
   - Chart.yaml: Helm chart metadata with component dependencies
   - values.yaml: Combined values for all components
   - README.md: Deployment instructions
   - recipe.yaml: Copy of the input recipe for reference
   - checksums.txt: SHA256 checksums of generated files
 
-# ArgoCD Output (--deployer argocd)
-
+ArgoCD:
   - app-of-apps.yaml: Parent ArgoCD Application
   - <component>/application.yaml: ArgoCD Application per component
   - <component>/values.yaml: Values for each component
   - README.md: Deployment instructions
+  - checksums.txt: SHA256 checksums of generated files
 
-# Examples
+Examples:
 
 Generate Helm umbrella chart (default):
   cnsctl bundle --recipe recipe.yaml --output ./my-bundle

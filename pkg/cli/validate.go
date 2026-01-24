@@ -20,35 +20,14 @@ import (
 func validateCmd() *cli.Command {
 	return &cli.Command{
 		Name:                  "validate",
+		Category:              functionalCategoryName,
 		EnableShellCompletion: true,
-		Usage:                 "Validate cluster configuration against recipe constraints",
+		Usage:                 "Validate cluster using specific recipe.",
 		Description: `Validate a system snapshot against the constraints defined in a recipe.
 
 This command compares actual system measurements from a snapshot against the
 expected constraints defined in a recipe file. It reports which constraints
 pass, fail, or cannot be evaluated.
-
-# Constraint Format
-
-Constraints in recipes use fully qualified measurement paths:
-  {Type}.{Subtype}.{Key}
-
-Examples:
-  K8s.server.version           - Kubernetes server version
-  OS.release.ID                - Operating system identifier
-  OS.release.VERSION_ID        - OS version
-  OS.sysctl./proc/sys/kernel/osrelease - Kernel version
-
-# Supported Operators
-
-Constraint values can use comparison operators:
-  ">= 1.32.4"  - Greater than or equal (version comparison)
-  "<= 1.33"    - Less than or equal (version comparison)
-  "> 1.30"     - Greater than (version comparison)
-  "< 2.0"      - Less than (version comparison)
-  "== ubuntu"  - Exact match
-  "!= rhel"    - Not equal
-  "ubuntu"     - Exact string match (no operator)
 
 # Examples
 
@@ -62,7 +41,8 @@ Output validation result to a file:
   cnsctl validate -r recipe.yaml -s snapshot.yaml -o result.yaml
 
 Run validation without failing on constraint errors (informational mode):
-  cnsctl validate -r recipe.yaml -s snapshot.yaml --fail-on-error=false`,
+  cnsctl validate -r recipe.yaml -s snapshot.yaml --fail-on-error=false
+`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "recipe",
