@@ -2,7 +2,6 @@
 # https://docs.codecov.com/docs/codecov-yaml
 
 coverage:
-  # Coverage precision (number of decimal places)
   precision: 2
   round: down
   range: "60...90"
@@ -15,35 +14,90 @@ coverage:
         threshold: 1%     # Allow 1% drop before failing
         if_ci_failed: error
 
-    # Coverage on changed files only (patch coverage)
+    # Coverage on changed files only
     patch:
       default:
         target: 70%       # New code should have 70% coverage
         threshold: 5%     # Allow 5% flexibility
         if_ci_failed: error
 
-# PR comment settings
+# PR comment configuration
 comment:
-  layout: "header, diff, flags, components, files"
-  behavior: default       # Post new comment on each push
-  require_changes: true   # Only comment if coverage changed
-  require_base: true      # Require base report for comparison
+  layout: "condensed_header, diff, flags, components"
+  behavior: default
+  require_changes: true
+  require_base: true
   require_head: true
+  hide_project_coverage: false
 
-# Ignore paths from coverage
+# GitHub Checks annotations (inline coverage feedback)
+github_checks:
+  annotations: true
+
+# Ignore paths from coverage calculation
 ignore:
+  # Test files
   - "**/*_test.go"
   - "**/mock_*.go"
   - "**/mocks/**"
+  - "**/testdata/**"
+  - "**/fixtures/**"
+
+  # Entry points (thin wrappers)
+  - "cmd/**/main.go"
+
+  # Non-code directories
   - "~archive/**"
   - "examples/**"
   - "docs/**"
   - "tools/**"
+  - "deployments/**"
 
-# Flag management (optional - group coverage by component)
+  # Templates (not Go code)
+  - "**/*.tmpl"
+
+# Component-based coverage tracking
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        threshold: 2%
+  individual_components:
+    - component_id: bundler
+      name: Bundler Framework
+      paths:
+        - pkg/bundler/**
+    - component_id: components
+      name: Component Bundlers
+      paths:
+        - pkg/component/**
+    - component_id: collector
+      name: Collectors
+      paths:
+        - pkg/collector/**
+    - component_id: recipe
+      name: Recipe System
+      paths:
+        - pkg/recipe/**
+    - component_id: validator
+      name: Validator
+      paths:
+        - pkg/validator/**
+    - component_id: api
+      name: API Server
+      paths:
+        - pkg/api/**
+        - pkg/server/**
+    - component_id: cli
+      name: CLI
+      paths:
+        - pkg/cli/**
+
+# Flag management for CI reporting
 flags:
   unit:
     paths:
       - pkg/
-      - cmd/
     carryforward: true
+    after_n_builds: 1

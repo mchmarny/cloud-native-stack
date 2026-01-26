@@ -1,66 +1,103 @@
 version: "2"
+
+# Run configuration
+run:
+  go: "1.25"
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+# Output configuration
+output:
+  formats:
+    colored-line-number:
+      path: stdout
+  print-issued-lines: true
+  print-linter-name: true
+  sort-results: true
+  sort-order:
+    - linter
+    - severity
+    - file
+
 linters:
   enable:
-    - asciicheck
-    - bodyclose
-    - dogsled
-    - dupl
-    - errorlint
-    - exhaustive
-    - funlen
-    - goconst
-    - gocritic
-    - gosec
-    - importas
-    - misspell
-    - nakedret
-    - nilnil
-    - prealloc
-    - revive
-    - staticcheck
-    - tparallel
-    - unconvert
-    - unparam
-    - whitespace
+    # Bug detection
+    - bodyclose       # HTTP response body must be closed
+    - copyloopvar     # Loop variable capture issues (Go 1.22+)
+    - errorlint       # Error wrapping and comparison
+    # - nilerr        # Return nil after error check (disabled: intentional nil returns for skippable errors)
+    - nilnil          # Nil/nil returns
+    - staticcheck     # Advanced static analysis
+
+    # Code quality
+    - asciicheck      # Non-ASCII identifiers
+    - dogsled         # Too many blank identifiers
+    - dupl            # Duplicate code detection
+    - exhaustive      # Enum exhaustiveness
+    - funlen          # Function length
+    # - gocognit      # Cognitive complexity (disabled: existing code exceeds threshold)
+    - goconst         # Repeated strings
+    - gocritic        # Opinionated checks
+    - govet           # Go vet checks
+    - misspell        # Spelling
+    - nakedret        # Naked returns
+    - prealloc        # Slice preallocation
+    - revive          # Golint replacement
+    - unconvert       # Unnecessary conversions
+    - unparam         # Unused parameters
+    - whitespace      # Whitespace issues
+
+    # Security
+    - gosec           # Security checks
+
+    # HTTP/Context
+    - noctx           # HTTP requests without context
+
+    # Testing
+    - tparallel       # t.Parallel() usage
+
+    # Style
+    - importas        # Import aliasing
 
   settings:
     funlen:
       lines: 200
       statements: 70
       ignore-comments: true
+
     gocognit:
       min-complexity: 20
-    godox:
-      keywords:
-        - TODO
-        - BUG
-        - FIXME
-        - NOTE
-        - OPTIMIZE
-        - HACK
+
     govet:
       enable:
         - shadow
+
     misspell:
       mode: restricted
       locale: US
       ignore-rules:
         - Lustre
+
     unparam:
       check-exported: true
+
     whitespace:
       multi-if: true
       multi-func: true
+
     dupl:
       threshold: 200
+
     revive:
       rules:
-        # Disable stuttering check - our collector types intentionally include package name
+        # Disable stuttering check - collector types intentionally include package name
         # for clarity when used together (e.g., gpu.GPUCollector, grub.GrubCollector)
         - name: exported
           disabled: false
           arguments:
             - disableStutteringCheck
+
   exclusions:
     generated: lax
     presets:
@@ -69,20 +106,30 @@ linters:
       - legacy
       - std-error-handling
     rules:
+      # Relaxed rules for test files
       - linters:
           - dupl
           - errcheck
           - funlen
+          - gocognit
           - gocyclo
           - gosec
+          - noctx
         path: _test\.go
+      # Relaxed rules for main entry points
+      - linters:
+          - funlen
+        path: cmd/.*/main\.go
     paths:
       - third_party$
       - builtin$
       - examples$
+      - ~archive$
+
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
+
 formatters:
   enable:
     - gofmt
@@ -93,3 +140,4 @@ formatters:
       - third_party$
       - builtin$
       - examples$
+      - ~archive$
