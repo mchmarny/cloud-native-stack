@@ -4,12 +4,14 @@ metadata:
   name: gke-cos
 
 spec:
-  # Inherits from base (implicit when spec.base is empty)
-  # This recipe contains EKS-specific settings shared by all EKS deployments
+  # GKE Container-Optimized OS recipe with GPU support
+  # This is a leaf recipe for GKE-COS deployments with GPU training workloads
 
   criteria:
     service: gke
     os: cos
+    accelerator: h100
+    intent: training
 
   componentRefs:
     # GKE-COS-specific GPU Operator overrides (inherits valuesFile from base)
