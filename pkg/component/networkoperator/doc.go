@@ -13,7 +13,6 @@
 //
 // Generated bundles include:
 //   - values.yaml: Helm chart configuration
-//   - README.md: Deployment documentation with prerequisites and instructions
 //   - checksums.txt: SHA256 checksums for verification
 //
 // # Implementation
@@ -43,10 +42,4 @@
 //
 // The bundler extracts values from recipe component references. Configuration
 // includes RDMA, SR-IOV, IPAM, and Multus settings.
-//
-// # Templates
-//
-// Templates are embedded in the binary using go:embed and rendered with Go's
-// text/template package. Templates support conditional sections based on
-// enabled features.
 package networkoperator

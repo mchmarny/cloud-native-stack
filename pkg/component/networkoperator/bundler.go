@@ -2,7 +2,6 @@ package networkoperator
 
 import (
 	"context"
-	_ "embed"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/registry"
@@ -14,14 +13,6 @@ import (
 
 const (
 	Name = "network-operator"
-)
-
-var (
-	//go:embed templates/README.md.tmpl
-	readmeTemplate string
-
-	// GetTemplate returns the named template content for README and manifest generation.
-	GetTemplate = internal.StandardTemplates(readmeTemplate)
 )
 
 func init() {
@@ -38,7 +29,6 @@ var componentConfig = internal.ComponentConfig{
 	ValueOverrideKeys:     []string{"networkoperator"},
 	DefaultHelmRepository: "https://helm.ngc.nvidia.com/nvidia",
 	DefaultHelmChart:      "nvidia/network-operator",
-	TemplateGetter:        GetTemplate,
 }
 
 // Bundler generates Network Operator deployment bundles.

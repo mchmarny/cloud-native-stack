@@ -247,12 +247,14 @@ func MakeBundle(ctx context.Context, b *BaseBundler, input recipe.RecipeInput, o
 		"Script": metadata, // "Script" key preserved for template compatibility
 	}
 
-	// Generate README
+	// Generate README (only if template exists)
 	if b.Config.IncludeReadme() && cfg.TemplateGetter != nil {
-		readmePath := filepath.Join(dirs.Root, "README.md")
-		if err := b.GenerateFileFromTemplate(ctx, cfg.TemplateGetter, "README.md",
-			readmePath, readmeData, 0644); err != nil {
-			return b.Result, err
+		if _, hasReadme := cfg.TemplateGetter("README.md"); hasReadme {
+			readmePath := filepath.Join(dirs.Root, "README.md")
+			if err := b.GenerateFileFromTemplate(ctx, cfg.TemplateGetter, "README.md",
+				readmePath, readmeData, 0644); err != nil {
+				return b.Result, err
+			}
 		}
 	}
 

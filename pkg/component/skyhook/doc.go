@@ -13,7 +13,6 @@
 // Generated bundles include:
 //   - values.yaml: Helm chart configuration
 //   - manifests/<customization>.yaml: Optional customization manifest (if specified)
-//   - README.md: Deployment documentation with prerequisites
 //   - checksums.txt: SHA256 checksums for verification
 //
 // # Implementation

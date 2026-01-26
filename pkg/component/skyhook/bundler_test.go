@@ -59,12 +59,6 @@ func TestBundler_Make(t *testing.T) {
 					t.Errorf("Expected values.yaml not found")
 				}
 
-				// Verify README
-				readmePath := filepath.Join(bundleDir, "README.md")
-				if _, err := os.Stat(readmePath); os.IsNotExist(err) {
-					t.Errorf("Expected README.md not found")
-				}
-
 				// Verify checksums.txt
 				checksumPath := filepath.Join(bundleDir, "checksums.txt")
 				if _, err := os.Stat(checksumPath); os.IsNotExist(err) {
@@ -166,32 +160,6 @@ func TestBundler_Make(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestGetTemplate(t *testing.T) {
-	expectedTemplates := []string{
-		"README.md",
-	}
-
-	for _, name := range expectedTemplates {
-		t.Run(name, func(t *testing.T) {
-			tmpl, ok := GetTemplate(name)
-			if !ok {
-				t.Errorf("GetTemplate(%s) not found", name)
-			}
-			if tmpl == "" {
-				t.Errorf("GetTemplate(%s) returned empty template", name)
-			}
-		})
-	}
-
-	// Test non-existent template
-	t.Run("nonexistent", func(t *testing.T) {
-		_, ok := GetTemplate("nonexistent")
-		if ok {
-			t.Error("GetTemplate() should return false for non-existent template")
-		}
-	})
 }
 
 func TestGetCustomizationTemplate(t *testing.T) {

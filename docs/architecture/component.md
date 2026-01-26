@@ -4,7 +4,7 @@ Learn how to create new bundlers for Cloud Native Stack.
 
 ## Overview
 
-Bundlers convert RecipeInput objects into deployment artifacts. Artifacts include Helm values files, Kubernetes manifests, and README documentation.
+Bundlers convert RecipeInput objects into deployment artifacts. Artifacts include Helm values files, Kubernetes manifests, and optional custom manifests. Deployment documentation (READMEs) is generated at the deployer level, not by individual component bundlers.
 
 **Framework features:**
 
@@ -84,7 +84,7 @@ That's it! The `MakeBundle()` function handles:
 - Applying node selectors and tolerations to configured Helm paths
 - Creating directory structure
 - Writing values.yaml with proper headers
-- Generating README from templates
+- Generating custom manifests (if CustomManifestFunc is defined)
 - Computing checksums
 
 ### Optional Components
@@ -146,10 +146,10 @@ var componentConfig = internal.ComponentConfig{
 
 #### Templates (bundler.go + templates/)
 
-Templates are embedded in `bundler.go` using `go:embed` and accessed via `StandardTemplates`:
+Templates are embedded in `bundler.go` using `go:embed`. Most bundlers don't need templates as they only generate `values.yaml` and `checksums.txt`. Templates are only needed for custom manifests (e.g., DCGM exporter ConfigMap, kernel module params).
 
 ```go
-// pkg/component/mybundler/bundler.go
+// pkg/component/mybundler/bundler.go - Bundler with custom manifests
 package mybundler
 
 import (
@@ -159,54 +159,20 @@ import (
 )
 
 var (
-    //go:embed templates/README.md.tmpl
-    readmeTemplate string
+    //go:embed templates/custom-manifest.yaml.tmpl
+    customManifestTemplate string
 
-    // GetTemplate returns template content using StandardTemplates helper.
-    // For bundlers with just a README template, this is the recommended approach.
-    GetTemplate = internal.StandardTemplates(readmeTemplate)
+    // GetTemplate returns template content using NewTemplateGetter helper.
+    GetTemplate = internal.NewTemplateGetter(map[string]string{
+        "custom-manifest": customManifestTemplate,
+    })
 )
-
-// For bundlers needing multiple templates, use NewTemplateGetter:
-// GetTemplate = internal.NewTemplateGetter(map[string]string{
-//     "README.md":     readmeTemplate,
-//     "custom.yaml":   customTemplate,
-// })
 ```
 
-**Template files** in `templates/` directory:
-
-```markdown
-# templates/README.md.tmpl - Receives combined map with Values + Script (metadata)
-# My Bundler Deployment
-
-Bundler Version: {{ .Script.Version }}
-Recipe Version: {{ .Script.RecipeVersion }}
-
-## Prerequisites
-
-- Kubernetes cluster
-- Helm 3.x
-- kubectl configured
-
-## Installation
-
-\```bash
-helm repo add myrepo {{ .Script.HelmRepository }}
-helm install my-bundler myrepo/{{ .Script.HelmChart }} \
-  --namespace {{ .Script.Namespace }} \
-  --create-namespace \
-  -f values.yaml
-\```
-
-## Verification
-
-\```bash
-kubectl get pods -n {{ .Script.Namespace }}
-\```
-```
-
-**Note:** Values are written directly to `values.yaml` using `internal.MarshalYAMLWithHeader()`, not via templates. Templates are used for README documentation.
+**Note:**
+- Values are written directly to `values.yaml` using `internal.MarshalYAMLWithHeader()`, not via templates
+- Deployment documentation (README) is generated at the deployer level (helm, argocd), not by component bundlers
+- Templates are only needed for custom Kubernetes manifests beyond the standard values.yaml
 
 ## Best Practices
 
@@ -234,10 +200,10 @@ kubectl get pods -n {{ .Script.Namespace }}
 
 ### Templates
 
-- Use `GetTemplate(name)` function pattern (returns `(string, bool)`)
-- For README, templates receive `{"Values": values, "Script": metadata}`
-- Access BundleMetadata fields directly: `{{ .Script.Namespace }}`, `{{ .Script.Version }}`
-- Access values in README: `{{ index .Values "key" }}`
+- Use `GetTemplate(name)` function pattern (returns `(string, bool)`) only for bundlers with custom manifests
+- Most bundlers don't need templates - they only generate values.yaml and checksums.txt
+- For custom manifest templates, access metadata via `{{ .Script.Namespace }}`, `{{ .Script.Version }}`
+- Access values in templates: `{{ index .Values "key" }}`
 - Handle missing values gracefully with `{{- if }}`
 - Validate template rendering in tests
 
@@ -328,13 +294,14 @@ flowchart LR
     subgraph "Bundler Output"
         A1[values.yaml]
         A2[manifests/]
-        A3[README.md]
+        A3[checksums.txt]
     end
 
     subgraph "Deployer Output"
         O1[ArgoCD Applications]
         O2[Flux HelmReleases]
         O3[Helm Charts]
+        O4[README.md]
     end
 ```
 

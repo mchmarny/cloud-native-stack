@@ -2,7 +2,6 @@ package dradriver
 
 import (
 	"context"
-	_ "embed"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/registry"
@@ -14,14 +13,6 @@ import (
 
 const (
 	Name = "nvidia-dra-driver-gpu"
-)
-
-var (
-	//go:embed templates/README.md.tmpl
-	readmeTemplate string
-
-	// GetTemplate returns the named template content for README and manifest generation.
-	GetTemplate = common.StandardTemplates(readmeTemplate)
 )
 
 func init() {
@@ -44,7 +35,6 @@ var componentConfig = common.ComponentConfig{
 	},
 	DefaultHelmRepository: "https://helm.ngc.nvidia.com/nvidia",
 	DefaultHelmChart:      "nvidia/nvidia-dra-driver-gpu",
-	TemplateGetter:        GetTemplate,
 }
 
 // Bundler creates Nvidia DRA Driver bundles based on recipes.

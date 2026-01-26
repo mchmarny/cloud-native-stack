@@ -10,7 +10,6 @@
 //
 // Generated bundles include:
 //   - values.yaml: Helm chart configuration
-//   - README.md: Deployment documentation with prerequisites and instructions
 //   - checksums.txt: SHA256 checksums for verification
 //
 // # Implementation
@@ -37,12 +36,4 @@
 //
 // The bundler extracts values from recipe component references. The recipe's
 // matchedRules field indicates which overlays were applied.
-//
-// # Templates
-//
-// Templates are embedded in the binary using go:embed and rendered with Go's
-// text/template package. Templates support:
-//   - Conditional sections based on enabled features
-//   - Version-specific configurations
-//   - Cloud provider-specific optimizations
 package dradriver

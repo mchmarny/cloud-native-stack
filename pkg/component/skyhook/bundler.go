@@ -20,9 +20,6 @@ const (
 )
 
 var (
-	//go:embed templates/README.md.tmpl
-	readmeTemplate string
-
 	//go:embed templates/customizations/ubuntu.yaml.tmpl
 	ubuntuCustomizationTemplate string
 
@@ -37,15 +34,6 @@ func init() {
 	registry.MustRegister(types.BundleTypeSkyhook, func(cfg *config.Config) registry.Bundler {
 		return NewBundler(cfg)
 	})
-}
-
-// GetTemplate returns the named template content for README generation.
-func GetTemplate(name string) (string, bool) {
-	templates := map[string]string{
-		"README.md": readmeTemplate,
-	}
-	tmpl, ok := templates[name]
-	return tmpl, ok
 }
 
 // GetCustomizationTemplate returns the template for a specific customization.
@@ -76,11 +64,7 @@ var componentConfig = common.ComponentConfig{
 	},
 	DefaultHelmRepository: "https://nvidia.github.io/skyhook",
 	DefaultHelmChart:      "skyhook",
-	TemplateGetter:        GetTemplate,
 	CustomManifestFunc:    generateCustomManifests,
-	MetadataExtensions: map[string]interface{}{
-		"HelmChartName": "skyhook",
-	},
 }
 
 // Bundler creates Skyhook Operator application bundles based on recipes.

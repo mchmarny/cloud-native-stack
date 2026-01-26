@@ -95,10 +95,8 @@ Generates deployment artifacts from recipes:
 
 - Helm values files (values.yaml)
 - Kubernetes manifests (ClusterPolicy, NICClusterPolicy, etc.)
-- Installation scripts (bash, with prerequisite checks)
-- Uninstallation scripts (cleanup)
-- README documentation
 - SHA256 checksum file
+- README documentation (generated at deployer level, not by component bundlers)
 
 **Input sources:**
 

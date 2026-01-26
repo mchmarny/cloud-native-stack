@@ -2,7 +2,6 @@ package certmanager
 
 import (
 	"context"
-	_ "embed"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/registry"
@@ -14,14 +13,6 @@ import (
 
 const (
 	Name = "cert-manager"
-)
-
-var (
-	//go:embed templates/README.md.tmpl
-	readmeTemplate string
-
-	// GetTemplate returns the named template content for README and manifest generation.
-	GetTemplate = internal.StandardTemplates(readmeTemplate)
 )
 
 func init() {
@@ -50,10 +41,6 @@ var componentConfig = internal.ComponentConfig{
 		"webhook.tolerations",
 		"cainjector.tolerations",
 		"startupapicheck.tolerations",
-	},
-	TemplateGetter: GetTemplate,
-	MetadataExtensions: map[string]interface{}{
-		"InstallCRDs": true,
 	},
 }
 

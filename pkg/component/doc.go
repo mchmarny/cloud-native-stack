@@ -6,7 +6,6 @@
 //   - Extracting configuration from recipes via component references
 //   - Generating Helm values files with proper YAML headers
 //   - Creating Kubernetes manifests (when needed)
-//   - Producing README documentation
 //   - Computing checksums for verification
 //
 // Components self-register with the bundler registry via init() functions, enabling automatic
@@ -51,20 +50,17 @@
 //  3. Create a Bundler struct that embeds [internal.BaseBundler]
 //  4. Implement Make() by calling [internal.MakeBundle] with your config
 //  5. Self-register in init() using [registry.MustRegister]
-//  6. Add templates in a templates/ subdirectory using go:embed directive
-//  7. Use [internal.StandardTemplates] for the common case of just a README template
 //
-// For components with custom metadata fields (used in README templates),
-// provide MetadataExtensions in the ComponentConfig. For components needing
-// custom Kubernetes manifests, provide a CustomManifestFunc.
+// For components needing custom Kubernetes manifests, provide a CustomManifestFunc
+// in the ComponentConfig with templates in a templates/ subdirectory.
 //
 // # Package Structure
 //
 // Each component package should contain:
-//   - bundler.go: ComponentConfig, Bundler struct, NewBundler, Make, embedded templates
+//   - bundler.go: ComponentConfig, Bundler struct, NewBundler, Make
 //   - bundler_test.go: Tests using [internal.RunStandardBundlerTests]
 //   - doc.go: Package documentation
-//   - templates/README.md.tmpl: README template for deployment instructions
+//   - templates/ (optional): Only needed for CustomManifestFunc templates
 //
 // See pkg/component/networkoperator for a minimal example, or
 // pkg/component/gpuoperator for an example with custom manifest generation.

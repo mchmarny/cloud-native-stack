@@ -14,7 +14,6 @@
 // Generated bundles include:
 //   - values.yaml: Helm chart configuration
 //   - manifests/: Kubernetes manifests (DCGM Exporter ConfigMap, Kernel Module Params)
-//   - README.md: Deployment documentation with prerequisites and instructions
 //   - checksums.txt: SHA256 checksums for verification
 //
 // # Implementation

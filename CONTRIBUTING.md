@@ -214,8 +214,6 @@ cloud-native-stack/
   - **GPU Operator**: Generates complete GPU Operator deployment bundle
     - Helm values.yaml with version management
     - Kubernetes ClusterPolicy manifest
-    - Installation/uninstallation scripts
-    - README with deployment instructions
     - SHA256 checksums for verification
   - **Network Operator**: Generates Network Operator deployment bundle
     - Helm values.yaml for RDMA and SR-IOV configuration
@@ -778,13 +776,11 @@ kubectl get configmap cns-recipe -n gpu-operator -o yaml
 bundles/gpu-operator/
 ├── values.yaml              # Helm chart configuration
 ├── manifests/
-│   └── clusterpolicy.yaml  # ClusterPolicy custom resource
-├── scripts/
-│   ├── install.sh          # Automated installation
-│   └── uninstall.sh        # Cleanup script
-├── README.md                # Deployment guide
+│   └── clusterpolicy.yaml  # ClusterPolicy custom resource (when applicable)
 └── checksums.txt            # SHA256 checksums
 ```
+
+Note: Deployment documentation (README) is generated at the deployer level (helm, argocd), not by component bundlers.
 
 ### Running the API Server
 
@@ -891,14 +887,9 @@ const (
     Name = "my-bundler"  // Component name matching recipe componentRefs
 )
 
-var (
-    //go:embed templates/README.md.tmpl
-    readmeTemplate string
-
-    // GetTemplate returns template content for README generation.
-    // Use StandardTemplates for the common case of just a README template.
-    GetTemplate = internal.StandardTemplates(readmeTemplate)
-)
+// Note: Most bundlers don't need templates or GetTemplate.
+// Only add these if the bundler generates custom manifests.
+// Values are written directly to values.yaml using MarshalYAMLWithHeader().
 
 func init() {
     // Self-register bundler factory in global registry
@@ -935,47 +926,15 @@ func (b *Bundler) Make(ctx context.Context, input recipe.RecipeInput, outputDir 
 }
 ```
 
-2. Create templates directory:
+2. Create bundler package directory:
 ```
 pkg/component/mybundler/
 ├── bundler.go           # All bundler logic (shown above)
 ├── bundler_test.go      # Tests using RunStandardBundlerTests
-├── doc.go               # Package documentation
-└── templates/
-    └── README.md.tmpl   # README template
+└── doc.go               # Package documentation
 ```
 
-**Example template (`templates/README.md.tmpl`):**
-```markdown
-# {{ .Script.DisplayName }} Deployment
-
-Bundler Version: {{ .Script.Version }}
-Recipe Version: {{ .Script.RecipeVersion }}
-
-## Prerequisites
-
-- Kubernetes 1.25+ cluster
-- Helm 3.x installed
-- kubectl configured
-
-## Installation
-
-```bash
-helm repo add myrepo {{ .Script.HelmRepository }}
-helm install {{ .Script.HelmReleaseName }} myrepo/{{ .Script.HelmChart }} \
-  --namespace {{ .Script.Namespace }} \
-  --create-namespace \
-  -f values.yaml
-```
-
-## Verification
-
-```bash
-kubectl get pods -n {{ .Script.Namespace }}
-```
-```
-
-**Note:** Templates receive a map with `Values` (Helm values) and `Script` (BundleMetadata).
+Note: Most bundlers don't need a templates/ directory since they only generate values.yaml and checksums.txt. Templates are only needed for bundlers that generate custom Kubernetes manifests (e.g., GPU Operator's DCGM exporter ConfigMap). Deployment documentation (README) is generated at the deployer level (helm, argocd), not by component bundlers.
 
 3. Add tests using the shared test harness:
 ```go
@@ -1037,7 +996,6 @@ tree test-bundles/my-bundler/
 ```
 test-bundles/my-bundler/
 ├── values.yaml
-├── README.md
 └── checksums.txt
 ```
 
@@ -1121,15 +1079,25 @@ var componentConfig = internal.ComponentConfig{
 
 #### File Structure Summary
 
-Each bundler package contains just 3-4 files:
+Each bundler package contains just 2-3 files:
 
 ```
 pkg/component/mybundler/
+├── bundler.go           # ComponentConfig + Bundler
+├── bundler_test.go      # Tests using RunStandardBundlerTests
+└── doc.go               # Package documentation
+```
+
+Bundlers with custom manifest generation add a templates/ directory:
+
+```
+pkg/component/gpuoperator/
 ├── bundler.go           # ComponentConfig + Bundler + embedded templates
 ├── bundler_test.go      # Tests using RunStandardBundlerTests
 ├── doc.go               # Package documentation
 └── templates/
-    └── README.md.tmpl   # README template (and any custom manifest templates)
+    ├── dcgm-exporter.yaml.tmpl      # Custom manifest template
+    └── kernel-module-params.yaml.tmpl
 ```
 
 #### Key Framework Features
@@ -1140,12 +1108,12 @@ pkg/component/mybundler/
 - Applying node selectors and tolerations to configured Helm paths
 - Creating directory structure
 - Writing values.yaml with proper headers
-- Calling CustomManifestFunc if defined
-- Generating README from templates
+- Calling CustomManifestFunc if defined (for custom manifests)
 - Computing SHA256 checksums
 
-**StandardTemplates helper:**
-- For bundlers with just a README template, use `internal.StandardTemplates(readmeTemplate)`
+**Template helpers:**
+- Most bundlers don't need templates (only values.yaml and checksums.txt are generated)
+- For bundlers with custom manifests, use `internal.NewTemplateGetter(map[string]string{...})`
 - Returns a template getter function compatible with ComponentConfig
 
 **RunStandardBundlerTests:**
@@ -1154,7 +1122,7 @@ pkg/component/mybundler/
 - Verifies file existence and checksums
 - Reduces test boilerplate significantly
 
-**BundleMetadata in templates:**
+**BundleMetadata in custom manifest templates:**
 - Access via `{{ .Script.Namespace }}`, `{{ .Script.Version }}`, etc.
 - Extensions via `{{ .Script.Extensions.FieldName }}`
 - Values via `{{ .Values }}` or `{{ index .Values "key" }}`
@@ -1163,23 +1131,22 @@ pkg/component/mybundler/
 
 **Implementation:**
 - ✅ Use `Name` constant for component name
-- ✅ Use `internal.StandardTemplates()` for simple README-only bundlers
-- ✅ Use `MetadataExtensions` for custom template data (not MetadataFunc)
-- ✅ Use `go:embed` for template portability
+- ✅ Most bundlers don't need templates (only values.yaml and checksums.txt)
+- ✅ Use `go:embed` for template portability when custom manifests are needed
 - ✅ Self-register in `init()` using `registry.MustRegister()`
 
 **Testing:**
 - ✅ Use `internal.RunStandardBundlerTests()` for consistent testing
 - ✅ Add custom tests only for component-specific behavior
 
-**Templates:**
+**Custom Manifest Templates (when needed):**
 - ✅ Access metadata via `{{ .Script.FieldName }}`
 - ✅ Access extensions via `{{ .Script.Extensions.CustomField }}`
 - ✅ Handle missing values gracefully with `{{- if }}`
 
 **Documentation:**
 - ✅ Add doc.go with package overview
-- ✅ Document bundle structure and custom metadata fields
+- ✅ Document bundle structure and any custom manifests generated
 
 
 ## Code Quality Standards

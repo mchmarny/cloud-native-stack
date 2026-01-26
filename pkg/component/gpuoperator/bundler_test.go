@@ -12,7 +12,7 @@ func TestBundler(t *testing.T) {
 		ComponentName:     Name,
 		NewBundler:        func(cfg *config.Config) internal.BundlerInterface { return NewBundler(cfg) },
 		GetTemplate:       GetTemplate,
-		ExpectedTemplates: []string{"README.md", "kernel-module-params", "dcgm-exporter"},
-		ExpectedFiles:     []string{"values.yaml", "README.md", "checksums.txt"},
+		ExpectedTemplates: []string{"kernel-module-params", "dcgm-exporter"},
+		ExpectedFiles:     []string{"values.yaml", "checksums.txt"},
 	})
 }

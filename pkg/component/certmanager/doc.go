@@ -12,7 +12,6 @@
 //
 // Generated bundles include:
 //   - values.yaml: Helm chart configuration
-//   - README.md: Deployment documentation with prerequisites and instructions
 //   - checksums.txt: SHA256 checksums for verification
 //
 // # Implementation
@@ -22,14 +21,6 @@
 //   - Node selector paths for controller, webhook, cainjector, and startupapicheck
 //   - Default Helm repository (https://charts.jetstack.io)
 //   - Default Helm chart (jetstack/cert-manager)
-//   - MetadataExtensions for InstallCRDs field
-//
-// # Custom Metadata
-//
-// This bundler provides custom metadata via MetadataExtensions to include:
-//   - InstallCRDs: Boolean flag for CRD installation (always true)
-//
-// This additional field is accessible in templates via {{ .Script.Extensions.InstallCRDs }}.
 //
 // # Usage
 //
@@ -47,15 +38,6 @@
 //
 // The bundler extracts values from recipe component references including
 // CRD installation settings, DNS configuration, and webhook settings.
-//
-// # Templates
-//
-// Templates are embedded in the binary using go:embed and rendered with Go's
-// text/template package. Templates support:
-//   - Conditional sections based on enabled features
-//   - Version-specific configurations
-//   - Namespace customization
-//   - Resource quota and limit configurations
 //
 // # Prerequisites
 //

@@ -2,7 +2,6 @@ package nvsentinel
 
 import (
 	"context"
-	_ "embed"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/config"
 	"github.com/NVIDIA/cloud-native-stack/pkg/bundler/registry"
@@ -14,14 +13,6 @@ import (
 
 const (
 	Name = "nvsentinel"
-)
-
-var (
-	//go:embed templates/README.md.tmpl
-	readmeTemplate string
-
-	// GetTemplate returns the named template content for README and manifest generation.
-	GetTemplate = common.StandardTemplates(readmeTemplate)
 )
 
 func init() {
@@ -45,7 +36,6 @@ var componentConfig = common.ComponentConfig{
 	AcceleratedTolerationPaths: []string{
 		"global.tolerations",
 	},
-	TemplateGetter: GetTemplate,
 }
 
 // Bundler creates NVSentinel application bundles based on recipes.

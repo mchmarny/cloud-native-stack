@@ -483,8 +483,7 @@ cnsctl validate \
 │  │ Template Engine │ (go:embed templates)              │
 │  │ ├─ values.yaml  │                                   │
 │  │ ├─ manifests/   │                                   │
-│  │ ├─ scripts/     │                                   │
-│  │ └─ README.md    │                                   │
+│  │ └─ checksums.txt│                                   │
 │  └────────┬────────┘                                   │
 │           │                                            │
 │  ┌────────▼────────┐                                   │
@@ -544,22 +543,14 @@ bundle-output/
 │   ├── values.yaml           # Helm values with extracted config
 │   ├── manifests/
 │   │   └── clusterpolicy.yaml  # Kubernetes manifest
-│   ├── scripts/
-│   │   ├── install.sh        # Deployment automation
-│   │   └── uninstall.sh      # Cleanup automation
-│   ├── README.md              # Deployment guide
 │   └── checksums.txt          # SHA256 verification
 │
 └── network-operator/
     ├── values.yaml
-    ├── manifests/
-    │   └── nicclusterpolicy.yaml
-    ├── scripts/
-    │   ├── install.sh
-    │   └── uninstall.sh
-    ├── README.md
     └── checksums.txt
 ```
+
+Note: Deployment documentation (README.md) is generated at the deployer level (helm, argocd), not by individual component bundlers. See [Deployer-Specific Output](#deployer-specific-output) for README locations.
 
 ## Stage 5: Deployment (GitOps Integration)
 
