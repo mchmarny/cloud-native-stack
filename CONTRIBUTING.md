@@ -226,6 +226,7 @@ cloud-native-stack/
     - Helm values.yaml
     - Skyhook CR manifest
   - **DRA Driver**: Generates NVIDIA DRA (Dynamic Resource Allocation) Driver deployment bundle
+  - **Prometheus**: Generates Prometheus monitoring system deployment bundle
     - Helm values.yaml with DRA configuration
     - Installation/uninstallation scripts
     - README with deployment instructions

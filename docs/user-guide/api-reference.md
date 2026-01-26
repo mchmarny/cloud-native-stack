@@ -186,6 +186,7 @@ The request body is the recipe (RecipeResult) directly. No wrapper object needed
 | `nvsentinel` | NVSentinel monitoring |
 | `skyhook-operator` | Skyhook node optimization |
 | `nvidia-dra-driver-gpu` | NVIDIA DRA (Dynamic Resource Allocation) Driver |
+| `prometheus` | Prometheus monitoring and alerting system |
 
 **Examples:**
 

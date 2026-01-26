@@ -483,6 +483,7 @@ cnsctl bundle [flags]
 - `nvsentinel` - NVSentinel deployment bundle
 - `skyhook-operator` - Skyhook node optimization deployment bundle
 - `nvidia-dra-driver-gpu` - NVIDIA DRA (Dynamic Resource Allocation) Driver deployment bundle
+- `prometheus` - Prometheus monitoring and alerting system deployment bundle
 
 **Behavior:**
 - If `--bundlers` is omitted, **all registered bundlers** execute

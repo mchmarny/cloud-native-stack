@@ -111,6 +111,7 @@ Each bundle scenario generates these components:
 - **nvsentinel** – NVSentinel monitoring
 - **skyhook-operator** – Node optimization
 - **nvidia-dra-driver-gpu** – NVIDIA DRA (Dynamic Resource Allocation) Driver (GB200 only)
+- **prometheus** – Prometheus monitoring and alerting system
 
 ### Bundle Contents
 
