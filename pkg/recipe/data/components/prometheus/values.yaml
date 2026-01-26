@@ -1,0 +1,39 @@
+# Basic Prometheus configuration for cloud-native monitoring
+server:
+  # Enable persistent storage
+  persistentVolume:
+    enabled: true
+    size: 20Gi
+
+  # Data retention
+  retention: "15d"
+
+  # Resource requests and limits
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+# Alertmanager for handling alerts
+alertmanager:
+  enabled: true
+  persistentVolume:
+    enabled: true
+    size: 2Gi
+
+# Node exporter for host metrics
+nodeExporter:
+  enabled: true
+  hostNetwork: true
+  hostPID: true
+
+# Pushgateway for batch job metrics
+pushgateway:
+  enabled: false
+
+# Enable kube-state-metrics for Kubernetes API metrics
+kubeStateMetrics:
+  enabled: true

@@ -134,6 +134,7 @@ func TestSupportedTypes(t *testing.T) {
 		BundleTypeNVSentinel,
 		BundleTypeCertManager,
 		BundleTypeDraDriver,
+		BundleTypePrometheus,
 	}
 
 	if len(types) != len(expectedTypes) {
@@ -191,6 +192,7 @@ func TestSupportedBundleTypesAsStrings(t *testing.T) {
 		"nvsentinel",
 		"cert-manager",
 		"nvidia-dra-driver-gpu",
+		"prometheus",
 	}
 
 	if len(strings) != len(expectedStrings) {

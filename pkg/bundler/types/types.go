@@ -18,6 +18,7 @@ const (
 	BundleTypeNVSentinel      BundleType = "nvsentinel"
 	BundleTypeCertManager     BundleType = "cert-manager"
 	BundleTypeDraDriver       BundleType = "nvidia-dra-driver-gpu"
+	BundleTypePrometheus      BundleType = "prometheus"
 )
 
 // String returns the string representation of the bundle type.
@@ -43,6 +44,8 @@ func ParseType(s string) (BundleType, error) {
 		return BundleTypeCertManager, nil
 	case string(BundleTypeDraDriver):
 		return BundleTypeDraDriver, nil
+	case string(BundleTypePrometheus):
+		return BundleTypePrometheus, nil
 	default:
 		if suggestion := findClosestBundleType(lower); suggestion != "" {
 			return "", fmt.Errorf("unsupported bundle type %q (did you mean %q?)", s, suggestion)
@@ -82,6 +85,7 @@ func SupportedTypes() []BundleType {
 		BundleTypeNVSentinel,
 		BundleTypeCertManager,
 		BundleTypeDraDriver,
+		BundleTypePrometheus,
 	}
 }
 
