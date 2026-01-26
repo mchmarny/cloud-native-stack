@@ -5,13 +5,11 @@ metadata:
 
 spec:
   # GKE Container-Optimized OS recipe with GPU support
-  # This is a leaf recipe for GKE-COS deployments with GPU training workloads
+  # This recipe provides GKE-COS specific configuration for any accelerator/intent
 
   criteria:
     service: gke
     os: cos
-    accelerator: h100
-    intent: training
 
   componentRefs:
     # GKE-COS-specific GPU Operator overrides (inherits valuesFile from base)
