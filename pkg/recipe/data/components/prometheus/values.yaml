@@ -1,0 +1,90 @@
+# Prometheus server configuration
+server:
+  # Enable persistent storage for metrics
+  persistentVolume:
+    enabled: true
+    size: 50Gi
+  # Set data retention period
+  retention: "30d"
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+
+# Alertmanager configuration
+alertmanager:
+  enabled: true
+  persistentVolume:
+    enabled: true
+    size: 5Gi
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+# Node exporter for host metrics
+nodeExporter:
+  enabled: true
+  # Run on all nodes including GPU nodes
+  hostNetwork: true
+  hostPID: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Pushgateway for batch job metrics
+pushgateway:
+  enabled: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Kube-state-metrics for Kubernetes API metrics
+kubeStateMetrics:
+  enabled: true
+
+# Additional scrape configurations for NVIDIA components
+serverFiles:
+  prometheus.yml:
+    scrape_configs:
+      # DCGM exporter metrics (GPU monitoring)
+      - job_name: 'dcgm-exporter'
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - gpu-operator
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: nvidia-dcgm-exporter
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: gpu-metrics
+
+      # NVIDIA device plugin metrics
+      - job_name: 'nvidia-device-plugin'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - gpu-operator
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: keep
+            regex: nvidia-device-plugin-daemonset

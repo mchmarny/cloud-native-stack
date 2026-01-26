@@ -1,0 +1,30 @@
+kind: recipeMetadata
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: monitoring
+
+spec:
+  # Base recipe for monitoring setup
+  base: base
+
+  criteria:
+    intent: monitoring
+
+  # Basic constraints for monitoring components
+  constraints:
+    - name: K8s.server.version
+      value: ">= 1.28.0"
+
+  componentRefs:
+    # Prometheus for metrics collection and alerting
+    - name: prometheus
+      type: Helm
+      source: https://prometheus-community.github.io/helm-charts
+      version: "25.29.0"
+      valuesFile: components/prometheus/values.yaml
+
+    # Cert-Manager for TLS certificates (if needed for secure monitoring endpoints)
+    - name: cert-manager
+      type: Helm
+      version: v1.17.2
+      valuesFile: components/cert-manager/values.yaml

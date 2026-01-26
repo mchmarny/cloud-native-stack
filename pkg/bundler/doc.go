@@ -37,6 +37,7 @@ With options:
   - cert-manager: Certificate Manager (values.yaml, scripts)
   - nvsentinel: NVSentinel (values.yaml, scripts)
   - skyhook-operator: Skyhook node optimization (values.yaml, Skyhook CR, scripts)
+  - prometheus: Prometheus monitoring (values.yaml, scripts)
 
 # Execution
 

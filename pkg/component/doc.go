@@ -28,6 +28,7 @@
 //   - gpuoperator/: GPU Operator component with custom manifest generation
 //   - networkoperator/: Network Operator component for RDMA and SR-IOV
 //   - nvsentinel/: NVIDIA Sentinel component with custom metadata
+//   - prometheus/: Prometheus monitoring component
 //   - skyhook/: Skyhook Operator component with custom metadata
 //
 // # Usage
