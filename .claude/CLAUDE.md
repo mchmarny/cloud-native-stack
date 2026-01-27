@@ -31,6 +31,10 @@
 5. **Structured errors** — Use `pkg/errors` with error codes
 6. **Context timeouts** — All I/O operations need context with timeout
 
+## Git Configuration
+
+Commit all changes by default to the `main` branch, no the old `master` branch. 
+
 ## Project Overview
 
 NVIDIA Cloud Native Stack (CNS) generates validated GPU-accelerated Kubernetes configurations.
