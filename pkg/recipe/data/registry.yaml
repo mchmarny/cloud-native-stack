@@ -115,3 +115,24 @@ components:
       accelerated:
         tolerationPaths:
           - kubeletPlugin.tolerations
+
+  - name: prometheus
+    displayName: prometheus
+    valueOverrideKeys:
+      - prometheus
+    helm:
+      defaultRepository: https://prometheus-community.github.io/helm-charts
+      defaultChart: prometheus-community/kube-prometheus-stack
+      defaultVersion: 66.2.2
+    nodeScheduling:
+      system:
+        nodeSelectorPaths:
+          - prometheus.prometheusSpec.nodeSelector
+          - alertmanager.alertmanagerSpec.nodeSelector
+          - grafana.nodeSelector
+          - prometheusOperator.nodeSelector
+        tolerationPaths:
+          - prometheus.prometheusSpec.tolerations
+          - alertmanager.alertmanagerSpec.tolerations
+          - grafana.tolerations
+          - prometheusOperator.tolerations

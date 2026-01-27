@@ -40,3 +40,9 @@ spec:
       source: https://helm.ngc.nvidia.com/nvidia/skyhook
       version: 0.11.1
       valuesFile: components/skyhook-operator/values.yaml
+
+    - name: prometheus
+      type: Helm
+      source: https://prometheus-community.github.io/helm-charts
+      version: 66.2.2
+      valuesFile: components/prometheus/values.yaml
