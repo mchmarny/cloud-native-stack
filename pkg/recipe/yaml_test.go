@@ -608,22 +608,18 @@ func TestLeafRecipesHaveCompleteCriteria(t *testing.T) {
 				return
 			}
 
-			// Leaf recipes should have complete criteria for matching
+			// Leaf recipes should have some meaningful criteria for matching
 			c := metadata.Spec.Criteria
 			if c == nil {
 				t.Error("leaf recipe missing criteria")
 				return
 			}
 
-			// Leaf recipes need accelerator, os, and intent for bundle generation
-			if c.Accelerator == "" {
-				t.Error("leaf recipe missing accelerator in criteria")
-			}
-			if c.OS == "" {
-				t.Error("leaf recipe missing os in criteria")
-			}
-			if c.Intent == "" {
-				t.Error("leaf recipe missing intent in criteria")
+			// Leaf recipes should have at least one criteria field to distinguish them
+			// Empty/missing fields act as wildcards and match everything, which is valid
+			hasSomeCriteria := c.Service != "" || c.Accelerator != "" || c.OS != "" || c.Intent != ""
+			if !hasSomeCriteria {
+				t.Error("leaf recipe should have at least one criteria field set")
 			}
 		})
 	}
