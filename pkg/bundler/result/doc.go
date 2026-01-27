@@ -33,7 +33,7 @@
 // Results are typically created by BaseBundler:
 //
 //	result := &result.Result{
-//	    BundlerType: types.BundleTypeGpuOperator,
+//	    BundlerType: types.BundleType("gpu-operator"),
 //	    Success:     true,
 //	    Files:       []string{"values.yaml", "manifests/clusterpolicy.yaml"},
 //	    Checksums:   map[string]string{"values.yaml": "sha256..."},

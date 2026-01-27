@@ -58,15 +58,15 @@ func TestOutput_HasErrors(t *testing.T) {
 		{
 			name: "single error",
 			errors: []BundleError{
-				{BundlerType: types.BundleTypeGpuOperator, Error: "failed"},
+				{BundlerType: types.BundleType("gpu-operator"), Error: "failed"},
 			},
 			want: true,
 		},
 		{
 			name: "multiple errors",
 			errors: []BundleError{
-				{BundlerType: types.BundleTypeGpuOperator, Error: "error 1"},
-				{BundlerType: types.BundleTypeNetworkOperator, Error: "error 2"},
+				{BundlerType: types.BundleType("gpu-operator"), Error: "error 1"},
+				{BundlerType: types.BundleType("network-operator"), Error: "error 2"},
 			},
 			want: true,
 		},
@@ -101,24 +101,24 @@ func TestOutput_SuccessCount(t *testing.T) {
 		{
 			name: "all successful",
 			results: []*Result{
-				{Type: types.BundleTypeGpuOperator, Success: true},
-				{Type: types.BundleTypeNetworkOperator, Success: true},
+				{Type: types.BundleType("gpu-operator"), Success: true},
+				{Type: types.BundleType("network-operator"), Success: true},
 			},
 			want: 2,
 		},
 		{
 			name: "all failed",
 			results: []*Result{
-				{Type: types.BundleTypeGpuOperator, Success: false},
-				{Type: types.BundleTypeNetworkOperator, Success: false},
+				{Type: types.BundleType("gpu-operator"), Success: false},
+				{Type: types.BundleType("network-operator"), Success: false},
 			},
 			want: 0,
 		},
 		{
 			name: "mixed success and failure",
 			results: []*Result{
-				{Type: types.BundleTypeGpuOperator, Success: true},
-				{Type: types.BundleTypeNetworkOperator, Success: false},
+				{Type: types.BundleType("gpu-operator"), Success: true},
+				{Type: types.BundleType("network-operator"), Success: false},
 				{Type: types.BundleType("custom"), Success: true},
 			},
 			want: 2,
@@ -154,24 +154,24 @@ func TestOutput_FailureCount(t *testing.T) {
 		{
 			name: "all successful",
 			results: []*Result{
-				{Type: types.BundleTypeGpuOperator, Success: true},
-				{Type: types.BundleTypeNetworkOperator, Success: true},
+				{Type: types.BundleType("gpu-operator"), Success: true},
+				{Type: types.BundleType("network-operator"), Success: true},
 			},
 			want: 0,
 		},
 		{
 			name: "all failed",
 			results: []*Result{
-				{Type: types.BundleTypeGpuOperator, Success: false},
-				{Type: types.BundleTypeNetworkOperator, Success: false},
+				{Type: types.BundleType("gpu-operator"), Success: false},
+				{Type: types.BundleType("network-operator"), Success: false},
 			},
 			want: 2,
 		},
 		{
 			name: "mixed success and failure",
 			results: []*Result{
-				{Type: types.BundleTypeGpuOperator, Success: true},
-				{Type: types.BundleTypeNetworkOperator, Success: false},
+				{Type: types.BundleType("gpu-operator"), Success: true},
+				{Type: types.BundleType("network-operator"), Success: false},
 				{Type: types.BundleType("custom"), Success: true},
 				{Type: types.BundleType("custom2"), Success: false},
 			},
@@ -330,7 +330,7 @@ func TestOutput_Summary(t *testing.T) {
 				OutputDir: "/output/bundles",
 				Results: []*Result{
 					{
-						Type:    types.BundleTypeGpuOperator,
+						Type:    types.BundleType("gpu-operator"),
 						Success: true,
 						Files:   []string{"file1.yaml", "file2.yaml"},
 						Size:    2048,
@@ -352,8 +352,8 @@ func TestOutput_Summary(t *testing.T) {
 			output: &Output{
 				OutputDir: "/output",
 				Results: []*Result{
-					{Type: types.BundleTypeGpuOperator, Success: true, Size: 1024},
-					{Type: types.BundleTypeNetworkOperator, Success: false, Size: 0},
+					{Type: types.BundleType("gpu-operator"), Success: true, Size: 1024},
+					{Type: types.BundleType("network-operator"), Success: false, Size: 0},
 					{Type: types.BundleType("custom"), Success: true, Size: 2048},
 				},
 				TotalSize:     3072,
@@ -371,7 +371,7 @@ func TestOutput_Summary(t *testing.T) {
 			name: "large size formatting",
 			output: &Output{
 				OutputDir:     "/output",
-				Results:       []*Result{{Type: types.BundleTypeGpuOperator, Success: true}},
+				Results:       []*Result{{Type: types.BundleType("gpu-operator"), Success: true}},
 				TotalSize:     5 * 1024 * 1024 * 1024, // 5 GB
 				TotalFiles:    1000,
 				TotalDuration: 2 * time.Minute,
@@ -400,8 +400,8 @@ func TestOutput_Summary(t *testing.T) {
 
 // TestOutput_ByType tests result lookup by type
 func TestOutput_ByType(t *testing.T) {
-	result1 := &Result{Type: types.BundleTypeGpuOperator, Success: true}
-	result2 := &Result{Type: types.BundleTypeNetworkOperator, Success: false}
+	result1 := &Result{Type: types.BundleType("gpu-operator"), Success: true}
+	result2 := &Result{Type: types.BundleType("network-operator"), Success: false}
 	result3 := &Result{Type: types.BundleType("custom"), Success: true}
 
 	output := &Output{
@@ -415,11 +415,11 @@ func TestOutput_ByType(t *testing.T) {
 	}
 
 	// Verify each result is accessible by type
-	if got := byType[types.BundleTypeGpuOperator]; got != result1 {
+	if got := byType[types.BundleType("gpu-operator")]; got != result1 {
 		t.Error("ByType()[gpu-operator] did not return correct result")
 	}
 
-	if got := byType[types.BundleTypeNetworkOperator]; got != result2 {
+	if got := byType[types.BundleType("network-operator")]; got != result2 {
 		t.Error("ByType()[network-operator] did not return correct result")
 	}
 
@@ -461,31 +461,31 @@ func TestOutput_FailedBundlers(t *testing.T) {
 		{
 			name: "single error",
 			errors: []BundleError{
-				{BundlerType: types.BundleTypeGpuOperator, Error: "failed"},
+				{BundlerType: types.BundleType("gpu-operator"), Error: "failed"},
 			},
 			want: []types.BundleType{
-				types.BundleTypeGpuOperator,
+				types.BundleType("gpu-operator"),
 			},
 		},
 		{
 			name: "multiple errors",
 			errors: []BundleError{
-				{BundlerType: types.BundleTypeGpuOperator, Error: "error 1"},
-				{BundlerType: types.BundleTypeNetworkOperator, Error: "error 2"},
+				{BundlerType: types.BundleType("gpu-operator"), Error: "error 1"},
+				{BundlerType: types.BundleType("network-operator"), Error: "error 2"},
 			},
 			want: []types.BundleType{
-				types.BundleTypeGpuOperator,
-				types.BundleTypeNetworkOperator,
+				types.BundleType("gpu-operator"),
+				types.BundleType("network-operator"),
 			},
 		},
 		{
 			name: "mixed with custom bundler",
 			errors: []BundleError{
-				{BundlerType: types.BundleTypeNetworkOperator, Error: "error 1"},
+				{BundlerType: types.BundleType("network-operator"), Error: "error 1"},
 				{BundlerType: types.BundleType("custom"), Error: "error 2"},
 			},
 			want: []types.BundleType{
-				types.BundleTypeNetworkOperator,
+				types.BundleType("network-operator"),
 				types.BundleType("custom"),
 			},
 		},
@@ -534,32 +534,32 @@ func TestOutput_SuccessfulBundlers(t *testing.T) {
 		{
 			name: "all successful",
 			results: []*Result{
-				{Type: types.BundleTypeGpuOperator, Success: true},
-				{Type: types.BundleTypeNetworkOperator, Success: true},
+				{Type: types.BundleType("gpu-operator"), Success: true},
+				{Type: types.BundleType("network-operator"), Success: true},
 			},
 			want: []types.BundleType{
-				types.BundleTypeGpuOperator,
-				types.BundleTypeNetworkOperator,
+				types.BundleType("gpu-operator"),
+				types.BundleType("network-operator"),
 			},
 		},
 		{
 			name: "all failed",
 			results: []*Result{
-				{Type: types.BundleTypeGpuOperator, Success: false},
-				{Type: types.BundleTypeNetworkOperator, Success: false},
+				{Type: types.BundleType("gpu-operator"), Success: false},
+				{Type: types.BundleType("network-operator"), Success: false},
 			},
 			want: []types.BundleType{},
 		},
 		{
 			name: "mixed results",
 			results: []*Result{
-				{Type: types.BundleTypeGpuOperator, Success: true},
-				{Type: types.BundleTypeNetworkOperator, Success: false},
+				{Type: types.BundleType("gpu-operator"), Success: true},
+				{Type: types.BundleType("network-operator"), Success: false},
 				{Type: types.BundleType("custom1"), Success: true},
 				{Type: types.BundleType("custom2"), Success: false},
 			},
 			want: []types.BundleType{
-				types.BundleTypeGpuOperator,
+				types.BundleType("gpu-operator"),
 				types.BundleType("custom1"),
 			},
 		},
@@ -595,7 +595,7 @@ func TestOutput_SuccessfulBundlers(t *testing.T) {
 
 // TestBundleError tests BundleError struct
 func TestBundleError(t *testing.T) {
-	bundlerType := types.BundleTypeGpuOperator
+	bundlerType := types.BundleType("gpu-operator")
 	errorMsg := "failed to generate bundle"
 
 	bundleErr := BundleError{
@@ -615,13 +615,13 @@ func TestBundleError(t *testing.T) {
 // TestOutput_CompleteWorkflow tests a complete output workflow
 func TestOutput_CompleteWorkflow(t *testing.T) {
 	// Create output with multiple results
-	result1 := New(types.BundleTypeGpuOperator)
+	result1 := New(types.BundleType("gpu-operator"))
 	result1.AddFile("/output/gpu/values.yaml", 1024)
 	result1.AddFile("/output/gpu/manifest.yaml", 2048)
 	result1.Duration = 3 * time.Second
 	result1.MarkSuccess()
 
-	result2 := New(types.BundleTypeNetworkOperator)
+	result2 := New(types.BundleType("network-operator"))
 	result2.AddFile("/output/network/values.yaml", 512)
 	result2.AddError(errors.New("template error"))
 	result2.Duration = 2 * time.Second
@@ -640,7 +640,7 @@ func TestOutput_CompleteWorkflow(t *testing.T) {
 		TotalFiles:    5,
 		TotalDuration: 6 * time.Second,
 		Errors: []BundleError{
-			{BundlerType: types.BundleTypeNetworkOperator, Error: "template error"},
+			{BundlerType: types.BundleType("network-operator"), Error: "template error"},
 		},
 	}
 
@@ -670,8 +670,8 @@ func TestOutput_CompleteWorkflow(t *testing.T) {
 	if len(failed) != 1 {
 		t.Errorf("FailedBundlers() returned %d types, want 1", len(failed))
 	}
-	if failed[0] != types.BundleTypeNetworkOperator {
-		t.Errorf("FailedBundlers()[0] = %s, want %s", failed[0], types.BundleTypeNetworkOperator)
+	if failed[0] != types.BundleType("network-operator") {
+		t.Errorf("FailedBundlers()[0] = %s, want %s", failed[0], types.BundleType("network-operator"))
 	}
 
 	// Verify SuccessfulBundlers

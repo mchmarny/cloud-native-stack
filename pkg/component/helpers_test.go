@@ -179,7 +179,7 @@ func TestComputeChecksum(t *testing.T) {
 
 func TestFileWriter(t *testing.T) {
 	tmpDir := t.TempDir()
-	res := result.New(types.BundleTypeGpuOperator)
+	res := result.New(types.BundleType("gpu-operator"))
 	writer := NewFileWriter(res)
 
 	t.Run("WriteFile", func(t *testing.T) {
@@ -276,7 +276,7 @@ func TestChecksumGenerator(t *testing.T) {
 
 	t.Run("Generate with multiple files", func(t *testing.T) {
 		// Create result with test files
-		res := result.New(types.BundleTypeGpuOperator)
+		res := result.New(types.BundleType("gpu-operator"))
 
 		// Create test files
 		file1 := filepath.Join(tmpDir, "file1.txt")
@@ -315,7 +315,7 @@ func TestChecksumGenerator(t *testing.T) {
 	})
 
 	t.Run("Generate with empty result", func(t *testing.T) {
-		res := result.New(types.BundleTypeGpuOperator)
+		res := result.New(types.BundleType("gpu-operator"))
 		generator := NewChecksumGenerator(res)
 
 		content, err := generator.Generate(tmpDir, "Empty")
@@ -331,7 +331,7 @@ func TestChecksumGenerator(t *testing.T) {
 	})
 
 	t.Run("Generate with non-existent file in result", func(t *testing.T) {
-		res := result.New(types.BundleTypeGpuOperator)
+		res := result.New(types.BundleType("gpu-operator"))
 		// Add a file that doesn't exist
 		res.AddFile(filepath.Join(tmpDir, "nonexistent.txt"), 0)
 

@@ -10,7 +10,7 @@ import (
 
 // TestResult_New tests result creation
 func TestResult_New(t *testing.T) {
-	bundlerType := types.BundleTypeGpuOperator
+	bundlerType := types.BundleType("gpu-operator")
 
 	result := New(bundlerType)
 
@@ -58,7 +58,7 @@ func TestResult_New(t *testing.T) {
 
 // TestResult_AddFile tests adding files to result
 func TestResult_AddFile(t *testing.T) {
-	result := New(types.BundleTypeGpuOperator)
+	result := New(types.BundleType("gpu-operator"))
 
 	// Add single file
 	result.AddFile("/path/to/file1.txt", 100)
@@ -104,7 +104,7 @@ func TestResult_AddFile(t *testing.T) {
 
 // TestResult_AddFile_ZeroSize tests adding file with zero size
 func TestResult_AddFile_ZeroSize(t *testing.T) {
-	result := New(types.BundleTypeGpuOperator)
+	result := New(types.BundleType("gpu-operator"))
 
 	result.AddFile("/path/to/empty.txt", 0)
 
@@ -119,7 +119,7 @@ func TestResult_AddFile_ZeroSize(t *testing.T) {
 
 // TestResult_AddError tests adding errors to result
 func TestResult_AddError(t *testing.T) {
-	result := New(types.BundleTypeGpuOperator)
+	result := New(types.BundleType("gpu-operator"))
 
 	// Add single error
 	err1 := errors.New("first error")
@@ -153,7 +153,7 @@ func TestResult_AddError(t *testing.T) {
 
 // TestResult_AddError_Nil tests adding nil error (should be ignored)
 func TestResult_AddError_Nil(t *testing.T) {
-	result := New(types.BundleTypeGpuOperator)
+	result := New(types.BundleType("gpu-operator"))
 
 	result.AddError(nil)
 
@@ -173,7 +173,7 @@ func TestResult_AddError_Nil(t *testing.T) {
 
 // TestResult_MarkSuccess tests marking result as successful
 func TestResult_MarkSuccess(t *testing.T) {
-	result := New(types.BundleTypeGpuOperator)
+	result := New(types.BundleType("gpu-operator"))
 
 	if result.Success {
 		t.Error("New result should not be successful")
@@ -196,7 +196,7 @@ func TestResult_MarkSuccess(t *testing.T) {
 
 // TestResult_Duration tests setting duration
 func TestResult_Duration(t *testing.T) {
-	result := New(types.BundleTypeGpuOperator)
+	result := New(types.BundleType("gpu-operator"))
 
 	duration := 5 * time.Second
 	result.Duration = duration
@@ -208,7 +208,7 @@ func TestResult_Duration(t *testing.T) {
 
 // TestResult_Checksum tests setting checksum
 func TestResult_Checksum(t *testing.T) {
-	result := New(types.BundleTypeGpuOperator)
+	result := New(types.BundleType("gpu-operator"))
 
 	checksum := "a1b2c3d4e5f6"
 	result.Checksum = checksum
@@ -220,7 +220,7 @@ func TestResult_Checksum(t *testing.T) {
 
 // TestResult_CompleteWorkflow tests a complete result workflow
 func TestResult_CompleteWorkflow(t *testing.T) {
-	result := New(types.BundleTypeGpuOperator)
+	result := New(types.BundleType("gpu-operator"))
 
 	// Add files
 	result.AddFile("/output/values.yaml", 1024)
@@ -264,16 +264,16 @@ func TestResult_CompleteWorkflow(t *testing.T) {
 		t.Errorf("Checksum = %s, want abc123def456", result.Checksum)
 	}
 
-	if result.Type != types.BundleTypeGpuOperator {
-		t.Errorf("Type = %s, want %s", result.Type, types.BundleTypeGpuOperator)
+	if result.Type != types.BundleType("gpu-operator") {
+		t.Errorf("Type = %s, want %s", result.Type, types.BundleType("gpu-operator"))
 	}
 }
 
 // TestResult_MultipleTypes tests results for different bundler types
 func TestResult_MultipleTypes(t *testing.T) {
 	types := []types.BundleType{
-		types.BundleTypeGpuOperator,
-		types.BundleTypeNetworkOperator,
+		types.BundleType("gpu-operator"),
+		types.BundleType("network-operator"),
 		types.BundleType("custom-bundler"),
 	}
 
@@ -296,7 +296,7 @@ func TestResult_MultipleTypes(t *testing.T) {
 
 // TestResult_LargeFileSize tests adding large file sizes
 func TestResult_LargeFileSize(t *testing.T) {
-	result := New(types.BundleTypeGpuOperator)
+	result := New(types.BundleType("gpu-operator"))
 
 	// Add files with large sizes
 	largeSize := int64(1024 * 1024 * 1024) // 1 GB
@@ -311,7 +311,7 @@ func TestResult_LargeFileSize(t *testing.T) {
 
 // TestResult_EmptyState tests result in empty state
 func TestResult_EmptyState(t *testing.T) {
-	result := New(types.BundleTypeGpuOperator)
+	result := New(types.BundleType("gpu-operator"))
 
 	// Verify result is in valid empty state
 	if len(result.Files) != 0 {

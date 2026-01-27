@@ -2363,7 +2363,7 @@ func GetBundlers(types ...BundleType) []Bundler {
 **Benefits**:
 - ✅ Decoupled registration - bundlers self-register via init()
 - ✅ Runtime extensibility - add bundlers without modifying core
-- ✅ Type safety - BundleType prevents string typos
+- ✅ Declarative configuration - components defined in `registry.yaml`
 - ✅ Thread-safe - RWMutex protects concurrent access
 
 #### 2. Functional Options Pattern
@@ -2590,71 +2590,64 @@ slog.Debug("bundle generated successfully",
 )
 ```
 
-### Creating Custom Bundlers
+### Adding New Components
+
+Adding a new component requires **no Go code**. Components are configured declaratively:
 
 #### Step-by-Step Guide
 
-1. **Create Package Structure**:
-   ```
-   pkg/bundler/myoperator/
-   ├── bundler.go         # Main bundler implementation
-   ├── config.go          # Configuration structs
-   ├── templates/         # Embedded templates
-   │   ├── values.yaml.tmpl
-   │   └── install.sh.tmpl
-   ├── bundler_test.go    # Unit tests
-   └── doc.go             # Package documentation
-   ```
-
-2. **Define Bundler Type**:
-   ```go
-   const bundlerType = bundler.BundleType("my-operator")
-   
-   func init() {
-       bundler.Register(bundlerType, func() bundler.Bundler {
-           return NewBundler()
-       })
-   }
+1. **Add to Component Registry** (`pkg/recipe/data/registry.yaml`):
+   ```yaml
+   components:
+     - name: my-operator
+       displayName: My Operator
+       valueOverrideKeys:
+         - myoperator
+       helm:
+         defaultRepository: https://charts.example.com
+         defaultChart: example/my-operator
+         defaultVersion: v1.0.0
+       nodeScheduling:
+         system:
+           nodeSelectorPaths:
+             - operator.nodeSelector
+           tolerationPaths:
+             - operator.tolerations
    ```
 
-3. **Implement Bundler Interface**:
-   ```go
-   type Bundler struct {
-       config *bundler.BundlerConfig
-   }
-   
-   func (b *Bundler) Type() bundler.BundleType {
-       return bundlerType
-   }
-   
-   func (b *Bundler) Validate(ctx context.Context, 
-       recipe *recipe.Recipe) error {
-       // Validation logic
-   }
-   
-   func (b *Bundler) Make(ctx context.Context, 
-       recipe *recipe.Recipe, outputDir string) (*bundler.BundleResult, error) {
-       // Generation logic
-   }
+2. **Create Values File** (`pkg/recipe/data/components/my-operator/values.yaml`):
+   ```yaml
+   # My Operator Helm values
+   operator:
+     replicas: 1
+     image:
+       repository: example/my-operator
+       tag: v1.0.0
    ```
 
-4. **Write Comprehensive Tests**:
-   ```go
-   func TestBundler_Make(t *testing.T) {
-       ctx := context.Background()
-       tmpDir := t.TempDir()
-       
-       recipe := createTestRecipe()
-       b := NewBundler()
-       
-       result, err := b.Make(ctx, recipe, tmpDir)
-       if err != nil {
-           t.Fatalf("Make() error = %v", err)
-       }
-       
-       // Verify expected files exist
-   }
+3. **Add to Recipe Overlay** (`pkg/recipe/data/overlays/<overlay>.yaml`):
+   ```yaml
+   componentRefs:
+     - name: my-operator
+       type: Helm
+       version: v1.0.0
+       source: https://charts.example.com
+       valuesFile: components/my-operator/values.yaml
    ```
+
+4. **Test the Component**:
+   ```bash
+   # Generate recipe with new component
+   cnsctl recipe --service eks --accelerator h100 -o recipe.yaml
+
+   # Generate bundle
+   cnsctl bundle -r recipe.yaml -o ./bundles
+
+   # Verify output
+   cat ./bundles/values.yaml
+   ```
+
+See [Bundler Development Guide](component.md) for detailed documentation.
 
 ### Best Practices
 
