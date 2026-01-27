@@ -1,0 +1,18 @@
+kind: recipeMetadata
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: gke-cos
+
+spec:
+  # GKE Container-Optimized OS recipe with GPU support
+  # This recipe provides GKE-COS specific configuration for any accelerator/intent
+
+  criteria:
+    service: gke
+    os: cos
+
+  componentRefs:
+    # GKE-COS-specific GPU Operator overrides (inherits valuesFile from base)
+    - name: gpu-operator
+      type: Helm
+      valuesFile: components/gpu-operator/values-gke-cos.yaml

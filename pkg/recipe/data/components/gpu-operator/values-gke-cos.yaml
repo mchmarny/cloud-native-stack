@@ -1,0 +1,39 @@
+# GPU Operator Helm values for GKE Container-Optimized OS (COS)
+# This configuration optimizes the GPU operator for GKE COS environments
+
+operator:
+  # Use COS-compatible image
+  repository: nvcr.io/nvidia/gpu-operator
+
+driver:
+  # GKE COS uses pre-installed drivers, disable driver installation
+  enabled: false
+
+toolkit:
+  # Container toolkit configuration for COS
+  enabled: true
+
+devicePlugin:
+  # Device plugin strategy for GKE
+  strategy: single
+
+dcgmExporter:
+  # Enable DCGM for monitoring in GKE
+  enabled: true
+
+gfd:
+  # GPU Feature Discovery for GKE node labeling
+  enabled: true
+
+migManager:
+  # MIG management for supported GPUs
+  enabled: true
+
+nodeStatusExporter:
+  # Export GPU node status
+  enabled: true
+
+cdi:
+  # Container Device Interface for COS
+  enabled: true
+  default: true
