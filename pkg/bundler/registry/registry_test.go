@@ -64,7 +64,7 @@ func TestRegistry_Register(t *testing.T) {
 	reg := NewRegistry()
 	bundler := &mockBundler{name: "test-bundler"}
 
-	reg.Register(types.BundleTypeGpuOperator, bundler)
+	reg.Register(types.BundleType("gpu-operator"), bundler)
 
 	if reg.Count() != 1 {
 		t.Errorf("Expected 1 bundler, got %d", reg.Count())
@@ -76,7 +76,7 @@ func TestRegistry_Register(t *testing.T) {
 
 	// Test registering multiple bundlers
 	bundler2 := &mockBundler{name: "test-bundler-2"}
-	reg.Register(types.BundleTypeNetworkOperator, bundler2)
+	reg.Register(types.BundleType("network-operator"), bundler2)
 
 	if reg.Count() != 2 {
 		t.Errorf("Expected 2 bundlers, got %d", reg.Count())
@@ -84,9 +84,9 @@ func TestRegistry_Register(t *testing.T) {
 
 	// Test overwriting existing bundler (should replace)
 	bundler3 := &mockBundler{name: "test-bundler-3"}
-	reg.Register(types.BundleTypeGpuOperator, bundler3)
+	reg.Register(types.BundleType("gpu-operator"), bundler3)
 
-	retrieved, ok := reg.Get(types.BundleTypeGpuOperator)
+	retrieved, ok := reg.Get(types.BundleType("gpu-operator"))
 	if !ok {
 		t.Fatal("Failed to retrieve bundler")
 	}
@@ -104,14 +104,14 @@ func TestRegistry_Get(t *testing.T) {
 	bundler := &mockBundler{name: "test-bundler"}
 
 	// Test getting non-existent bundler
-	_, ok := reg.Get(types.BundleTypeGpuOperator)
+	_, ok := reg.Get(types.BundleType("gpu-operator"))
 	if ok {
 		t.Error("Expected Get to return false for non-existent bundler")
 	}
 
 	// Test getting existing bundler
-	reg.Register(types.BundleTypeGpuOperator, bundler)
-	retrieved, ok := reg.Get(types.BundleTypeGpuOperator)
+	reg.Register(types.BundleType("gpu-operator"), bundler)
+	retrieved, ok := reg.Get(types.BundleType("gpu-operator"))
 	if !ok {
 		t.Fatal("Expected Get to return true for existing bundler")
 	}
@@ -136,8 +136,8 @@ func TestRegistry_GetAll(t *testing.T) {
 	bundler2 := &mockBundler{name: "bundler-2"}
 	bundler3 := &mockBundler{name: "bundler-3"}
 
-	reg.Register(types.BundleTypeGpuOperator, bundler1)
-	reg.Register(types.BundleTypeNetworkOperator, bundler2)
+	reg.Register(types.BundleType("gpu-operator"), bundler1)
+	reg.Register(types.BundleType("network-operator"), bundler2)
 	reg.Register(types.BundleType("custom"), bundler3)
 
 	all = reg.GetAll()
@@ -146,10 +146,10 @@ func TestRegistry_GetAll(t *testing.T) {
 	}
 
 	// Verify all bundlers are present
-	if all[types.BundleTypeGpuOperator] != bundler1 {
+	if all[types.BundleType("gpu-operator")] != bundler1 {
 		t.Error("GPU operator bundler not found or mismatched")
 	}
-	if all[types.BundleTypeNetworkOperator] != bundler2 {
+	if all[types.BundleType("network-operator")] != bundler2 {
 		t.Error("Network operator bundler not found or mismatched")
 	}
 	if all[types.BundleType("custom")] != bundler3 {
@@ -157,7 +157,7 @@ func TestRegistry_GetAll(t *testing.T) {
 	}
 
 	// Test that returned map is a copy (modifying it doesn't affect registry)
-	delete(all, types.BundleTypeGpuOperator)
+	delete(all, types.BundleType("gpu-operator"))
 	if reg.Count() != 3 {
 		t.Error("Modifying GetAll result should not affect registry")
 	}
@@ -174,8 +174,8 @@ func TestRegistry_List(t *testing.T) {
 	}
 
 	// Register bundlers
-	reg.Register(types.BundleTypeGpuOperator, &mockBundler{name: "bundler-1"})
-	reg.Register(types.BundleTypeNetworkOperator, &mockBundler{name: "bundler-2"})
+	reg.Register(types.BundleType("gpu-operator"), &mockBundler{name: "bundler-1"})
+	reg.Register(types.BundleType("network-operator"), &mockBundler{name: "bundler-2"})
 
 	list := reg.List()
 	if len(list) != 2 {
@@ -188,10 +188,10 @@ func TestRegistry_List(t *testing.T) {
 		found[t] = true
 	}
 
-	if !found[types.BundleTypeGpuOperator] {
+	if !found[types.BundleType("gpu-operator")] {
 		t.Error("GPU operator type not found in list")
 	}
-	if !found[types.BundleTypeNetworkOperator] {
+	if !found[types.BundleType("network-operator")] {
 		t.Error("Network operator type not found in list")
 	}
 }
@@ -202,18 +202,18 @@ func TestRegistry_Unregister(t *testing.T) {
 	bundler := &mockBundler{name: "test-bundler"}
 
 	// Test unregistering non-existent bundler
-	err := reg.Unregister(types.BundleTypeGpuOperator)
+	err := reg.Unregister(types.BundleType("gpu-operator"))
 	if err == nil {
 		t.Error("Expected error when unregistering non-existent bundler")
 	}
 
 	// Register and unregister
-	reg.Register(types.BundleTypeGpuOperator, bundler)
+	reg.Register(types.BundleType("gpu-operator"), bundler)
 	if reg.Count() != 1 {
 		t.Fatal("Failed to register bundler")
 	}
 
-	err = reg.Unregister(types.BundleTypeGpuOperator)
+	err = reg.Unregister(types.BundleType("gpu-operator"))
 	if err != nil {
 		t.Errorf("Unregister failed: %v", err)
 	}
@@ -227,7 +227,7 @@ func TestRegistry_Unregister(t *testing.T) {
 	}
 
 	// Verify bundler is actually removed
-	_, ok := reg.Get(types.BundleTypeGpuOperator)
+	_, ok := reg.Get(types.BundleType("gpu-operator"))
 	if ok {
 		t.Error("Bundler should not be retrievable after unregister")
 	}
@@ -266,12 +266,12 @@ func TestRegistry_IsEmpty(t *testing.T) {
 		t.Error("New registry should be empty")
 	}
 
-	reg.Register(types.BundleTypeGpuOperator, &mockBundler{})
+	reg.Register(types.BundleType("gpu-operator"), &mockBundler{})
 	if reg.IsEmpty() {
 		t.Error("Registry should not be empty after registration")
 	}
 
-	reg.Unregister(types.BundleTypeGpuOperator)
+	reg.Unregister(types.BundleType("gpu-operator"))
 	if !reg.IsEmpty() {
 		t.Error("Registry should be empty after removing all bundlers")
 	}
@@ -361,11 +361,11 @@ func TestGlobalRegistry_Register(t *testing.T) {
 		return &mockBundler{name: "test"}
 	}
 
-	Register(types.BundleTypeGpuOperator, factory)
+	Register(types.BundleType("gpu-operator"), factory)
 
 	// Verify registration
 	globalMu.RLock()
-	_, exists := globalFactories[types.BundleTypeGpuOperator]
+	_, exists := globalFactories[types.BundleType("gpu-operator")]
 	globalMu.RUnlock()
 
 	if !exists {
@@ -392,12 +392,12 @@ func TestGlobalRegistry_Register_Duplicate(t *testing.T) {
 	}
 
 	// First registration should succeed
-	if err := Register(types.BundleTypeGpuOperator, factory); err != nil {
+	if err := Register(types.BundleType("gpu-operator"), factory); err != nil {
 		t.Fatalf("first registration failed: %v", err)
 	}
 
 	// Second registration should return error
-	if err := Register(types.BundleTypeGpuOperator, factory); err == nil {
+	if err := Register(types.BundleType("gpu-operator"), factory); err == nil {
 		t.Error("expected error on duplicate registration, got nil")
 	}
 }
@@ -421,11 +421,11 @@ func TestGlobalRegistry_MustRegister(t *testing.T) {
 	}
 
 	// Should not panic
-	MustRegister(types.BundleTypeGpuOperator, factory)
+	MustRegister(types.BundleType("gpu-operator"), factory)
 
 	// Verify registration
 	globalMu.RLock()
-	_, exists := globalFactories[types.BundleTypeGpuOperator]
+	_, exists := globalFactories[types.BundleType("gpu-operator")]
 	globalMu.RUnlock()
 
 	if !exists {
@@ -455,8 +455,8 @@ func TestGlobalRegistry_NewFromGlobal(t *testing.T) {
 		return &mockBundler{name: "bundler-2"}
 	}
 
-	Register(types.BundleTypeGpuOperator, factory1)
-	Register(types.BundleTypeNetworkOperator, factory2)
+	Register(types.BundleType("gpu-operator"), factory1)
+	Register(types.BundleType("network-operator"), factory2)
 
 	// Create registry from global
 	cfg := config.NewConfig()
@@ -467,7 +467,7 @@ func TestGlobalRegistry_NewFromGlobal(t *testing.T) {
 	}
 
 	// Verify bundlers are instantiated correctly
-	bundler1, ok := reg.Get(types.BundleTypeGpuOperator)
+	bundler1, ok := reg.Get(types.BundleType("gpu-operator"))
 	if !ok {
 		t.Fatal("GPU operator bundler not found")
 	}
@@ -477,7 +477,7 @@ func TestGlobalRegistry_NewFromGlobal(t *testing.T) {
 		}
 	}
 
-	bundler2, ok := reg.Get(types.BundleTypeNetworkOperator)
+	bundler2, ok := reg.Get(types.BundleType("network-operator"))
 	if !ok {
 		t.Fatal("Network operator bundler not found")
 	}
@@ -513,8 +513,8 @@ func TestGlobalRegistry_GlobalTypes(t *testing.T) {
 		return &mockBundler{name: "test"}
 	}
 
-	Register(types.BundleTypeGpuOperator, factory)
-	Register(types.BundleTypeNetworkOperator, factory)
+	Register(types.BundleType("gpu-operator"), factory)
+	Register(types.BundleType("network-operator"), factory)
 
 	globalTypes := GlobalTypes()
 	if len(globalTypes) != 2 {
@@ -527,10 +527,10 @@ func TestGlobalRegistry_GlobalTypes(t *testing.T) {
 		found[t] = true
 	}
 
-	if !found[types.BundleTypeGpuOperator] {
+	if !found[types.BundleType("gpu-operator")] {
 		t.Error("GPU operator type not found")
 	}
-	if !found[types.BundleTypeNetworkOperator] {
+	if !found[types.BundleType("network-operator")] {
 		t.Error("Network operator type not found")
 	}
 }

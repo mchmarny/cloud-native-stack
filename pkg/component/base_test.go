@@ -21,13 +21,13 @@ func TestNewBaseBundler(t *testing.T) {
 		{
 			name:        "with config",
 			config:      config.NewConfig(),
-			bundlerType: types.BundleTypeGpuOperator,
+			bundlerType: types.BundleType("gpu-operator"),
 			wantNilCfg:  false,
 		},
 		{
 			name:        "nil config creates default",
 			config:      nil,
-			bundlerType: types.BundleTypeGpuOperator,
+			bundlerType: types.BundleType("gpu-operator"),
 			wantNilCfg:  false,
 		},
 	}
@@ -57,7 +57,7 @@ func TestNewBaseBundler(t *testing.T) {
 
 func TestBaseBundler_CreateBundleDir(t *testing.T) {
 	tmpDir := t.TempDir()
-	b := NewBaseBundler(nil, types.BundleTypeGpuOperator)
+	b := NewBaseBundler(nil, types.BundleType("gpu-operator"))
 
 	dirs, err := b.CreateBundleDir(tmpDir, "test-bundle")
 	if err != nil {
@@ -92,7 +92,7 @@ func TestBaseBundler_CreateBundleDir(t *testing.T) {
 
 func TestBaseBundler_WriteFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	b := NewBaseBundler(nil, types.BundleTypeGpuOperator)
+	b := NewBaseBundler(nil, types.BundleType("gpu-operator"))
 
 	testFile := filepath.Join(tmpDir, "test.txt")
 	content := []byte("test content")
@@ -129,7 +129,7 @@ func TestBaseBundler_WriteFile(t *testing.T) {
 
 func TestBaseBundler_WriteFileString(t *testing.T) {
 	tmpDir := t.TempDir()
-	b := NewBaseBundler(nil, types.BundleTypeGpuOperator)
+	b := NewBaseBundler(nil, types.BundleType("gpu-operator"))
 
 	testFile := filepath.Join(tmpDir, "test.txt")
 	content := "test string content"
@@ -151,7 +151,7 @@ func TestBaseBundler_WriteFileString(t *testing.T) {
 }
 
 func TestBaseBundler_RenderTemplate(t *testing.T) {
-	b := NewBaseBundler(nil, types.BundleTypeGpuOperator)
+	b := NewBaseBundler(nil, types.BundleType("gpu-operator"))
 
 	tests := []struct {
 		name    string
@@ -197,7 +197,7 @@ func TestBaseBundler_RenderTemplate(t *testing.T) {
 
 func TestBaseBundler_RenderAndWriteTemplate(t *testing.T) {
 	tmpDir := t.TempDir()
-	b := NewBaseBundler(nil, types.BundleTypeGpuOperator)
+	b := NewBaseBundler(nil, types.BundleType("gpu-operator"))
 
 	tmpl := "Hello, {{.Name}}!"
 	data := map[string]string{"Name": "World"}
@@ -222,7 +222,7 @@ func TestBaseBundler_RenderAndWriteTemplate(t *testing.T) {
 
 func TestBaseBundler_GenerateChecksums(t *testing.T) {
 	tmpDir := t.TempDir()
-	b := NewBaseBundler(nil, types.BundleTypeGpuOperator)
+	b := NewBaseBundler(nil, types.BundleType("gpu-operator"))
 	ctx := context.Background()
 
 	// Create bundle directory
@@ -275,7 +275,7 @@ func TestBaseBundler_GenerateChecksums(t *testing.T) {
 
 func TestBaseBundler_GenerateChecksums_ContextCancelled(t *testing.T) {
 	tmpDir := t.TempDir()
-	b := NewBaseBundler(nil, types.BundleTypeGpuOperator)
+	b := NewBaseBundler(nil, types.BundleType("gpu-operator"))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
@@ -288,7 +288,7 @@ func TestBaseBundler_GenerateChecksums_ContextCancelled(t *testing.T) {
 
 func TestBaseBundler_MakeExecutable(t *testing.T) {
 	tmpDir := t.TempDir()
-	b := NewBaseBundler(nil, types.BundleTypeGpuOperator)
+	b := NewBaseBundler(nil, types.BundleType("gpu-operator"))
 
 	testFile := filepath.Join(tmpDir, "script.sh")
 	if err := os.WriteFile(testFile, []byte("#!/bin/bash\necho test"), 0644); err != nil {
@@ -313,7 +313,7 @@ func TestBaseBundler_MakeExecutable(t *testing.T) {
 }
 
 func TestBaseBundler_Finalize(t *testing.T) {
-	b := NewBaseBundler(nil, types.BundleTypeGpuOperator)
+	b := NewBaseBundler(nil, types.BundleType("gpu-operator"))
 
 	// Add some files to result
 	b.Result.AddFile("/tmp/file1.txt", 100)
@@ -337,7 +337,7 @@ func TestBaseBundler_Finalize(t *testing.T) {
 }
 
 func TestBaseBundler_CheckContext(t *testing.T) {
-	b := NewBaseBundler(nil, types.BundleTypeGpuOperator)
+	b := NewBaseBundler(nil, types.BundleType("gpu-operator"))
 
 	tests := []struct {
 		name    string
@@ -371,7 +371,7 @@ func TestBaseBundler_CheckContext(t *testing.T) {
 }
 
 func TestBaseBundler_AddError(t *testing.T) {
-	b := NewBaseBundler(nil, types.BundleTypeGpuOperator)
+	b := NewBaseBundler(nil, types.BundleType("gpu-operator"))
 
 	// Add nil error - should not panic
 	b.AddError(nil)
@@ -397,7 +397,7 @@ func TestBaseBundler_BuildBaseConfigMap(t *testing.T) {
 		config.WithVersion("v1.2.3"),
 	)
 
-	b := NewBaseBundler(cfg, types.BundleTypeGpuOperator)
+	b := NewBaseBundler(cfg, types.BundleType("gpu-operator"))
 	configMap := b.BuildBaseConfigMap()
 
 	// Test bundler version is set
@@ -417,7 +417,7 @@ func TestBaseBundler_GenerateFileFromTemplate(t *testing.T) {
 	}
 
 	tmpDir := t.TempDir()
-	b := NewBaseBundler(nil, types.BundleTypeGpuOperator)
+	b := NewBaseBundler(nil, types.BundleType("gpu-operator"))
 
 	tests := []struct {
 		name         string
@@ -568,7 +568,7 @@ func TestBaseBundler_BuildConfigMapFromInput(t *testing.T) {
 		config.WithVersion("bundler-v1.2.3"),
 	)
 
-	b := NewBaseBundler(cfg, types.BundleTypeGpuOperator)
+	b := NewBaseBundler(cfg, types.BundleType("gpu-operator"))
 
 	tests := []struct {
 		name    string

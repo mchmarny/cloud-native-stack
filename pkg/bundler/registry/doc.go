@@ -27,6 +27,7 @@
 //
 // # Registration Pattern
 //
+// Component names are defined in pkg/recipe/data/registry.yaml.
 // Bundlers self-register in their package init() functions:
 //
 //	package gpuoperator
@@ -37,7 +38,7 @@
 //	)
 //
 //	func init() {
-//	    registry.MustRegister(types.BundleTypeGpuOperator, func(cfg *config.Config) registry.Bundler {
+//	    registry.MustRegister(types.BundleType("gpu-operator"), func(cfg *config.Config) registry.Bundler {
 //	        return NewBundler(cfg)
 //	    })
 //	}
@@ -58,13 +59,13 @@
 //
 // Check if a type is registered:
 //
-//	if reg.Has(types.BundleTypeGpuOperator) {
+//	if reg.Has(types.BundleType("gpu-operator")) {
 //	    // GPU Operator bundler is available
 //	}
 //
 // Get a bundler instance:
 //
-//	bundler, ok := reg.Get(types.BundleTypeGpuOperator)
+//	bundler, ok := reg.Get(types.BundleType("gpu-operator"))
 //	if ok {
 //	    result, err := bundler.Make(ctx, recipe, outputDir)
 //	}
@@ -72,8 +73,8 @@
 // Get multiple bundlers:
 //
 //	bundlers := reg.GetAll([]types.BundleType{
-//	    types.BundleTypeGpuOperator,
-//	    types.BundleTypeNetworkOperator,
+//	    types.BundleType("gpu-operator"),
+//	    types.BundleType("network-operator"),
 //	})
 //
 // # Usage - Custom Registry
@@ -81,7 +82,7 @@
 // Create a custom registry for testing:
 //
 //	reg := registry.New()
-//	reg.Register(types.BundleTypeGpuOperator, func(cfg *config.Config) registry.Bundler {
+//	reg.Register(types.BundleType("gpu-operator"), func(cfg *config.Config) registry.Bundler {
 //	    return mockBundler
 //	})
 //
@@ -98,14 +99,14 @@
 //
 // Register returns an error if a type is already registered:
 //
-//	err := reg.Register(types.BundleTypeGpuOperator, factory)
+//	err := reg.Register(types.BundleType("gpu-operator"), factory)
 //	if err != nil {
 //	    // Handle duplicate registration
 //	}
 //
 // MustRegister panics on duplicate registration:
 //
-//	reg.MustRegister(types.BundleTypeGpuOperator, factory)
+//	reg.MustRegister(types.BundleType("gpu-operator"), factory)
 //	// Panics if already registered
 //
 // # Discovery
@@ -130,11 +131,11 @@
 //
 //	func TestMyBundler(t *testing.T) {
 //	    reg := registry.New()
-//	    reg.Register(types.BundleTypeGpuOperator, func(cfg *config.Config) registry.Bundler {
+//	    reg.Register(types.BundleType("gpu-operator"), func(cfg *config.Config) registry.Bundler {
 //	        return &mockBundler{}
 //	    })
 //
-//	    bundler, ok := reg.Get(types.BundleTypeGpuOperator)
+//	    bundler, ok := reg.Get(types.BundleType("gpu-operator"))
 //	    if !ok {
 //	        t.Fatal("bundler not found")
 //	    }
