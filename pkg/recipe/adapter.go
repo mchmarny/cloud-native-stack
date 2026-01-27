@@ -11,11 +11,17 @@ import (
 //go:embed data/base.yaml data/overlays/*.yaml data/registry.yaml data/components/*/*.yaml data/components/*/manifests/*.yaml
 var dataFS embed.FS
 
-// GetManifestContent retrieves a manifest file from embedded data.
+// GetEmbeddedFS returns the embedded data filesystem.
+// This is used by the CLI to create layered data providers.
+func GetEmbeddedFS() embed.FS {
+	return dataFS
+}
+
+// GetManifestContent retrieves a manifest file from the data provider.
 // Path should be relative to data directory (e.g., "components/gpu-operator/manifests/dcgm-exporter.yaml").
 func GetManifestContent(path string) ([]byte, error) {
-	fullPath := "data/" + path
-	return dataFS.ReadFile(fullPath)
+	provider := GetDataProvider()
+	return provider.ReadFile(path)
 }
 
 // RecipeInput is an interface that both Recipe and RecipeResult implement.
@@ -113,14 +119,15 @@ func (r *RecipeResult) GetValuesForComponent(name string) (map[string]interface{
 
 	// Step 1: Load base and/or overlay values from files (if ValuesFile specified)
 	if ref.ValuesFile != "" {
+		provider := GetDataProvider()
+
 		// Determine if this is an overlay values file (not the base values.yaml)
 		baseValuesFile := fmt.Sprintf("components/%s/values.yaml", name)
 		isOverlay := ref.ValuesFile != baseValuesFile
 
 		if isOverlay {
 			// Load base values first
-			baseValuesPath := fmt.Sprintf("data/%s", baseValuesFile)
-			baseData, err := dataFS.ReadFile(baseValuesPath)
+			baseData, err := provider.ReadFile(baseValuesFile)
 			if err != nil {
 				// If base file doesn't exist, that's okay - just use overlay
 				result = make(map[string]interface{})
@@ -132,8 +139,7 @@ func (r *RecipeResult) GetValuesForComponent(name string) (map[string]interface{
 			}
 
 			// Load overlay values
-			overlayPath := fmt.Sprintf("data/%s", ref.ValuesFile)
-			overlayData, err := dataFS.ReadFile(overlayPath)
+			overlayData, err := provider.ReadFile(ref.ValuesFile)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read overlay values file %q: %w", ref.ValuesFile, err)
 			}
@@ -147,8 +153,7 @@ func (r *RecipeResult) GetValuesForComponent(name string) (map[string]interface{
 			mergeValues(result, overlayValues)
 		} else {
 			// Just load the base values file
-			valuesPath := fmt.Sprintf("data/%s", ref.ValuesFile)
-			data, err := dataFS.ReadFile(valuesPath)
+			data, err := provider.ReadFile(ref.ValuesFile)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read values file %q: %w", ref.ValuesFile, err)
 			}

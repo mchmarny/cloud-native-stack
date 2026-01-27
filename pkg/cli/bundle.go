@@ -211,6 +211,7 @@ Package with explicit tag (overrides CLI version):
 				Usage: "Git repository URL for ArgoCD applications (only used with --deployer argocd)",
 			},
 			kubeconfigFlag,
+			dataFlag,
 			// OCI registry connection flags (used when --output is oci://...)
 			&cli.BoolFlag{
 				Name:  "insecure-tls",
@@ -226,6 +227,11 @@ Package with explicit tag (overrides CLI version):
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			// Initialize external data provider if --data flag is set
+			if err := initDataProvider(cmd); err != nil {
+				return fmt.Errorf("failed to initialize data provider: %w", err)
+			}
+
 			opts, err := parseBundleCmdOptions(cmd)
 			if err != nil {
 				return err
@@ -290,39 +296,47 @@ Package with explicit tag (overrides CLI version):
 
 			// Package and push as OCI artifact when output is oci://
 			if opts.ociRef != nil {
-				pushResult, ociErr := oci.PackageAndPush(ctx, oci.OutputConfig{
-					SourceDir:   opts.outputDir,
-					OutputDir:   opts.outputDir,
-					Reference:   opts.ociRef,
-					Version:     version,
-					PlainHTTP:   opts.plainHTTP,
-					InsecureTLS: opts.insecureTLS,
-				})
-				if ociErr != nil {
-					return ociErr
-				}
-
-				// Update results with OCI metadata
-				for i := range out.Results {
-					if out.Results[i].Success {
-						out.Results[i].SetOCIMetadata(pushResult.Digest, pushResult.Reference, true)
-					}
-				}
-
-				// Write image reference to file if --image-refs specified
-				if opts.imageRefsPath != "" {
-					// Write digest reference (e.g., ghcr.io/nvidia/bundle@sha256:abc123...)
-					if err := os.WriteFile(opts.imageRefsPath, []byte(pushResult.Digest+"\n"), 0600); err != nil {
-						slog.Error("failed to write image refs file", "error", err, "path", opts.imageRefsPath)
-						return fmt.Errorf("failed to write image refs: %w", err)
-					}
-					slog.Info("wrote image reference", "path", opts.imageRefsPath, "ref", pushResult.Digest)
+				if err := pushOCIBundle(ctx, opts, out); err != nil {
+					return err
 				}
 			}
 
 			return nil
 		},
 	}
+}
+
+// pushOCIBundle packages and pushes the bundle to an OCI registry.
+func pushOCIBundle(ctx context.Context, opts *bundleCmdOptions, out *result.Output) error {
+	pushResult, err := oci.PackageAndPush(ctx, oci.OutputConfig{
+		SourceDir:   opts.outputDir,
+		OutputDir:   opts.outputDir,
+		Reference:   opts.ociRef,
+		Version:     version,
+		PlainHTTP:   opts.plainHTTP,
+		InsecureTLS: opts.insecureTLS,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Update results with OCI metadata
+	for i := range out.Results {
+		if out.Results[i].Success {
+			out.Results[i].SetOCIMetadata(pushResult.Digest, pushResult.Reference, true)
+		}
+	}
+
+	// Write image reference to file if --image-refs specified
+	if opts.imageRefsPath != "" {
+		if err := os.WriteFile(opts.imageRefsPath, []byte(pushResult.Digest+"\n"), 0600); err != nil {
+			slog.Error("failed to write image refs file", "error", err, "path", opts.imageRefsPath)
+			return fmt.Errorf("failed to write image refs: %w", err)
+		}
+		slog.Info("wrote image reference", "path", opts.imageRefsPath, "ref", pushResult.Digest)
+	}
+
+	return nil
 }
 
 // printDeploymentInstructions prints user-friendly deployment instructions from the deployer.

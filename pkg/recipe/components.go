@@ -96,9 +96,10 @@ func MustGetComponentRegistry() *ComponentRegistry {
 	return reg
 }
 
-// loadComponentRegistry loads the component registry from embedded data.
+// loadComponentRegistry loads the component registry from the data provider.
 func loadComponentRegistry() (*ComponentRegistry, error) {
-	data, err := dataFS.ReadFile("data/registry.yaml")
+	provider := GetDataProvider()
+	data, err := provider.ReadFile("registry.yaml")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read registry.yaml: %w", err)
 	}

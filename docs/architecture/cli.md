@@ -541,6 +541,31 @@ When using snapshot mode, the recipe builder extracts environment parameters fro
 - **inference** – Optimize for low latency, single-request performance, efficient batching
 - **any** – Provides general-purpose recommendations applicable to both workloads
 
+#### External Data Directory
+
+The `--data` flag enables extending embedded recipe data with external files:
+
+```mermaid
+flowchart TD
+    A[Embedded Data<br/>pkg/recipe/data/] --> C[Layered Data Provider]
+    B[External Directory<br/>--data ./my-data/] --> C
+    C --> D[Recipe Generation]
+
+    subgraph Merge Behavior
+        E[registry.yaml] -->|Merged| F[Combined Registry]
+        G[Other Files] -->|Replaced| H[External Takes Precedence]
+    end
+```
+
+**Requirements:**
+- External directory must contain `registry.yaml`
+- No symlinks allowed (security)
+- Max file size: 10MB per file
+
+**Merge Rules:**
+- `registry.yaml`: Components merged by name (external overrides embedded)
+- All other files: External replaces embedded if path matches
+
 #### Usage Examples
 
 ```bash
@@ -561,6 +586,12 @@ cnsctl recipe \
   --os ubuntu \
   --nodes 8 \
   --format yaml
+
+# Use external data directory
+cnsctl recipe --service eks --accelerator h100 --data ./my-custom-data
+
+# Bundle with external data
+cnsctl bundle --recipe recipe.yaml --data ./my-custom-data --output ./bundles
 ```
 
 #### Recipe Output Structure
