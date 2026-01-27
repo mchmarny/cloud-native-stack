@@ -39,13 +39,37 @@ func Serve() error {
 		"date", date,
 	)
 
+	// Parse allowlists from environment variables
+	allowLists, err := recipe.ParseAllowListsFromEnv()
+	if err != nil {
+		return fmt.Errorf("failed to parse allowlists from environment: %w", err)
+	}
+
+	if allowLists != nil {
+		slog.Info("criteria allowlists configured",
+			"accelerators", len(allowLists.Accelerators),
+			"services", len(allowLists.Services),
+			"intents", len(allowLists.Intents),
+			"os_types", len(allowLists.OSTypes),
+		)
+		slog.Debug("criteria allowlists loaded",
+			"accelerators", allowLists.AcceleratorStrings(),
+			"services", allowLists.ServiceStrings(),
+			"intents", allowLists.IntentStrings(),
+			"os_types", allowLists.OSTypeStrings(),
+		)
+	}
+
 	// Setup recipe handler
 	rb := recipe.NewBuilder(
 		recipe.WithVersion(version),
+		recipe.WithAllowLists(allowLists),
 	)
 
 	// Setup bundle handler
-	bb, err := bundler.New()
+	bb, err := bundler.New(
+		bundler.WithAllowLists(allowLists),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create bundler: %w", err)
 	}

@@ -66,6 +66,14 @@ func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
 		"nodes", criteria.Nodes,
 	)
 
+	// Validate criteria against allowlists (if configured)
+	if b.AllowLists != nil {
+		if validateErr := b.AllowLists.ValidateCriteria(criteria); validateErr != nil {
+			server.WriteErrorFromErr(w, r, validateErr, "Criteria value not allowed", nil)
+			return
+		}
+	}
+
 	result, err := b.BuildFromCriteria(ctx, criteria)
 	if err != nil {
 		server.WriteErrorFromErr(w, r, err, "Failed to build recipe", nil)

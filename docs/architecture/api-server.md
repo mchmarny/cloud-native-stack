@@ -28,7 +28,11 @@ The API server provides HTTP REST access to **Steps 2 and 4 of the Cloud Native 
 - **No snapshot mode** – Cannot analyze captured snapshots (query mode only)
 - **No validation** – Use CLI `cnsctl validate` to check constraints against snapshots
 - **No ConfigMap integration** – API server doesn't read/write ConfigMaps
-- **No value overrides** – Use CLI for `--set` and node selector flags
+
+**API Server Configuration:**
+- **Criteria allowlists** – Restrict allowed values for accelerator, service, intent, and OS via environment variables
+- **Value overrides** – Supported via `?set=bundler:path=value` query parameters on `/v1/bundle`
+- **Node scheduling** – Supported via `?system-node-selector` and `?accelerated-node-selector` query parameters
 
 **For complete workflow**, use the CLI which supports:
 - All four steps: snapshot → recipe → validate → bundle
@@ -79,12 +83,13 @@ flowchart TD
     M5["5. Logging Middleware<br/>• Log request start<br/>• Capture status<br/>• Log completion"] --> H
     
     H["6. Application Handler<br/>recipe.Builder.HandleRecipes"] --> H1
-    
+
     H1["A. Method Validation<br/>(GET only)"] --> H2
-    H2["B. Parse Query Parameters<br/>os, osv, kernel, service<br/>k8s, gpu, intent, context"] --> H3
-    H3["C. Validation<br/>• Validate enums<br/>• Parse versions<br/>• Return 400 on error"] --> H4
-    H4["D. Build Recipe<br/>• Builder.Build(ctx, query)<br/>• Load store (cached)<br/>• Clone & merge measurements"] --> H5
-    H5["E. Respond<br/>• Set Cache-Control<br/>• Serialize to JSON<br/>• Return 200 OK"] --> Z
+    H2["B. Parse Query Parameters<br/>service, accelerator, intent, os, nodes"] --> H3
+    H3["C. Format Validation<br/>• Validate enums<br/>• Parse values<br/>• Return 400 on error"] --> H3a
+    H3a["D. Allowlist Validation<br/>• Check against configured allowlists<br/>• Return 400 if disallowed"] --> H4
+    H4["E. Build Recipe<br/>• Builder.BuildFromCriteria(ctx, criteria)<br/>• Load store (cached)<br/>• Apply matching overlays"] --> H5
+    H5["F. Respond<br/>• Set Cache-Control<br/>• Serialize to JSON<br/>• Return 200 OK"] --> Z
     
     Z[JSON Response]
 ```
@@ -114,16 +119,47 @@ func main() {
 
 **Responsibilities:**
 - Initialize structured logging
-- Create recipe builder
+- Parse criteria allowlists from environment variables
+- Create recipe builder with allowlist configuration
+- Create bundle handler with allowlist configuration
 - Setup HTTP routes
 - Configure server with middleware
 - Handle graceful shutdown
 
 **Key Features:**
 - Version info injection via ldflags: `version`, `commit`, `date`
-- Single route: `/v1/recipe` → recipe handler
+- Routes: `/v1/recipe` → recipe handler, `/v1/bundle` → bundle handler
+- Criteria allowlists parsed from `CNS_ALLOWED_*` environment variables
 - Server configured with production defaults
 - Graceful shutdown on SIGINT/SIGTERM
+
+**Initialization Flow:**
+```go
+func Serve() error {
+    // 1. Setup logging
+    logging.SetDefaultStructuredLogger(name, version)
+
+    // 2. Parse allowlists from environment
+    allowLists, err := recipe.ParseAllowListsFromEnv()
+    if err != nil {
+        return fmt.Errorf("failed to parse allowlists: %w", err)
+    }
+
+    // 3. Create recipe handler with allowlists
+    rb := recipe.NewBuilder(
+        recipe.WithVersion(version),
+        recipe.WithAllowLists(allowLists),
+    )
+
+    // 4. Create bundle handler with allowlists
+    bb, err := bundler.New(
+        bundler.WithAllowLists(allowLists),
+    )
+
+    // 5. Setup routes and start server
+    // ...
+}
+```
 
 ### Server Infrastructure: `pkg/server/`
 
@@ -207,25 +243,32 @@ func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodGet {
         return 405
     }
-    
+
     // 2. Parse query parameters
-    query := parseQueryFromRequest(r)
-    
-    // 3. Validate query
-    if err := query.Validate(); err != nil {
+    criteria := ParseCriteriaFromRequest(r)
+
+    // 3. Validate criteria format
+    if err := criteria.Validate(); err != nil {
         return 400 with error details
     }
-    
-    // 4. Build recipe
-    recipe, err := b.Build(r.Context(), query)
+
+    // 4. Validate against allowlists (if configured)
+    if b.AllowLists != nil {
+        if err := b.AllowLists.ValidateCriteria(criteria); err != nil {
+            return 400 with allowed values in error details
+        }
+    }
+
+    // 5. Build recipe
+    recipe, err := b.BuildFromCriteria(r.Context(), criteria)
     if err != nil {
         return 500
     }
-    
-    // 5. Set cache headers
-    w.Header().Set("Cache-Control", "public, max-age=300")
-    
-    // 6. Respond with JSON
+
+    // 6. Set cache headers
+    w.Header().Set("Cache-Control", "public, max-age=600")
+
+    // 7. Respond with JSON
     serializer.RespondJSON(w, http.StatusOK, recipe)
 }
 ```
@@ -718,10 +761,28 @@ All errors follow a consistent JSON structure:
 | Code | HTTP Status | Description | Retryable |
 |------|-------------|-------------|-----------|
 | `RATE_LIMIT_EXCEEDED` | 429 | Too many requests | Yes |
-| `INVALID_REQUEST` | 400 | Invalid parameters | No |
+| `INVALID_REQUEST` | 400 | Invalid parameters or disallowed criteria value | No |
 | `METHOD_NOT_ALLOWED` | 405 | Wrong HTTP method | No |
 | `INTERNAL_ERROR` | 500 | Server error | Yes |
 | `SERVICE_UNAVAILABLE` | 503 | Not ready | Yes |
+
+**Allowlist Validation Error Example:**
+
+When a request uses a criteria value not in the configured allowlist:
+
+```json
+{
+  "code": "INVALID_REQUEST",
+  "message": "accelerator type not allowed",
+  "details": {
+    "requested": "gb200",
+    "allowed": ["h100", "l40"]
+  },
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2026-01-27T12:00:00Z",
+  "retryable": false
+}
+```
 
 ### Error Handling Strategy
 
@@ -975,8 +1036,34 @@ ENTRYPOINT ["cnsd"]
 
 ### Environment Variables
 
-- `PORT` - Server port (default: 8080)
-- Future: `RATE_LIMIT`, `RATE_LIMIT_BURST`, etc.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8080` | Server port |
+| `CNS_ALLOWED_ACCELERATORS` | (none) | Comma-separated list of allowed GPU types (e.g., `h100,l40`). If not set, all types allowed. |
+| `CNS_ALLOWED_SERVICES` | (none) | Comma-separated list of allowed K8s services (e.g., `eks,gke`). If not set, all services allowed. |
+| `CNS_ALLOWED_INTENTS` | (none) | Comma-separated list of allowed intents (e.g., `training`). If not set, all intents allowed. |
+| `CNS_ALLOWED_OS` | (none) | Comma-separated list of allowed OS types (e.g., `ubuntu,rhel`). If not set, all OS types allowed. |
+
+**Criteria Allowlists:**
+
+When allowlist environment variables are configured, the API server validates incoming requests against the allowed values. This enables operators to restrict the API to specific configurations.
+
+```bash
+# Start server with restricted accelerators
+export CNS_ALLOWED_ACCELERATORS=h100,l40
+export CNS_ALLOWED_SERVICES=eks,gke
+./cnsd
+
+# Server logs on startup:
+# INFO criteria allowlists configured accelerators=2 services=2 intents=0 os_types=0
+# DEBUG criteria allowlists loaded accelerators=["h100","l40"] services=["eks","gke"] intents=[] os_types=[]
+```
+
+**Validation behavior:**
+- Requests with disallowed values return HTTP 400 with error details
+- The `any` value is always allowed regardless of allowlist
+- Both `/v1/recipe` and `/v1/bundle` endpoints enforce allowlists
+- CLI (`cnsctl`) is not affected by allowlists
 
 ## Future Enhancements
 
@@ -1275,8 +1362,11 @@ spec:
           value: "8080"
         - name: LOG_LEVEL
           value: "info"
-        - name: RECIPE_STORE_PATH
-          value: "/etc/cns/recipes"
+        # Criteria allowlists (optional - omit to allow all values)
+        - name: CNS_ALLOWED_ACCELERATORS
+          value: "h100,l40,a100"
+        - name: CNS_ALLOWED_SERVICES
+          value: "eks,gke,aks"
         resources:
           requests:
             cpu: 100m
