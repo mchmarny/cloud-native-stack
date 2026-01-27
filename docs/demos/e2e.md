@@ -153,6 +153,14 @@ Review manifest:
 crane manifest "ghcr.io/mchmarny/cns-bundle@$(cat .digest)" | jq .
 ```
 
+Unpack the image: 
+
+```shell
+skopeo copy "docker://ghcr.io/mchmarny/cns-bundle@$(cat .digest)" oci:image-oci
+mkdir -p ./cns-unpacked
+oras pull --oci-layout "image-oci@$(cat .digest)" -o ./cns-unpacked
+```
+
 ## Links
 
 * [Installation Guide](https://github.com/mchmarny/cloud-native-stack/blob/main/docs/user-guide/installation.md)

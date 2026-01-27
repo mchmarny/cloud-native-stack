@@ -40,20 +40,6 @@ View embedded recipe files structure:
 tree -L 2 pkg/recipe/data/
 ```
 
-Expected structure:
-
-```
-pkg/recipe/data/
-├── base.yaml
-├── components
-├── eks-training.yaml
-├── eks.yaml
-├── gb200-eks-training.yaml
-├── gb200-eks-ubuntu-training.yaml
-├── h100-ubuntu-inference.yaml
-└── README.md
-```
-
 ### Base
 
 Base recipe (foundation for all recipes):
