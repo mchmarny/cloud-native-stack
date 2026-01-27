@@ -37,6 +37,16 @@ func WithVersion(version string) Option {
 	}
 }
 
+// WithAllowLists returns an Option that sets criteria allowlists for the Builder.
+// When allowlists are configured, the Builder will reject criteria values that
+// are not in the allowed list. This is used by the API server to restrict
+// which criteria values can be requested.
+func WithAllowLists(al *AllowLists) Option {
+	return func(b *Builder) {
+		b.AllowLists = al
+	}
+}
+
 // NewBuilder creates a new Builder instance with the provided functional options.
 func NewBuilder(opts ...Option) *Builder {
 	b := &Builder{}
@@ -52,7 +62,8 @@ func NewBuilder(opts ...Option) *Builder {
 // It loads recipe metadata, applies matching overlays, and generates
 // tailored configuration recipes.
 type Builder struct {
-	Version string
+	Version    string
+	AllowLists *AllowLists
 }
 
 // BuildFromCriteria creates a RecipeResult payload for the provided criteria.

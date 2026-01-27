@@ -383,7 +383,7 @@ ls -la
 
 | Code | HTTP Status | Description | Retryable |
 |------|-------------|-------------|-----------|
-| `INVALID_REQUEST` | 400 | Invalid query parameters or request body | No |
+| `INVALID_REQUEST` | 400 | Invalid query parameters, request body, or disallowed criteria value | No |
 | `METHOD_NOT_ALLOWED` | 405 | Wrong HTTP method | No |
 | `NO_MATCHING_RULE` | 404 | No configuration found | No |
 | `RATE_LIMIT_EXCEEDED` | 429 | Too many requests | Yes |
@@ -419,6 +419,64 @@ fi
 - **Burst**: 200 requests
 - **Headers**: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 - **429 Response**: Includes `Retry-After` header
+
+## Criteria Allowlists
+
+The API server can be configured to restrict which criteria values are allowed. This enables operators to limit the API to specific accelerators, services, intents, or OS types.
+
+### Configuration
+
+Allowlists are configured via environment variables when starting the server:
+
+| Environment Variable | Description | Example |
+|---------------------|-------------|---------|
+| `CNS_ALLOWED_ACCELERATORS` | Comma-separated list of allowed GPU types | `h100,l40` |
+| `CNS_ALLOWED_SERVICES` | Comma-separated list of allowed K8s services | `eks,gke` |
+| `CNS_ALLOWED_INTENTS` | Comma-separated list of allowed workload intents | `training` |
+| `CNS_ALLOWED_OS` | Comma-separated list of allowed OS types | `ubuntu,rhel` |
+
+**Behavior:**
+- If an environment variable is **not set**, all values for that criteria are allowed
+- If an environment variable is **set**, only the specified values are permitted
+- The `any` value is always allowed regardless of allowlist configuration
+- Allowlists apply to both `/v1/recipe` and `/v1/bundle` endpoints
+
+### Example Configuration
+
+```shell
+# Start server allowing only H100 and L40 GPUs on EKS
+docker run -p 8080:8080 \
+  -e CNS_ALLOWED_ACCELERATORS=h100,l40 \
+  -e CNS_ALLOWED_SERVICES=eks \
+  ghcr.io/nvidia/cnsd:latest
+```
+
+### Error Response
+
+When a disallowed criteria value is requested:
+
+```shell
+curl "http://localhost:8080/v1/recipe?accelerator=gb200&service=eks"
+```
+
+**Response** (HTTP 400):
+```json
+{
+  "code": "INVALID_REQUEST",
+  "message": "accelerator type not allowed",
+  "details": {
+    "requested": "gb200",
+    "allowed": ["h100", "l40"]
+  },
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2026-01-27T10:30:00Z",
+  "retryable": false
+}
+```
+
+### CLI Behavior
+
+The CLI (`cnsctl`) is **not affected** by allowlists. Allowlists only apply to the API server, allowing operators to restrict API access while maintaining full CLI functionality for administrative tasks.
 
 ## Programming Language Examples
 

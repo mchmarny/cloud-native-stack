@@ -94,6 +94,14 @@ func (b *DefaultBundler) HandleBundles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate recipe criteria against allowlists (if configured)
+	if b.AllowLists != nil && recipeResult.Criteria != nil {
+		if validateErr := b.AllowLists.ValidateCriteria(recipeResult.Criteria); validateErr != nil {
+			server.WriteErrorFromErr(w, r, validateErr, "Recipe criteria value not allowed", nil)
+			return
+		}
+	}
+
 	slog.Debug("bundle request received",
 		"components", len(recipeResult.ComponentRefs),
 		"value_overrides", len(params.valueOverrides),

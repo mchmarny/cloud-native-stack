@@ -37,6 +37,10 @@ import (
 type DefaultBundler struct {
 	// Config provides bundler-specific configuration including value overrides.
 	Config *config.Config
+
+	// AllowLists defines which criteria values are permitted for bundle requests.
+	// When set, the bundler validates that the recipe's criteria are within the allowed values.
+	AllowLists *recipe.AllowLists
 }
 
 // Option defines a functional option for configuring DefaultBundler.
@@ -49,6 +53,14 @@ func WithConfig(cfg *config.Config) Option {
 		if cfg != nil {
 			db.Config = cfg
 		}
+	}
+}
+
+// WithAllowLists sets the criteria allowlists for the bundler.
+// When configured, the bundler validates that recipe criteria are within allowed values.
+func WithAllowLists(al *recipe.AllowLists) Option {
+	return func(db *DefaultBundler) {
+		db.AllowLists = al
 	}
 }
 
