@@ -7,7 +7,7 @@ Deploy the CNS API Server in your Kubernetes cluster for self-hosted recipe gene
 **API Server deployment** enables self-hosted recipe generation:
 
 - Isolated deployment: Recipe data stays within your infrastructure
-- Custom recipes: Modify embedded recipe data (`data-v1.yaml`)
+- Custom recipes: Modify embedded recipe data (see `pkg/recipe/data/`)
 - High availability: Deploy multiple replicas with load balancing
 - Observability: Prometheus `/metrics` endpoint and structured logging
 
@@ -408,20 +408,21 @@ The e2e script:
 
 ### ConfigMap for Custom Recipe Data (Advanced)
 
+> **Note:** This example shows the concept of mounting custom recipe data. The actual recipe format uses a base-plus-overlay architecture. See `pkg/recipe/data/` for the current schema (`base.yaml` and `overlays/*.yaml`).
+
 ```yaml
-# configmap.yaml
+# configmap.yaml - Example showing custom recipe data mounting
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cns-recipe-data
   namespace: cns
 data:
-  data-v1.yaml: |
-    # Your custom recipe data
-    base:
-      - type: K8s
-        subtypes: [...]
-    overlays: [...]
+  base.yaml: |
+    # Your custom base recipe
+    apiVersion: cns.nvidia.com/v1alpha1
+    kind: RecipeMetadata
+    # ... (see pkg/recipe/data/base.yaml for schema)
 ```
 
 Mount in deployment:
@@ -440,7 +441,7 @@ spec:
               mountPath: /data
           env:
             - name: RECIPE_DATA_PATH
-              value: /data/data-v1.yaml
+              value: /data
 ```
 
 ## High Availability

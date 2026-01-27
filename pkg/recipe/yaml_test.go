@@ -40,7 +40,7 @@ import (
 // testMetadataFS embeds all recipe data files for testing.
 // This uses a separate embed directive to include component values files.
 //
-//go:embed data/base.yaml data/*.yaml data/components/**/*.yaml
+//go:embed data/base.yaml data/overlays/*.yaml data/components/**/*.yaml
 var testMetadataFS embed.FS
 
 // validMeasurementTypes are the valid top-level measurement types for constraints.

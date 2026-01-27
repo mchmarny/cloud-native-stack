@@ -8,7 +8,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed data/*.yaml data/components/*/*.yaml
+//go:embed data/base.yaml data/overlays/*.yaml data/components/*/*.yaml
 var dataFS embed.FS
 
 // RecipeInput is an interface that both Recipe and RecipeResult implement.

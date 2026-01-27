@@ -69,9 +69,9 @@ make server   # Start API server locally
    - Add factory method in `factory.go`
    - Write table-driven tests with mocks
 
-2. **Update recipe data** in `pkg/recipe/data/data-v1.yaml`:
-   - Add base measurements for new GPU type
-   - Create overlays with Query matching
+2. **Update recipe data** in `pkg/recipe/data/`:
+   - Add base measurements in `base.yaml`
+   - Create overlay files in `overlays/` with criteria matching
 
 3. **Test workflow**:
    ```bash

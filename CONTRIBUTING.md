@@ -195,7 +195,7 @@ cloud-native-stack/
   - **Snapshot Mode**: Extract query from snapshot → Build recipe → Return recommendations
 - **Input**: OS, OS version, kernel, K8s service/version, GPU type, workload intent
 - **Output**: Recipe with matched rules and configuration measurements
-- **Data Source**: Embedded YAML configuration (`recipe/data/data-v1.yaml`)
+- **Data Source**: Embedded YAML configuration (`recipe/data/base.yaml` and `recipe/data/overlays/*.yaml`)
 - **Query Extraction**: Parses K8s, OS, GPU measurements from snapshots to construct recipe queries
 
 #### Snapshotter

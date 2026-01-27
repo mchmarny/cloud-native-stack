@@ -235,7 +235,7 @@ When choosing between approaches, prioritize in this order:
 
 | File | Purpose |
 |------|---------|
-| `pkg/recipe/data/data-v1.yaml` | Recipe overlay definitions |
+| `pkg/recipe/data/overlays/*.yaml` | Recipe overlay definitions |
 | `api/cns/v1/server.yaml` | OpenAPI spec |
 | `.goreleaser.yaml` | Release configuration |
 | `go.mod` | Dependencies |

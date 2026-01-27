@@ -418,7 +418,7 @@ Constraint names use dot-notation paths that map to snapshot measurements:
 ### Example: GB200 Training Recipe Constraints
 
 ```yaml
-# pkg/recipe/data/gb200-eks-ubuntu-training.yaml
+# pkg/recipe/data/overlays/gb200-eks-ubuntu-training.yaml
 spec:
   criteria:
     service: eks
@@ -515,7 +515,7 @@ go test -v ./pkg/recipe/... -run TestConstraintValuesHaveValidOperators
 
 1. **Create the recipe file** in `pkg/recipe/data/`:
    ```yaml
-   # pkg/recipe/data/gke-h100-inference.yaml
+   # pkg/recipe/data/overlays/gke-h100-inference.yaml
    apiVersion: cns.nvidia.com/v1alpha1
    kind: RecipeMetadata
    metadata:
@@ -740,7 +740,7 @@ When adding new recipe metadata or component configurations:
 
 6. **Generate and inspect bundle**:
    ```bash
-   cnsctl bundle -r pkg/recipe/data/your-recipe.yaml -o ./test-bundles
+   cnsctl bundle -r pkg/recipe/data/overlays/your-recipe.yaml -o ./test-bundles
    cat test-bundles/gpu-operator/values.yaml | grep -A5 "driver:"
    ```
 
@@ -792,7 +792,7 @@ cnsctl recipe --service eks --accelerator gb200 --format json | \
 
 ```bash
 # Validate YAML syntax
-yamllint pkg/recipe/data/your-recipe.yaml
+yamllint pkg/recipe/data/overlays/your-recipe.yaml
 
 # Run all recipe tests
 go test -v ./pkg/recipe/... -count=1

@@ -90,19 +90,19 @@ cat pkg/recipe/data/components/gpu-operator/values.yaml | yq .
 EKS recipe (example of inheritance from base):
 
 ```shell
-yq . pkg/recipe/data/eks.yaml
+yq . pkg/recipe/data/overlays/eks.yaml
 ```
 
 EKS training recipe (inherits from eks):
 
 ```shell
-yq . pkg/recipe/data/eks-training.yaml
+yq . pkg/recipe/data/overlays/eks-training.yaml
 ```
 
 View GB200 EKS training recipe (inherits from eks-training):
 
 ```shell
-yq . pkg/recipe/data/gb200-eks-training.yaml
+yq . pkg/recipe/data/overlays/gb200-eks-training.yaml
 ```
 
 ### Multi-Level Inheritance (Values)
@@ -122,7 +122,7 @@ Base ValuesFile → Overlay ValuesFile → Overlay Overrides → CLI --set flags
 View leaf recipe (inherits from gb200-eks-training):
 
 ```shell
-yq pkg/recipe/data/gb200-eks-ubuntu-training.yaml
+yq pkg/recipe/data/overlays/gb200-eks-ubuntu-training.yaml
 ```
 
 ## Criteria Matching (runtime == at query time, compiled binary)

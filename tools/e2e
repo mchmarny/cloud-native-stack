@@ -301,7 +301,7 @@ test_all_recipe_data_files() {
   msg "Testing CLI Workflow for Leaf Recipes"
   msg "=========================================="
   
-  local recipe_data_dir="${ROOT}/pkg/recipe/data"
+  local recipe_data_dir="${ROOT}/pkg/recipe/data/overlays"
   local all_recipes_dir="${OUTPUT_DIR}/bundles/all-recipes"
   mkdir -p "$all_recipes_dir"
   

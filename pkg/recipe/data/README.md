@@ -16,16 +16,17 @@ This directory contains recipe metadata and component configurations for the NVI
 ```
 pkg/recipe/data/
 ├── base.yaml                      # Base recipe (universal defaults)
-├── eks.yaml                       # EKS overlay
-├── eks-training.yaml              # EKS + training overlay
-├── gb200-eks-training.yaml        # GB200 + EKS + training overlay
-├── gb200-eks-ubuntu-training.yaml # Full criteria leaf recipe
-├── h100-ubuntu-inference.yaml     # H100 inference overlay
+├── overlays/                      # Environment-specific overlays
+│   ├── eks.yaml                   # EKS overlay
+│   ├── eks-training.yaml          # EKS + training overlay
+│   ├── gb200-eks-training.yaml    # GB200 + EKS + training overlay
+│   ├── gb200-eks-ubuntu-training.yaml # Full criteria leaf recipe
+│   └── h100-ubuntu-inference.yaml # H100 inference overlay
 └── components/                    # Component value configurations
     ├── cert-manager/
     ├── nvidia-dra-driver-gpu/
     ├── gpu-operator/
-    ├── ...
+    └── ...
 ```
 
 ## Overview
@@ -64,7 +65,7 @@ All recipe metadata and component values are automatically validated. Tests run 
 
 ```bash
 # Generate bundle from recipe with overrides
-cnsctl bundle -r pkg/recipe/data/your-recipe.yaml -o ./test-bundles
+cnsctl bundle -r pkg/recipe/data/overlays/your-recipe.yaml -o ./test-bundles
 
 # Verify merged values
 cat test-bundles/gpu-operator/values.yaml | grep -A5 "driver:"

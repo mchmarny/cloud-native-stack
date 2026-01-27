@@ -15,7 +15,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed data/base.yaml data/*.yaml
+//go:embed data/base.yaml data/overlays/*.yaml
 var metadataFS embed.FS
 
 var (
