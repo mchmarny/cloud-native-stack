@@ -6,15 +6,14 @@ metadata:
     - base
     - eks
     - eks-training
-    - gb200-eks-training
 criteria:
   service: eks
-  accelerator: gb200
+  accelerator: any
   intent: training
   os: any
 constraints:
   - name: K8s.server.version
-    value: '>= 1.32.4'
+    value: '>= 1.30'
 componentRefs:
   - name: cert-manager
     type: Helm
@@ -24,27 +23,10 @@ componentRefs:
   - name: gpu-operator
     type: Helm
     source: https://helm.ngc.nvidia.com/nvidia
-    version: v25.3.3
+    version: v25.10.1
     valuesFile: components/gpu-operator/values-eks-training.yaml
-    overrides:
-      cdi:
-        default: false
-        enabled: true
-      driver:
-        kernelModuleConfig:
-          name: kernel-module-params
-        version: 580.82.07
-      gdrcopy:
-        enabled: true
     dependencyRefs:
       - cert-manager
-  - name: nvidia-dra-driver-gpu
-    type: Helm
-    source: https://helm.ngc.nvidia.com/nvidia
-    version: 25.8.1
-    valuesFile: components/nvidia-dra-driver-gpu/values.yaml
-    dependencyRefs:
-      - gpu-operator
   - name: nvsentinel
     type: Helm
     source: oci://ghcr.io/nvidia
@@ -57,11 +39,8 @@ componentRefs:
     source: https://helm.ngc.nvidia.com/nvidia/skyhook
     version: 0.11.1
     valuesFile: components/skyhook-operator/values.yaml
-    overrides:
-      customization: training
 deploymentOrder:
   - cert-manager
   - gpu-operator
-  - nvidia-dra-driver-gpu
   - nvsentinel
   - skyhook-operator

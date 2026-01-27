@@ -7,14 +7,21 @@ metadata:
     - eks
     - eks-training
     - gb200-eks-training
+    - gb200-eks-ubuntu-training
 criteria:
   service: eks
   accelerator: gb200
   intent: training
-  os: any
+  os: ubuntu
 constraints:
   - name: K8s.server.version
     value: '>= 1.32.4'
+  - name: OS.release.ID
+    value: ubuntu
+  - name: OS.release.VERSION_ID
+    value: "24.04"
+  - name: OS.sysctl./proc/sys/kernel/osrelease
+    value: '>= 6.8'
 componentRefs:
   - name: cert-manager
     type: Helm
@@ -58,7 +65,7 @@ componentRefs:
     version: 0.11.1
     valuesFile: components/skyhook-operator/values.yaml
     overrides:
-      customization: training
+      customization: ubuntu
 deploymentOrder:
   - cert-manager
   - gpu-operator
