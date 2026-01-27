@@ -2,7 +2,6 @@ package recipe
 
 import (
 	"context"
-	"embed"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -14,9 +13,6 @@ import (
 	cnserrors "github.com/NVIDIA/cloud-native-stack/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
-
-//go:embed data/base.yaml data/overlays/*.yaml
-var metadataFS embed.FS
 
 var (
 	metadataStoreOnce   sync.Once
@@ -36,7 +32,7 @@ type MetadataStore struct {
 	ValuesFiles map[string][]byte
 }
 
-// loadMetadataStore loads and caches the metadata store from embedded data.
+// loadMetadataStore loads and caches the metadata store from the data provider.
 func loadMetadataStore(_ context.Context) (*MetadataStore, error) {
 	metadataStoreOnce.Do(func() {
 		// Record cache miss on first load
@@ -47,8 +43,10 @@ func loadMetadataStore(_ context.Context) (*MetadataStore, error) {
 			ValuesFiles: make(map[string][]byte),
 		}
 
+		provider := GetDataProvider()
+
 		// Load all YAML files from data directory
-		err := fs.WalkDir(metadataFS, "data", func(path string, d fs.DirEntry, err error) error {
+		err := provider.WalkDir("", func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
@@ -60,13 +58,12 @@ func loadMetadataStore(_ context.Context) (*MetadataStore, error) {
 
 			// Handle component files (files in the components/ directory)
 			if strings.Contains(path, "components/") {
-				content, readErr := metadataFS.ReadFile(path)
+				content, readErr := provider.ReadFile(path)
 				if readErr != nil {
 					return fmt.Errorf("failed to read component file %s: %w", path, readErr)
 				}
-				// Store with relative path from data/ directory (e.g., "components/cert-manager/values.yaml")
-				relPath := strings.TrimPrefix(path, "data/")
-				store.ValuesFiles[relPath] = content
+				// Store with relative path (e.g., "components/cert-manager/values.yaml")
+				store.ValuesFiles[path] = content
 				return nil
 			}
 
@@ -75,13 +72,13 @@ func loadMetadataStore(_ context.Context) (*MetadataStore, error) {
 				return nil
 			}
 
-			// Skip old data-v1.yaml format
-			if filename == "data-v1.yaml" {
+			// Skip old data-v1.yaml format and registry.yaml (handled separately)
+			if filename == "data-v1.yaml" || filename == "registry.yaml" {
 				return nil
 			}
 
 			// Read and parse metadata file
-			content, readErr := metadataFS.ReadFile(path)
+			content, readErr := provider.ReadFile(path)
 			if readErr != nil {
 				return fmt.Errorf("failed to read %s: %w", path, readErr)
 			}

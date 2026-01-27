@@ -609,3 +609,80 @@ func hasName(flag cli.Flag, name string) bool {
 	}
 	return false
 }
+
+func TestRecipeCmd_HasDataFlag(t *testing.T) {
+	cmd := recipeCmd()
+
+	found := false
+	for _, flag := range cmd.Flags {
+		if hasName(flag, "data") {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		t.Error("recipe command should have --data flag")
+	}
+}
+
+func TestInitDataProvider_EmptyPath(t *testing.T) {
+	// Create a minimal command with just the data flag
+	testCmd := &cli.Command{
+		Name: "test",
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "data"},
+		},
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return initDataProvider(cmd)
+		},
+	}
+
+	// Run with no --data flag (should succeed with no-op)
+	err := testCmd.Run(context.Background(), []string{"test"})
+	if err != nil {
+		t.Errorf("expected no error with empty --data flag, got: %v", err)
+	}
+}
+
+func TestInitDataProvider_InvalidPath(t *testing.T) {
+	testCmd := &cli.Command{
+		Name: "test",
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "data"},
+		},
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return initDataProvider(cmd)
+		},
+	}
+
+	// Run with non-existent path
+	err := testCmd.Run(context.Background(), []string{"test", "--data", "/non/existent/path"})
+	if err == nil {
+		t.Error("expected error with non-existent path")
+	}
+}
+
+func TestInitDataProvider_MissingRegistry(t *testing.T) {
+	// Create temp directory without registry.yaml
+	tmpDir := t.TempDir()
+
+	testCmd := &cli.Command{
+		Name: "test",
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "data"},
+		},
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return initDataProvider(cmd)
+		},
+	}
+
+	// Run with directory that has no registry.yaml
+	err := testCmd.Run(context.Background(), []string{"test", "--data", tmpDir})
+	if err == nil {
+		t.Error("expected error when registry.yaml is missing")
+	}
+	if !strings.Contains(err.Error(), "registry.yaml") {
+		t.Errorf("error should mention registry.yaml, got: %v", err)
+	}
+}

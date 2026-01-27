@@ -236,6 +236,7 @@ Generate recipes using direct system parameters:
 | `--nodes` | | int | Number of GPU nodes in the cluster |
 | `--output` | `-o` | string | Output file (default: stdout) |
 | `--format` | `-f` | string | Format: json, yaml (default: yaml) |
+| `--data` | | string | External data directory to overlay on embedded data (see [External Data](#external-data-directory)) |
 
 **Examples:**
 ```shell
@@ -471,6 +472,7 @@ cnsctl bundle [flags]
 | `--deployer` | | string | Deployment method: helm (default), argocd |
 | `--repo` | | string | Git repository URL for ArgoCD applications (only used with `--deployer argocd`) |
 | `--set` | | string[] | Override values in bundle files (repeatable) |
+| `--data` | | string | External data directory to overlay on embedded data (see [External Data](#external-data-directory)) |
 | `--system-node-selector` | | string[] | Node selector for system components (format: key=value, repeatable) |
 | `--system-node-toleration` | | string[] | Toleration for system components (format: key=value:effect, repeatable) |
 | `--accelerated-node-selector` | | string[] | Node selector for accelerated/GPU nodes (format: key=value, repeatable) |
@@ -881,9 +883,131 @@ cnsctl bundle --help  # Shows available bundlers
 cnsctl --debug bundle -r recipe.yaml -b gpu-operator
 ```
 
+## External Data Directory
+
+The `--data` flag enables extending or overriding the embedded recipe data with external files. This allows customization without rebuilding the CLI.
+
+### Overview
+
+CNS embeds recipe data (overlays, component values, registry) at compile time. The `--data` flag layers an external directory on top, enabling:
+
+- **Custom components**: Add new components to the registry
+- **Override values**: Replace default component values files
+- **Custom overlays**: Add new recipe overlays for specific environments
+- **Registry extensions**: Add custom components while preserving embedded ones
+
+### Directory Structure
+
+The external directory must mirror the embedded data structure:
+
+```
+my-data/
+├── registry.yaml          # REQUIRED - merged with embedded registry
+├── base.yaml              # Optional - replaces embedded base.yaml
+├── overlays/
+│   └── custom-overlay.yaml    # Optional - adds new overlay
+└── components/
+    └── gpu-operator/
+        └── values.yaml        # Optional - replaces embedded values
+```
+
+### Requirements
+
+1. **registry.yaml is required**: The external directory must contain a `registry.yaml` file
+2. **Security validations**: Symlinks are rejected, file size is limited (10MB default)
+3. **No path traversal**: Paths containing `..` are rejected
+
+### Merge Behavior
+
+| File Type | Behavior |
+|-----------|----------|
+| `registry.yaml` | **Merged** - External components are added to embedded; same-named components are replaced |
+| All other files | **Replaced** - External file completely replaces embedded if path matches |
+
+### Usage Examples
+
+```shell
+# Use external data directory for recipe generation
+cnsctl recipe --service eks --accelerator h100 --data ./my-data
+
+# Use external data directory for bundle generation
+cnsctl bundle --recipe recipe.yaml --data ./my-data --output ./bundles
+
+# Combine with other flags
+cnsctl recipe --service eks --gpu gb200 --intent training \
+  --data ./custom-recipes \
+  --output recipe.yaml
+```
+
+### Example: Adding a Custom Component
+
+1. **Create external data directory:**
+```shell
+mkdir -p my-data/components/my-operator
+```
+
+2. **Create registry.yaml with custom component:**
+```yaml
+# my-data/registry.yaml
+apiVersion: cns.nvidia.com/v1alpha1
+kind: ComponentRegistry
+components:
+  - name: my-operator
+    displayName: My Custom Operator
+    helm:
+      defaultRepository: https://my-charts.example.com
+      defaultChart: my-operator
+      defaultVersion: v1.0.0
+```
+
+3. **Create values file for the component:**
+```yaml
+# my-data/components/my-operator/values.yaml
+replicaCount: 1
+image:
+  repository: my-registry/my-operator
+  tag: v1.0.0
+```
+
+4. **Create overlay that includes the component:**
+```yaml
+# my-data/overlays/my-custom-overlay.yaml
+kind: recipeMetadata
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: my-custom-overlay
+spec:
+  criteria:
+    service: eks
+    intent: training
+  componentRefs:
+    - name: my-operator
+      type: Helm
+      valuesFile: components/my-operator/values.yaml
+```
+
+5. **Generate recipe with external data:**
+```shell
+cnsctl recipe --service eks --intent training --data ./my-data
+```
+
+### Debugging External Data
+
+Use `--debug` flag to see detailed logging about external data loading:
+
+```shell
+cnsctl --debug recipe --service eks --data ./my-data
+```
+
+Debug logs include:
+- External files discovered and registered
+- File source resolution (embedded vs external)
+- Registry merge details (components added/overridden)
+
 ## See Also
 
 - [Installation Guide](installation.md) - Install cnsctl
 - [Agent Deployment](agent-deployment.md) - Kubernetes agent setup
 - [API Reference](../integration/api-reference.md) - Programmatic access
 - [Architecture Docs](../architecture/README.md) - Internal architecture
+- [Data Architecture](../architecture/data.md) - Recipe data system details

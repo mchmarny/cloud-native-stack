@@ -80,11 +80,17 @@ Override snapshot-detected criteria:
 	Supports: file paths, HTTP/HTTPS URLs, or ConfigMap URIs (cm://namespace/name).
 	If provided, criteria are extracted from the snapshot.`,
 			},
+			dataFlag,
 			outputFlag,
 			formatFlag,
 			kubeconfigFlag,
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			// Initialize external data provider if --data flag is set
+			if err := initDataProvider(cmd); err != nil {
+				return fmt.Errorf("failed to initialize data provider: %w", err)
+			}
+
 			// Parse output format
 			outFormat := serializer.Format(cmd.String("format"))
 			if outFormat.IsUnknown() {

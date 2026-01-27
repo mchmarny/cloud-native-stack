@@ -14,6 +14,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/NVIDIA/cloud-native-stack/pkg/logging"
+	"github.com/NVIDIA/cloud-native-stack/pkg/recipe"
 	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
 )
 
@@ -46,6 +47,14 @@ var (
 		Name:    "kubeconfig",
 		Aliases: []string{"k"},
 		Usage:   "Path to kubeconfig file (overrides KUBECONFIG env and default ~/.kube/config)",
+	}
+
+	dataFlag = &cli.StringFlag{
+		Name: "data",
+		Usage: `Path to external data directory to overlay on embedded recipe data.
+	The directory must contain registry.yaml (required). Registry components are merged
+	with embedded (external takes precedence by name). All other files (base.yaml,
+	overlays, component values) fully replace embedded files or add new ones.`,
 	}
 )
 
@@ -131,4 +140,35 @@ func commandLister(_ context.Context, cmd *cli.Command) {
 		}
 		fmt.Println(c.Name)
 	}
+}
+
+// initDataProvider initializes the data provider from the --data flag.
+// If the flag is not set, returns nil (uses embedded data).
+// If the flag is set, creates a layered provider that overlays the external
+// directory on top of embedded data.
+func initDataProvider(cmd *cli.Command) error {
+	dataDir := cmd.String("data")
+	if dataDir == "" {
+		return nil
+	}
+
+	slog.Info("initializing external data provider", "directory", dataDir)
+
+	// Create embedded provider
+	embedded := recipe.NewEmbeddedDataProvider(recipe.GetEmbeddedFS(), "data")
+
+	// Create layered provider
+	layered, err := recipe.NewLayeredDataProvider(embedded, recipe.LayeredProviderConfig{
+		ExternalDir:   dataDir,
+		AllowSymlinks: false,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to initialize external data: %w", err)
+	}
+
+	// Set as global data provider
+	recipe.SetDataProvider(layered)
+
+	slog.Info("external data provider initialized successfully", "directory", dataDir)
+	return nil
 }
