@@ -28,7 +28,7 @@ This installs the latest release and handles updates via `brew upgrade cnsctl`.
 Install the latest version using the installation script:
 
 ```shell
-curl -sfL https://raw.githubusercontent.com/nvidia/cloud-native-stack/refs/heads/main/install | bash -s --
+curl -sfL https://raw.githubusercontent.com/mchmarny/cloud-native-stack/main/install | bash -s --
 ```
 
 This script:
