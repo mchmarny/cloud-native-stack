@@ -1,0 +1,106 @@
+name: E2E Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+  workflow_dispatch: {}  # allow manual runs
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-test:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GO_VERSION: '1.25'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b  # v5.4.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          docker system prune -f
+
+      - name: Prep system for Kind cluster
+        run: |
+          # Network configuration for Kind
+          sudo sysctl -w net.ipv4.ip_forward=1
+          sudo sysctl -w fs.inotify.max_user_watches=524288
+          sudo sysctl -w fs.inotify.max_user_instances=1024
+
+      - name: Install E2E testing tools
+        uses: ./.github/actions/install-e2e-tools
+
+      - name: Create Kind cluster
+        run: make cluster-create
+
+      - name: Run Tilt CI
+        run: make tilt-ci
+
+      - name: Set up port forwarding
+        run: |
+          kubectl port-forward -n cns svc/cnsd 8080:8080 &
+          sleep 5
+          curl -sf http://localhost:8080/health || exit 1
+
+      - name: Run E2E tests
+        run: ./tests/e2e/run.sh
+
+      - name: Collect debug artifacts
+        if: failure()
+        run: |
+          mkdir -p /tmp/debug-artifacts
+          kubectl get all --all-namespaces > /tmp/debug-artifacts/all-resources.txt || true
+          kubectl get events --all-namespaces --sort-by='.lastTimestamp' > /tmp/debug-artifacts/events.txt || true
+          kubectl logs -n cns -l app.kubernetes.io/name=cnsd --tail=500 > /tmp/debug-artifacts/cnsd-logs.txt || true
+          docker images > /tmp/debug-artifacts/docker-images.txt || true
+
+      - name: Export Kind logs
+        if: failure()
+        run: |
+          mkdir -p /tmp/kind-logs
+          kind export logs /tmp/kind-logs --name cns || true
+
+      - name: Upload debug artifacts
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f  # v6.0.0
+        with:
+          name: e2e-debug-artifacts-${{ github.run_id }}
+          path: |
+            /tmp/debug-artifacts/
+            /tmp/kind-logs/
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        run: |
+          make cluster-delete || true
+          docker system prune -f || true

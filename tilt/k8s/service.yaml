@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cnsd
+  namespace: cns
+  labels:
+    app.kubernetes.io/name: cnsd
+    app.kubernetes.io/component: api-server
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+    - name: metrics
+      port: 9090
+      targetPort: metrics
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: cnsd

@@ -14,6 +14,11 @@ KO_VERSION          = $(shell ko version 2>/dev/null || echo "not installed")
 GORELEASER_VERSION  = $(shell goreleaser --version 2>/dev/null | sed -n 's/^GitVersion:[[:space:]]*//p' || echo "not installed")
 COVERAGE_THRESHOLD ?= 70
 
+# Tilt/ctlptl configuration
+CTLPTL_CONFIG_FILE = .ctlptl.yaml
+REGISTRY_PORT = 5001
+REGISTRY_NAME = ctlptl-registry
+
 # Default target
 all: help
 
@@ -115,10 +120,16 @@ bench: ## Runs benchmarks
 	@go test -bench=. -benchmem ./...
 
 .PHONY: e2e
-e2e: ## Runs end-to-end integration tests
+e2e: ## Runs end-to-end integration tests (CLI only)
 	@set -e; \
 	echo "Running e2e integration tests..."; \
 	tools/e2e
+
+.PHONY: e2e-tilt
+e2e-tilt: ## Runs e2e tests with Tilt cluster (requires: make dev-env)
+	@set -e; \
+	echo "Running e2e tests with Tilt cluster..."; \
+	tests/e2e/run.sh
 
 .PHONY: scan
 scan: ## Scans for vulnerabilities with grype
@@ -199,8 +210,120 @@ cleanup: ## Cleans up CNS Kubernetes resources (requires kubectl)
 demos: ## Creates demo GIFs using VHS tool
 	vhs docs/demos/videos/cli.tape -o docs/demos/videos/cli.gif
 
+# =============================================================================
+# Tilt Local Development
+# =============================================================================
+
+.PHONY: tilt-up
+tilt-up: ## Starts Tilt development environment
+	@echo "Starting Tilt development environment..."
+	@if ! command -v tilt >/dev/null 2>&1; then \
+		echo "Error: tilt is not installed."; \
+		echo "Install: brew install tilt-dev/tap/tilt"; \
+		echo "     or: curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash"; \
+		exit 1; \
+	fi
+	tilt up -f tilt/Tiltfile
+
+.PHONY: tilt-down
+tilt-down: ## Stops Tilt development environment
+	@echo "Stopping Tilt development environment..."
+	@if command -v tilt >/dev/null 2>&1; then \
+		tilt down -f tilt/Tiltfile; \
+	else \
+		echo "Warning: tilt is not installed"; \
+	fi
+
+.PHONY: tilt-ci
+tilt-ci: ## Runs Tilt in CI mode (no UI, waits for resources)
+	@echo "Running Tilt in CI mode..."
+	@if ! command -v tilt >/dev/null 2>&1; then \
+		echo "Error: tilt is not installed."; \
+		echo "Install: brew install tilt-dev/tap/tilt"; \
+		echo "     or: curl -fsSL https://raw.githubusercontent.com/tilt-dev/tilt/master/scripts/install.sh | bash"; \
+		exit 1; \
+	fi
+	@for i in 1 2 3; do \
+		echo "Attempt $$i of 3..."; \
+		if tilt ci -f tilt/Tiltfile --timeout=5m; then \
+			echo "Tilt CI succeeded on attempt $$i"; \
+			break; \
+		else \
+			if [ $$i -lt 3 ]; then \
+				echo "Tilt CI failed on attempt $$i, retrying in 10 seconds..."; \
+				sleep 10; \
+			else \
+				echo "Tilt CI failed after 3 attempts"; \
+				exit 1; \
+			fi; \
+		fi; \
+	done
+
+# =============================================================================
+# Cluster Management (ctlptl + Kind)
+# =============================================================================
+
+.PHONY: cluster-create
+cluster-create: ## Creates local Kind cluster with registry
+	@echo "Creating local development cluster..."
+	@if ! command -v ctlptl >/dev/null 2>&1; then \
+		echo "Error: ctlptl is not installed."; \
+		echo "Install: brew install tilt-dev/tap/ctlptl"; \
+		echo "     or: go install github.com/tilt-dev/ctlptl/cmd/ctlptl@latest"; \
+		exit 1; \
+	fi
+	@if ! command -v docker >/dev/null 2>&1; then \
+		echo "Error: docker is not installed."; \
+		echo "Install: https://docs.docker.com/get-docker/"; \
+		exit 1; \
+	fi
+	@if ! command -v kind >/dev/null 2>&1; then \
+		echo "Error: kind is not installed."; \
+		echo "Install: brew install kind"; \
+		echo "     or: go install sigs.k8s.io/kind@latest"; \
+		exit 1; \
+	fi
+	ctlptl apply -f $(CTLPTL_CONFIG_FILE)
+	@echo "Waiting for nodes to be ready..."
+	@kubectl wait --for=condition=ready nodes --all --timeout=300s
+	@echo "Cluster created. Registry at localhost:$(REGISTRY_PORT)"
+
+.PHONY: cluster-delete
+cluster-delete: ## Deletes local Kind cluster and registry
+	@echo "Deleting local development cluster..."
+	ctlptl delete -f $(CTLPTL_CONFIG_FILE) || echo "Cluster not found"
+
+.PHONY: cluster-status
+cluster-status: ## Shows cluster and registry status
+	@echo "=== Cluster Status ==="
+	@if command -v ctlptl >/dev/null 2>&1; then \
+		ctlptl get clusters 2>/dev/null || echo "No ctlptl clusters"; \
+	fi
+	@if command -v kubectl >/dev/null 2>&1 && kubectl cluster-info >/dev/null 2>&1; then \
+		echo "Context: $$(kubectl config current-context)"; \
+		kubectl get nodes -o wide 2>/dev/null || true; \
+		echo ""; \
+		echo "Registry:"; \
+		docker ps --filter "name=$(REGISTRY_NAME)" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || true; \
+	else \
+		echo "No active cluster"; \
+	fi
+
+# =============================================================================
+# Combined Development Targets
+# =============================================================================
+
+.PHONY: dev-env
+dev-env: cluster-create tilt-up ## Creates cluster and starts Tilt (full setup)
+
+.PHONY: dev-env-clean
+dev-env-clean: tilt-down cluster-delete ## Stops Tilt and deletes cluster (full cleanup)
+
+.PHONY: dev-restart
+dev-restart: tilt-down tilt-up ## Restarts Tilt without recreating cluster
+
 .PHONY: help
 help: ## Displays available commands
 	@echo "Available make targets:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk \
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk \
 		'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
