@@ -4,6 +4,10 @@
 # Prometheus configuration
 prometheus:
   prometheusSpec:
+    # Discover ServiceMonitors across all namespaces (e.g., dcgm-exporter in nvidia-gpu-operator)
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+
     # Resource configuration
     resources:
       requests:
@@ -57,14 +61,3 @@ nodeExporter:
 # kube-state-metrics - for Kubernetes object metrics
 kubeStateMetrics:
   enabled: true
-
-# ServiceMonitor for DCGM exporter - automatic GPU metrics collection
-additionalServiceMonitors:
-  - name: dcgm-exporter
-    selector:
-      matchLabels:
-        app: nvidia-dcgm-exporter
-    endpoints:
-      - port: metrics
-        interval: 30s
-        path: /metrics
