@@ -39,16 +39,17 @@
 // # Endpoints
 //
 // Application Endpoints (with rate limiting):
-//   - GET /v1/recipe - Generate configuration recipe based on query parameters
+//   - GET /v1/recipe  - Generate configuration recipe based on query parameters
+//   - POST /v1/recipe - Generate configuration recipe from criteria body (JSON/YAML)
 //
 // System Endpoints (no rate limiting):
 //   - GET /health  - Health check (liveness probe)
 //   - GET /ready   - Readiness check
 //   - GET /metrics - Prometheus metrics
 //
-// # Query Parameters
+// # Query Parameters (GET /v1/recipe)
 //
-// The /v1/recipe endpoint accepts:
+// The /v1/recipe endpoint accepts these query parameters for GET requests:
 //   - os: Operating system (ubuntu, cos, rhel, any)
 //   - osv: OS version (e.g., 24.04)
 //   - kernel: Kernel version (supports vendor suffixes)
@@ -57,6 +58,29 @@
 //   - gpu: GPU type (h100, gb200, a100, l40, any)
 //   - intent: Workload intent (training, inference, any)
 //   - context: Include context metadata (true/false)
+//
+// # Request Body (POST /v1/recipe)
+//
+// POST requests accept a RecipeCriteria resource in the request body.
+// Supports both JSON (application/json) and YAML (application/x-yaml) formats.
+//
+// Example request body:
+//
+//	kind: recipeCriteria
+//	apiVersion: cns.nvidia.com/v1alpha1
+//	metadata:
+//	  name: my-criteria
+//	spec:
+//	  service: eks
+//	  accelerator: gb200
+//	  os: ubuntu
+//	  intent: training
+//
+// Example curl command:
+//
+//	curl -X POST http://localhost:8080/v1/recipe \
+//	  -H "Content-Type: application/yaml" \
+//	  -d @criteria.yaml
 //
 // # Configuration
 //

@@ -759,6 +759,254 @@ run_bundle_tests() {
 }
 
 # ============================================================================
+# CRITERIA FILE TESTS (--criteria flag)
+# ============================================================================
+
+test_criteria_file_flag() {
+  msg ""
+  msg "=========================================="
+  msg "Testing Criteria File Support (--criteria flag)"
+  msg "=========================================="
+
+  local criteria_test_dir="${OUTPUT_DIR}/criteria-file-test"
+  mkdir -p "$criteria_test_dir"
+
+  # -------------------------------------------------------------------------
+  # Test 1: Valid YAML criteria file
+  # -------------------------------------------------------------------------
+  msg ""
+  msg "--- Test 1: Valid YAML Criteria File ---"
+
+  local yaml_criteria="${criteria_test_dir}/criteria.yaml"
+  cat > "$yaml_criteria" << 'EOF'
+kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: test-criteria
+spec:
+  service: eks
+  accelerator: h100
+  os: ubuntu
+  intent: training
+EOF
+
+  local yaml_recipe="${criteria_test_dir}/yaml-recipe.yaml"
+  if ! "${CNSCTL_BIN}" recipe --criteria "$yaml_criteria" -o "$yaml_recipe" 2>&1; then
+    test_fail "criteria-file/yaml" "Failed to generate recipe from YAML criteria file"
+  else
+    test_pass "criteria-file/yaml"
+
+    # Verify recipe was created
+    if [ -f "$yaml_recipe" ]; then
+      test_pass "criteria-file/yaml-recipe-created"
+
+      # Verify criteria values were applied
+      if grep -q "service: eks" "$yaml_recipe" 2>/dev/null || grep -q '"service": "eks"' "$yaml_recipe" 2>/dev/null; then
+        test_pass "criteria-file/yaml-service-applied"
+      else
+        test_fail "criteria-file/yaml-service-applied" "Service value not found in recipe"
+      fi
+    else
+      test_fail "criteria-file/yaml-recipe-created" "Recipe file was not created"
+    fi
+  fi
+
+  # -------------------------------------------------------------------------
+  # Test 2: Valid JSON criteria file
+  # -------------------------------------------------------------------------
+  msg ""
+  msg "--- Test 2: Valid JSON Criteria File ---"
+
+  local json_criteria="${criteria_test_dir}/criteria.json"
+  cat > "$json_criteria" << 'EOF'
+{
+  "kind": "recipeCriteria",
+  "apiVersion": "cns.nvidia.com/v1alpha1",
+  "metadata": {
+    "name": "test-criteria-json"
+  },
+  "spec": {
+    "service": "gke",
+    "accelerator": "a100",
+    "os": "ubuntu",
+    "intent": "inference"
+  }
+}
+EOF
+
+  local json_recipe="${criteria_test_dir}/json-recipe.yaml"
+  if ! "${CNSCTL_BIN}" recipe --criteria "$json_criteria" -o "$json_recipe" 2>&1; then
+    test_fail "criteria-file/json" "Failed to generate recipe from JSON criteria file"
+  else
+    test_pass "criteria-file/json"
+
+    # Verify recipe was created
+    if [ -f "$json_recipe" ]; then
+      test_pass "criteria-file/json-recipe-created"
+    else
+      test_fail "criteria-file/json-recipe-created" "Recipe file was not created"
+    fi
+  fi
+
+  # -------------------------------------------------------------------------
+  # Test 3: CLI flag override
+  # -------------------------------------------------------------------------
+  msg ""
+  msg "--- Test 3: CLI Flag Overrides Criteria File ---"
+
+  local override_recipe="${criteria_test_dir}/override-recipe.yaml"
+  if ! "${CNSCTL_BIN}" recipe --criteria "$yaml_criteria" --service gke -o "$override_recipe" 2>&1; then
+    test_fail "criteria-file/override" "Failed to generate recipe with CLI override"
+  else
+    test_pass "criteria-file/override"
+
+    # Verify the service was overridden to gke (not eks from file)
+    if grep -q "service: gke" "$override_recipe" 2>/dev/null || grep -q '"service": "gke"' "$override_recipe" 2>/dev/null; then
+      test_pass "criteria-file/override-applied"
+    else
+      test_fail "criteria-file/override-applied" "CLI override (--service gke) was not applied"
+    fi
+  fi
+
+  # -------------------------------------------------------------------------
+  # Test 4: Invalid criteria file (wrong kind)
+  # -------------------------------------------------------------------------
+  msg ""
+  msg "--- Test 4: Invalid Criteria File (Wrong Kind) ---"
+
+  local invalid_kind="${criteria_test_dir}/invalid-kind.yaml"
+  cat > "$invalid_kind" << 'EOF'
+kind: wrongKind
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: invalid
+spec:
+  service: eks
+EOF
+
+  if "${CNSCTL_BIN}" recipe --criteria "$invalid_kind" -o /dev/null 2>&1; then
+    test_fail "criteria-file/invalid-kind" "Should fail with invalid kind"
+  else
+    test_pass "criteria-file/invalid-kind"
+  fi
+
+  # -------------------------------------------------------------------------
+  # Test 5: Invalid criteria file (wrong apiVersion)
+  # -------------------------------------------------------------------------
+  msg ""
+  msg "--- Test 5: Invalid Criteria File (Wrong apiVersion) ---"
+
+  local invalid_version="${criteria_test_dir}/invalid-version.yaml"
+  cat > "$invalid_version" << 'EOF'
+kind: recipeCriteria
+apiVersion: wrong.version/v1
+metadata:
+  name: invalid
+spec:
+  service: eks
+EOF
+
+  if "${CNSCTL_BIN}" recipe --criteria "$invalid_version" -o /dev/null 2>&1; then
+    test_fail "criteria-file/invalid-apiversion" "Should fail with invalid apiVersion"
+  else
+    test_pass "criteria-file/invalid-apiversion"
+  fi
+
+  # -------------------------------------------------------------------------
+  # Test 6: Invalid criteria file (invalid enum value)
+  # -------------------------------------------------------------------------
+  msg ""
+  msg "--- Test 6: Invalid Criteria File (Invalid Enum Value) ---"
+
+  local invalid_enum="${criteria_test_dir}/invalid-enum.yaml"
+  cat > "$invalid_enum" << 'EOF'
+kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: invalid-enum
+spec:
+  service: invalid-service
+  accelerator: h100
+EOF
+
+  if "${CNSCTL_BIN}" recipe --criteria "$invalid_enum" -o /dev/null 2>&1; then
+    test_fail "criteria-file/invalid-enum" "Should fail with invalid service enum"
+  else
+    test_pass "criteria-file/invalid-enum"
+  fi
+
+  # -------------------------------------------------------------------------
+  # Test 7: Non-existent criteria file
+  # -------------------------------------------------------------------------
+  msg ""
+  msg "--- Test 7: Non-existent Criteria File ---"
+
+  if "${CNSCTL_BIN}" recipe --criteria "/non/existent/file.yaml" -o /dev/null 2>&1; then
+    test_fail "criteria-file/non-existent" "Should fail with non-existent file"
+  else
+    test_pass "criteria-file/non-existent"
+  fi
+
+  # -------------------------------------------------------------------------
+  # Test 8: Criteria file with bundle command
+  # -------------------------------------------------------------------------
+  msg ""
+  msg "--- Test 8: Criteria File with Bundle Generation ---"
+
+  local criteria_bundle_dir="${criteria_test_dir}/bundle"
+  mkdir -p "$criteria_bundle_dir"
+
+  # First generate recipe from criteria
+  local criteria_recipe="${criteria_test_dir}/for-bundle.yaml"
+  if ! "${CNSCTL_BIN}" recipe --criteria "$yaml_criteria" -o "$criteria_recipe" 2>&1; then
+    test_fail "criteria-file/bundle-recipe" "Failed to generate recipe for bundle test"
+  else
+    # Then generate bundle from that recipe
+    if ! "${CNSCTL_BIN}" bundle -r "$criteria_recipe" -o "$criteria_bundle_dir" 2>&1; then
+      test_fail "criteria-file/bundle" "Failed to generate bundle from criteria-based recipe"
+    else
+      test_pass "criteria-file/bundle"
+
+      # Verify bundle was created
+      verify_umbrella_chart "$criteria_bundle_dir" "criteria-file/bundle-structure"
+    fi
+  fi
+
+  # -------------------------------------------------------------------------
+  # Test 9: Partial criteria file (only some fields)
+  # -------------------------------------------------------------------------
+  msg ""
+  msg "--- Test 9: Partial Criteria File ---"
+
+  local partial_criteria="${criteria_test_dir}/partial.yaml"
+  cat > "$partial_criteria" << 'EOF'
+kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: partial-criteria
+spec:
+  accelerator: h100
+EOF
+
+  local partial_recipe="${criteria_test_dir}/partial-recipe.yaml"
+  if ! "${CNSCTL_BIN}" recipe --criteria "$partial_criteria" -o "$partial_recipe" 2>&1; then
+    test_fail "criteria-file/partial" "Failed to generate recipe from partial criteria file"
+  else
+    test_pass "criteria-file/partial"
+
+    # Verify recipe was created
+    if [ -f "$partial_recipe" ]; then
+      test_pass "criteria-file/partial-recipe-created"
+    else
+      test_fail "criteria-file/partial-recipe-created" "Recipe file was not created"
+    fi
+  fi
+
+  msg ""
+  msg "Criteria file tests completed"
+}
+
+# ============================================================================
 # EXTERNAL DATA DIRECTORY TESTS (--data flag)
 # ============================================================================
 
@@ -942,7 +1190,10 @@ else
   err "Recipe file not found, cannot run bundle tests"
 fi
 
-# Step 5: Test external data directory (--data flag)
+# Step 5: Test criteria file (--criteria flag)
+test_criteria_file_flag
+
+# Step 6: Test external data directory (--data flag)
 test_external_data_flag
 
 # Print summary

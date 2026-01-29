@@ -233,19 +233,29 @@ flowchart TD
 
 ### Recipe Handler: `pkg/recipe/handler.go`
 
-HTTP handler for recipe generation endpoint.
+HTTP handler for recipe generation endpoint. Supports both GET (query parameters) and POST (criteria body) methods.
 
 #### Handler Flow
 
 ```go
 func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
-    // 1. Validate method (GET only)
-    if r.Method != http.MethodGet {
+    var criteria *Criteria
+    var err error
+
+    // 1. Route based on HTTP method
+    switch r.Method {
+    case http.MethodGet:
+        // 2a. Parse query parameters for GET
+        criteria, err = ParseCriteriaFromRequest(r)
+    case http.MethodPost:
+        // 2b. Parse request body for POST (JSON or YAML)
+        criteria, err = ParseCriteriaFromBody(r.Body, r.Header.Get("Content-Type"))
+        defer r.Body.Close()
+    default:
+        // Reject other methods
+        w.Header().Set("Allow", "GET, POST")
         return 405
     }
-
-    // 2. Parse query parameters
-    criteria := ParseCriteriaFromRequest(r)
 
     // 3. Validate criteria format
     if err := criteria.Validate(); err != nil {
@@ -273,6 +283,27 @@ func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
+#### POST Request Body Format
+
+POST requests accept a `RecipeCriteria` resource (Kubernetes-style):
+
+```yaml
+kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: my-criteria
+spec:
+  service: eks
+  accelerator: gb200
+  os: ubuntu
+  intent: training
+```
+
+Supported content types:
+- `application/json` - JSON format
+- `application/x-yaml` - YAML format
+```
+
 #### Query Parameter Parsing
 
 | Parameter | Type | Validation | Example |
@@ -292,7 +323,11 @@ Shared with CLI - same logic as described in CLI architecture.
 
 ### Recipe Generation
 
-**Endpoint**: `GET /v1/recipe`
+**Endpoints**:
+- `GET /v1/recipe` - Generate recipe from query parameters
+- `POST /v1/recipe` - Generate recipe from criteria body
+
+#### GET Method
 
 **Query Parameters**:
 - `service` - Kubernetes service type (eks, gke, aks, oke)
@@ -301,6 +336,23 @@ Shared with CLI - same logic as described in CLI architecture.
 - `intent` - Workload intent (training, inference)
 - `os` - Operating system family (ubuntu, rhel, cos, amazonlinux)
 - `nodes` - Number of GPU nodes (0 = any/unspecified)
+
+#### POST Method
+
+**Content Types**: `application/json`, `application/x-yaml`
+
+**Request Body**: `RecipeCriteria` resource with kind, apiVersion, metadata, and spec fields.
+
+```yaml
+kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: my-criteria
+spec:
+  service: eks
+  accelerator: h100
+  intent: training
+```
 
 **Response**: 200 OK
 

@@ -2,10 +2,15 @@
 package recipe
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/NVIDIA/cloud-native-stack/pkg/serializer"
+	"gopkg.in/yaml.v3"
 )
 
 // criteriaAnyValue is the wildcard value for criteria matching.
@@ -450,4 +455,206 @@ func ParseCriteriaFromValues(values url.Values) (*Criteria, error) {
 	}
 
 	return c, nil
+}
+
+// RecipeCriteriaKind is the kind value for RecipeCriteria resources.
+const RecipeCriteriaKind = "recipeCriteria"
+
+// RecipeCriteriaAPIVersion is the API version for RecipeCriteria resources.
+const RecipeCriteriaAPIVersion = "cns.nvidia.com/v1alpha1"
+
+// RecipeCriteria represents a Kubernetes-style criteria resource.
+// This is the format used in criteria files and API requests.
+//
+// Example:
+//
+//	kind: recipeCriteria
+//	apiVersion: cns.nvidia.com/v1alpha1
+//	metadata:
+//	  name: gb200-eks-ubuntu-training
+//	spec:
+//	  service: eks
+//	  os: ubuntu
+//	  accelerator: gb200
+//	  intent: training
+type RecipeCriteria struct {
+	// Kind is always "recipeCriteria".
+	Kind string `json:"kind" yaml:"kind"`
+
+	// APIVersion is the API version (e.g., "cns.nvidia.com/v1alpha1").
+	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
+
+	// Metadata contains the name and other metadata.
+	Metadata struct {
+		// Name is the unique identifier for this criteria set.
+		Name string `json:"name" yaml:"name"`
+	} `json:"metadata" yaml:"metadata"`
+
+	// Spec contains the actual criteria specification.
+	Spec *Criteria `json:"spec" yaml:"spec"`
+}
+
+// rawCriteriaSpec is an intermediate struct for parsing criteria spec with string enum values.
+// This allows validation through Parse* functions before creating the typed Criteria.
+type rawCriteriaSpec struct {
+	Service     string `json:"service,omitempty" yaml:"service,omitempty"`
+	Accelerator string `json:"accelerator,omitempty" yaml:"accelerator,omitempty"`
+	Intent      string `json:"intent,omitempty" yaml:"intent,omitempty"`
+	OS          string `json:"os,omitempty" yaml:"os,omitempty"`
+	Nodes       int    `json:"nodes,omitempty" yaml:"nodes,omitempty"`
+}
+
+// rawRecipeCriteria is for parsing RecipeCriteria with string enum values in spec.
+type rawRecipeCriteria struct {
+	Kind       string `json:"kind" yaml:"kind"`
+	APIVersion string `json:"apiVersion" yaml:"apiVersion"`
+	Metadata   struct {
+		Name string `json:"name" yaml:"name"`
+	} `json:"metadata" yaml:"metadata"`
+	Spec rawCriteriaSpec `json:"spec" yaml:"spec"`
+}
+
+// validateAndConvertRawSpec validates raw string values and converts to typed Criteria.
+func validateAndConvertRawSpec(raw *rawCriteriaSpec) (*Criteria, error) {
+	c := NewCriteria()
+
+	if raw.Service != "" {
+		st, err := ParseCriteriaServiceType(raw.Service)
+		if err != nil {
+			return nil, err
+		}
+		c.Service = st
+	}
+
+	if raw.Accelerator != "" {
+		at, err := ParseCriteriaAcceleratorType(raw.Accelerator)
+		if err != nil {
+			return nil, err
+		}
+		c.Accelerator = at
+	}
+
+	if raw.Intent != "" {
+		it, err := ParseCriteriaIntentType(raw.Intent)
+		if err != nil {
+			return nil, err
+		}
+		c.Intent = it
+	}
+
+	if raw.OS != "" {
+		ot, err := ParseCriteriaOSType(raw.OS)
+		if err != nil {
+			return nil, err
+		}
+		c.OS = ot
+	}
+
+	if raw.Nodes < 0 {
+		return nil, fmt.Errorf("invalid nodes count: %d (must be >= 0)", raw.Nodes)
+	}
+	c.Nodes = raw.Nodes
+
+	return c, nil
+}
+
+// LoadCriteriaFromFile loads criteria from a YAML or JSON file.
+// The file format is auto-detected from the file extension.
+// All fields are optional and default to "any" if not specified.
+//
+// Example file (YAML):
+//
+//	kind: recipeCriteria
+//	apiVersion: cns.nvidia.com/v1alpha1
+//	metadata:
+//	  name: gb200-eks-ubuntu-training
+//	spec:
+//	  service: eks
+//	  os: ubuntu
+//	  accelerator: gb200
+//	  intent: training
+func LoadCriteriaFromFile(path string) (*Criteria, error) {
+	raw, err := serializer.FromFile[rawRecipeCriteria](path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load criteria file: %w", err)
+	}
+
+	// Validate kind and apiVersion
+	if raw.Kind != "" && raw.Kind != RecipeCriteriaKind {
+		return nil, fmt.Errorf("invalid kind %q, expected %q", raw.Kind, RecipeCriteriaKind)
+	}
+	if raw.APIVersion != "" && raw.APIVersion != RecipeCriteriaAPIVersion {
+		return nil, fmt.Errorf("invalid apiVersion %q, expected %q", raw.APIVersion, RecipeCriteriaAPIVersion)
+	}
+
+	return validateAndConvertRawSpec(&raw.Spec)
+}
+
+// ParseCriteriaFromBody parses criteria from an io.Reader (HTTP request body).
+// Supports JSON and YAML based on the Content-Type header.
+// All fields are optional and default to "any" if not specified.
+//
+// Supported Content-Types:
+//   - application/json
+//   - application/x-yaml, application/yaml, text/yaml
+//
+// If Content-Type is empty or unrecognized, JSON is assumed.
+//
+// Example JSON body:
+//
+//	{
+//	  "kind": "recipeCriteria",
+//	  "apiVersion": "cns.nvidia.com/v1alpha1",
+//	  "metadata": {"name": "my-criteria"},
+//	  "spec": {"service": "eks", "accelerator": "h100"}
+//	}
+func ParseCriteriaFromBody(body io.Reader, contentType string) (*Criteria, error) {
+	if body == nil {
+		return nil, fmt.Errorf("request body cannot be nil")
+	}
+
+	data, err := io.ReadAll(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read request body: %w", err)
+	}
+
+	if len(data) == 0 {
+		return nil, fmt.Errorf("request body is empty")
+	}
+
+	var raw rawRecipeCriteria
+
+	// Determine format from Content-Type header
+	ct := strings.ToLower(strings.TrimSpace(contentType))
+	// Extract media type (strip charset and other params)
+	if idx := strings.Index(ct, ";"); idx != -1 {
+		ct = strings.TrimSpace(ct[:idx])
+	}
+
+	switch ct {
+	case "application/x-yaml", "application/yaml", "text/yaml":
+		if err := yaml.Unmarshal(data, &raw); err != nil {
+			return nil, fmt.Errorf("failed to parse YAML body: %w", err)
+		}
+	case "application/json", "":
+		// Default to JSON for empty or unrecognized content type
+		if err := json.Unmarshal(data, &raw); err != nil {
+			return nil, fmt.Errorf("failed to parse JSON body: %w", err)
+		}
+	default:
+		// Try JSON first for unrecognized types
+		if err := json.Unmarshal(data, &raw); err != nil {
+			return nil, fmt.Errorf("unsupported content type %q and failed to parse as JSON: %w", contentType, err)
+		}
+	}
+
+	// Validate kind and apiVersion
+	if raw.Kind != "" && raw.Kind != RecipeCriteriaKind {
+		return nil, fmt.Errorf("invalid kind %q, expected %q", raw.Kind, RecipeCriteriaKind)
+	}
+	if raw.APIVersion != "" && raw.APIVersion != RecipeCriteriaAPIVersion {
+		return nil, fmt.Errorf("invalid apiVersion %q, expected %q", raw.APIVersion, RecipeCriteriaAPIVersion)
+	}
+
+	return validateAndConvertRawSpec(&raw.Spec)
 }

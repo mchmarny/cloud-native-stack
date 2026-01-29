@@ -223,6 +223,43 @@ cnsctl recipe [flags]
 
 **Modes:**
 
+#### Criteria File Mode (Recommended)
+Generate recipes using a Kubernetes-style criteria file:
+
+**Flags:**
+| Flag | Short | Type | Description |
+|------|-------|------|-------------|
+| `--criteria` | `-c` | string | Path to criteria file (YAML/JSON), alternative to individual flags |
+| `--output` | `-o` | string | Output file (default: stdout) |
+| `--format` | `-f` | string | Format: json, yaml (default: yaml) |
+| `--data` | | string | External data directory to overlay on embedded data (see [External Data](#external-data-directory)) |
+
+The criteria file uses a Kubernetes-style format:
+```yaml
+kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: gb200-eks-ubuntu-training
+spec:
+  service: eks
+  os: ubuntu
+  accelerator: gb200
+  intent: training
+  nodes: 8
+```
+
+Individual CLI flags can override criteria file values:
+```shell
+# Load criteria from file
+cnsctl recipe --criteria criteria.yaml
+
+# Override service from file
+cnsctl recipe --criteria criteria.yaml --service gke
+
+# Save output to file
+cnsctl recipe -c criteria.yaml -o recipe.yaml
+```
+
 #### Query Mode
 Generate recipes using direct system parameters:
 

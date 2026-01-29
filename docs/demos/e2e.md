@@ -14,7 +14,7 @@ cnsctl -h
 
 ## Recipe
 
-Basic:
+Basic (query parameters):
 
 ```shell
 cnsctl recipe \
@@ -24,14 +24,52 @@ cnsctl recipe \
   --intent training | yq .
 ```
 
+From criteria file:
+
+```shell
+# Create criteria file
+cat > /tmp/criteria.yaml << 'EOF'
+kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: gb200-eks-training
+spec:
+  service: eks
+  accelerator: gb200
+  os: ubuntu
+  intent: training
+EOF
+
+# Generate recipe from criteria file
+cnsctl recipe --criteria /tmp/criteria.yaml | yq .
+
+# CLI flags override criteria file values
+cnsctl recipe --criteria /tmp/criteria.yaml --service gke | yq .
+```
+
 Metadata overlays: `components=5 overlays=5`
 
 ![data flow](images/recipe.png)
 
-Recipe from API: 
+Recipe from API (GET):
 
 ```shell
 curl -s "https://cns.dgxc.io/v1/recipe?service=eks&accelerator=gb200&intent=training" | jq .
+```
+
+Recipe from API (POST with criteria body):
+
+```shell
+curl -s -X POST "https://cns.dgxc.io/v1/recipe" \
+  -H "Content-Type: application/x-yaml" \
+  -d 'kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: gb200-training
+spec:
+  service: eks
+  accelerator: gb200
+  intent: training' | jq .
 ```
 
 Allowed list support in self-hosted API:

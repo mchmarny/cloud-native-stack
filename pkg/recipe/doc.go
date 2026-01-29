@@ -97,15 +97,74 @@
 //	    return
 //	}
 //
-// # Query Parameters (HTTP API)
+// # Query Parameters (HTTP API - GET)
 //
-// The HTTP handler accepts these query parameters:
+// The HTTP handler accepts these query parameters for GET requests:
 //   - service: eks, gke, aks, any (default: any)
 //   - accelerator: h100, gb200, a100, l40, any (default: any)
 //   - gpu: alias for accelerator (backwards compatibility)
 //   - intent: training, inference, any (default: any)
 //   - os: ubuntu, cos, rhel, any (default: any)
 //   - nodes: integer node count (default: 0 = any)
+//
+// # Criteria Files (CLI and HTTP API - POST)
+//
+// Criteria can be defined in a Kubernetes-style YAML or JSON file using the
+// RecipeCriteria resource type. This provides an alternative to individual
+// CLI flags or query parameters.
+//
+// RecipeCriteria: Kubernetes-style resource for criteria definition
+//
+//	type RecipeCriteria struct {
+//	    Kind       string    // Must be "recipeCriteria"
+//	    APIVersion string    // Must be "cns.nvidia.com/v1alpha1"
+//	    Metadata   struct {
+//	        Name string       // Optional descriptive name
+//	    }
+//	    Spec *Criteria        // The criteria specification
+//	}
+//
+// Example criteria file (criteria.yaml):
+//
+//	kind: recipeCriteria
+//	apiVersion: cns.nvidia.com/v1alpha1
+//	metadata:
+//	  name: gb200-eks-ubuntu-training
+//	spec:
+//	  service: eks
+//	  os: ubuntu
+//	  accelerator: gb200
+//	  intent: training
+//
+// Load criteria from a file:
+//
+//	criteria, err := recipe.LoadCriteriaFromFile("/path/to/criteria.yaml")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	result, err := builder.BuildFromCriteria(ctx, criteria)
+//
+// Parse criteria from HTTP request body (POST):
+//
+//	criteria, err := recipe.ParseCriteriaFromBody(r.Body, r.Header.Get("Content-Type"))
+//	if err != nil {
+//	    http.Error(w, err.Error(), http.StatusBadRequest)
+//	    return
+//	}
+//
+// CLI usage with criteria file:
+//
+//	cnsctl recipe --criteria /path/to/criteria.yaml --output recipe.yaml
+//
+// CLI flags can override criteria file values:
+//
+//	cnsctl recipe --criteria criteria.yaml --service gke --output recipe.yaml
+//
+// HTTP API POST request:
+//
+//	curl -X POST http://localhost:8080/v1/recipe \
+//	  -H "Content-Type: application/yaml" \
+//	  -d @criteria.yaml
 //
 // # Criteria Matching
 //

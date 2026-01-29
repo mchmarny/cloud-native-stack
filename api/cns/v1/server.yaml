@@ -236,6 +236,167 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+    post:
+      tags: [Recipes]
+      summary: Generate recipe from criteria body
+      operationId: createRecipe
+      description: >
+        Alternative to GET with query parameters. Accepts criteria as JSON or YAML
+        in the request body. Useful for programmatic access or when criteria is
+        stored in configuration files.
+      parameters:
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Client-provided request ID for tracing
+      requestBody:
+        required: true
+        description: Recipe criteria in Kubernetes-style resource format
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecipeCriteria"
+            examples:
+              minimal:
+                summary: Minimal criteria (single field)
+                value:
+                  kind: recipeCriteria
+                  apiVersion: cns.nvidia.com/v1alpha1
+                  metadata:
+                    name: eks-minimal
+                  spec:
+                    service: eks
+              full:
+                summary: Full criteria specification
+                value:
+                  kind: recipeCriteria
+                  apiVersion: cns.nvidia.com/v1alpha1
+                  metadata:
+                    name: gb200-eks-ubuntu-training
+                  spec:
+                    service: eks
+                    accelerator: gb200
+                    intent: training
+                    os: ubuntu
+                    nodes: 4
+          application/x-yaml:
+            schema:
+              $ref: "#/components/schemas/RecipeCriteria"
+            examples:
+              minimal:
+                summary: Minimal criteria (single field)
+                value: |
+                  kind: recipeCriteria
+                  apiVersion: cns.nvidia.com/v1alpha1
+                  metadata:
+                    name: eks-minimal
+                  spec:
+                    service: eks
+              full:
+                summary: Full criteria specification
+                value: |
+                  kind: recipeCriteria
+                  apiVersion: cns.nvidia.com/v1alpha1
+                  metadata:
+                    name: gb200-eks-ubuntu-training
+                  spec:
+                    service: eks
+                    accelerator: gb200
+                    intent: training
+                    os: ubuntu
+                    nodes: 4
+      responses:
+        "200":
+          description: Recipe payload for the provided criteria
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/RateLimitLimit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/RateLimitRemaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/RateLimitReset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecipeResponse"
+        "400":
+          description: Invalid request body or criteria values
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                invalidCriteria:
+                  summary: Invalid criteria value
+                  value:
+                    code: INVALID_REQUEST
+                    message: "Invalid recipe criteria"
+                    details:
+                      error: "invalid service type: windows"
+                    requestId: "550e8400-e29b-41d4-a716-446655440000"
+                    timestamp: "2025-01-15T10:30:00Z"
+                    retryable: false
+                emptyBody:
+                  summary: Empty request body
+                  value:
+                    code: INVALID_REQUEST
+                    message: "Invalid recipe criteria"
+                    details:
+                      error: "request body is empty"
+                    requestId: "550e8400-e29b-41d4-a716-446655440000"
+                    timestamp: "2025-01-15T10:30:00Z"
+                    retryable: false
+        "429":
+          description: Rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds until retry allowed
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+            X-RateLimit-Limit:
+              $ref: "#/components/headers/RateLimitLimit"
+            X-RateLimit-Remaining:
+              $ref: "#/components/headers/RateLimitRemaining"
+            X-RateLimit-Reset:
+              $ref: "#/components/headers/RateLimitReset"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Service temporarily unavailable
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds until retry allowed
+            X-Request-Id:
+              $ref: "#/components/headers/RequestIdResponse"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /v1/bundle:
     post:
@@ -654,9 +815,35 @@ components:
           description: Whether client should retry this request
           example: false
 
+    RecipeCriteria:
+      type: object
+      description: Kubernetes-style recipe criteria resource
+      required: [kind, apiVersion, spec]
+      properties:
+        kind:
+          type: string
+          description: Resource kind (always "recipeCriteria")
+          enum: [recipeCriteria]
+          example: recipeCriteria
+        apiVersion:
+          type: string
+          description: API version
+          enum: [cns.nvidia.com/v1alpha1]
+          example: cns.nvidia.com/v1alpha1
+        metadata:
+          type: object
+          description: Resource metadata
+          properties:
+            name:
+              type: string
+              description: Unique identifier for this criteria set
+              example: gb200-eks-ubuntu-training
+        spec:
+          $ref: "#/components/schemas/Criteria"
+
     Criteria:
       type: object
-      description: Recipe criteria parameters
+      description: Recipe criteria specification
       properties:
         service:
           type: string

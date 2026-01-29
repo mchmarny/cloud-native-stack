@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -113,14 +114,15 @@ func TestRecipeEndpoint(t *testing.T) {
 	}
 }
 
-// TestRecipeEndpointMethods verifies only GET is allowed
+// TestRecipeEndpointMethods verifies only GET and POST are allowed
 func TestRecipeEndpointMethods(t *testing.T) {
 	b := recipe.NewBuilder()
 
-	methods := []string{http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch}
+	// These methods should return 405 Method Not Allowed
+	disallowedMethods := []string{http.MethodPut, http.MethodDelete, http.MethodPatch}
 
-	for _, method := range methods {
-		t.Run(method, func(t *testing.T) {
+	for _, method := range disallowedMethods {
+		t.Run(method+"_not_allowed", func(t *testing.T) {
 			req := httptest.NewRequest(method, "/v1/recipe", nil)
 			w := httptest.NewRecorder()
 
@@ -134,6 +136,64 @@ func TestRecipeEndpointMethods(t *testing.T) {
 			allow := w.Header().Get("Allow")
 			if allow == "" {
 				t.Error("expected Allow header to be set")
+			}
+		})
+	}
+}
+
+// TestRecipeEndpointPOST verifies POST method works with JSON/YAML bodies
+func TestRecipeEndpointPOST(t *testing.T) {
+	b := recipe.NewBuilder()
+
+	tests := []struct {
+		name        string
+		body        string
+		contentType string
+		wantStatus  int
+	}{
+		{
+			name:        "valid JSON body",
+			body:        `{"kind":"recipeCriteria","apiVersion":"cns.nvidia.com/v1alpha1","spec":{"service":"eks","accelerator":"h100"}}`,
+			contentType: "application/json",
+			wantStatus:  http.StatusOK,
+		},
+		{
+			name:        "valid YAML body",
+			body:        "kind: recipeCriteria\napiVersion: cns.nvidia.com/v1alpha1\nspec:\n  service: gke\n  accelerator: a100",
+			contentType: "application/x-yaml",
+			wantStatus:  http.StatusOK,
+		},
+		{
+			name:        "empty body",
+			body:        "",
+			contentType: "application/json",
+			wantStatus:  http.StatusBadRequest,
+		},
+		{
+			name:        "invalid JSON",
+			body:        `{invalid}`,
+			contentType: "application/json",
+			wantStatus:  http.StatusBadRequest,
+		},
+		{
+			name:        "invalid service value",
+			body:        `{"spec":{"service":"invalid"}}`,
+			contentType: "application/json",
+			wantStatus:  http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/v1/recipe", strings.NewReader(tt.body))
+			req.Header.Set("Content-Type", tt.contentType)
+			w := httptest.NewRecorder()
+
+			b.HandleRecipes(w, req)
+
+			if w.Code != tt.wantStatus {
+				t.Errorf("expected status %d, got %d; body: %s",
+					tt.wantStatus, w.Code, w.Body.String())
 			}
 		})
 	}
