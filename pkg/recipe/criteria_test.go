@@ -3,6 +3,8 @@ package recipe
 import (
 	"net/http"
 	"net/url"
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -669,4 +671,389 @@ func TestParseCriteriaOSType_AllAliases(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoadCriteriaFromFile(t *testing.T) {
+	tests := []struct {
+		name     string
+		filename string
+		content  string
+		want     *Criteria
+		wantErr  bool
+	}{
+		{
+			name:     "valid YAML file with full structure",
+			filename: "criteria.yaml",
+			content: `kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: eks-h100-training
+spec:
+  service: eks
+  accelerator: h100
+  intent: training
+  os: ubuntu
+  nodes: 4
+`,
+			want: &Criteria{
+				Service:     CriteriaServiceEKS,
+				Accelerator: CriteriaAcceleratorH100,
+				Intent:      CriteriaIntentTraining,
+				OS:          CriteriaOSUbuntu,
+				Nodes:       4,
+			},
+			wantErr: false,
+		},
+		{
+			name:     "valid JSON file with full structure",
+			filename: "criteria.json",
+			content:  `{"kind":"recipeCriteria","apiVersion":"cns.nvidia.com/v1alpha1","metadata":{"name":"gke-a100"},"spec":{"service":"gke","accelerator":"a100","intent":"inference"}}`,
+			want: &Criteria{
+				Service:     CriteriaServiceGKE,
+				Accelerator: CriteriaAcceleratorA100,
+				Intent:      CriteriaIntentInference,
+				OS:          CriteriaOSAny,
+				Nodes:       0,
+			},
+			wantErr: false,
+		},
+		{
+			name:     "partial fields - only spec.service",
+			filename: "partial.yaml",
+			content: `kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: aks-only
+spec:
+  service: aks`,
+			want: &Criteria{
+				Service:     CriteriaServiceAKS,
+				Accelerator: CriteriaAcceleratorAny,
+				Intent:      CriteriaIntentAny,
+				OS:          CriteriaOSAny,
+				Nodes:       0,
+			},
+			wantErr: false,
+		},
+		{
+			name:     "empty file returns error",
+			filename: "empty.yaml",
+			content:  ``,
+			wantErr:  true,
+		},
+		{
+			name:     "empty spec defaults to any",
+			filename: "empty_spec.yaml",
+			content: `kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: empty
+spec: {}`,
+			want: &Criteria{
+				Service:     CriteriaServiceAny,
+				Accelerator: CriteriaAcceleratorAny,
+				Intent:      CriteriaIntentAny,
+				OS:          CriteriaOSAny,
+				Nodes:       0,
+			},
+			wantErr: false,
+		},
+		{
+			name:     "missing kind and apiVersion still works",
+			filename: "minimal.yaml",
+			content: `spec:
+  service: eks`,
+			want: &Criteria{
+				Service:     CriteriaServiceEKS,
+				Accelerator: CriteriaAcceleratorAny,
+				Intent:      CriteriaIntentAny,
+				OS:          CriteriaOSAny,
+				Nodes:       0,
+			},
+			wantErr: false,
+		},
+		{
+			name:     "invalid kind",
+			filename: "invalid_kind.yaml",
+			content: `kind: wrongKind
+apiVersion: cns.nvidia.com/v1alpha1
+spec:
+  service: eks`,
+			wantErr: true,
+		},
+		{
+			name:     "invalid apiVersion",
+			filename: "invalid_api.yaml",
+			content: `kind: recipeCriteria
+apiVersion: wrong/v1
+spec:
+  service: eks`,
+			wantErr: true,
+		},
+		{
+			name:     "invalid service type",
+			filename: "invalid_service.yaml",
+			content: `kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+spec:
+  service: invalid`,
+			wantErr: true,
+		},
+		{
+			name:     "invalid accelerator type",
+			filename: "invalid_accelerator.yaml",
+			content: `kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+spec:
+  accelerator: v100`,
+			wantErr: true,
+		},
+		{
+			name:     "invalid intent type",
+			filename: "invalid_intent.yaml",
+			content: `kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+spec:
+  intent: serving`,
+			wantErr: true,
+		},
+		{
+			name:     "invalid OS type",
+			filename: "invalid_os.yaml",
+			content: `kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+spec:
+  os: windows`,
+			wantErr: true,
+		},
+		{
+			name:     "negative nodes count",
+			filename: "negative_nodes.yaml",
+			content: `kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+spec:
+  nodes: -5`,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create temporary file
+			tmpDir := t.TempDir()
+			filePath := tmpDir + "/" + tt.filename
+			if err := writeTestFile(filePath, tt.content); err != nil {
+				t.Fatalf("failed to create test file: %v", err)
+			}
+
+			got, err := LoadCriteriaFromFile(filePath)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("LoadCriteriaFromFile() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				return
+			}
+			if got.Service != tt.want.Service {
+				t.Errorf("Service = %v, want %v", got.Service, tt.want.Service)
+			}
+			if got.Accelerator != tt.want.Accelerator {
+				t.Errorf("Accelerator = %v, want %v", got.Accelerator, tt.want.Accelerator)
+			}
+			if got.Intent != tt.want.Intent {
+				t.Errorf("Intent = %v, want %v", got.Intent, tt.want.Intent)
+			}
+			if got.OS != tt.want.OS {
+				t.Errorf("OS = %v, want %v", got.OS, tt.want.OS)
+			}
+			if got.Nodes != tt.want.Nodes {
+				t.Errorf("Nodes = %v, want %v", got.Nodes, tt.want.Nodes)
+			}
+		})
+	}
+}
+
+func TestLoadCriteriaFromFile_NotFound(t *testing.T) {
+	_, err := LoadCriteriaFromFile("/nonexistent/path/criteria.yaml")
+	if err == nil {
+		t.Error("expected error for non-existent file")
+	}
+}
+
+func TestParseCriteriaFromBody(t *testing.T) {
+	tests := []struct {
+		name        string
+		body        string
+		contentType string
+		want        *Criteria
+		wantErr     bool
+	}{
+		{
+			name:        "JSON body with full structure",
+			body:        `{"kind":"recipeCriteria","apiVersion":"cns.nvidia.com/v1alpha1","metadata":{"name":"test"},"spec":{"service":"eks","accelerator":"h100","intent":"training"}}`,
+			contentType: "application/json",
+			want: &Criteria{
+				Service:     CriteriaServiceEKS,
+				Accelerator: CriteriaAcceleratorH100,
+				Intent:      CriteriaIntentTraining,
+				OS:          CriteriaOSAny,
+				Nodes:       0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "YAML body with application/x-yaml",
+			body: `kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: test
+spec:
+  service: gke
+  accelerator: gb200
+  os: cos`,
+			contentType: "application/x-yaml",
+			want: &Criteria{
+				Service:     CriteriaServiceGKE,
+				Accelerator: CriteriaAcceleratorGB200,
+				Intent:      CriteriaIntentAny,
+				OS:          CriteriaOSCOS,
+				Nodes:       0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "YAML body with text/yaml",
+			body: `kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+spec:
+  service: aks
+  nodes: 8`,
+			contentType: "text/yaml",
+			want: &Criteria{
+				Service:     CriteriaServiceAKS,
+				Accelerator: CriteriaAcceleratorAny,
+				Intent:      CriteriaIntentAny,
+				OS:          CriteriaOSAny,
+				Nodes:       8,
+			},
+			wantErr: false,
+		},
+		{
+			name:        "empty content type defaults to JSON",
+			body:        `{"spec":{"service":"oke"}}`,
+			contentType: "",
+			want: &Criteria{
+				Service:     CriteriaServiceOKE,
+				Accelerator: CriteriaAcceleratorAny,
+				Intent:      CriteriaIntentAny,
+				OS:          CriteriaOSAny,
+				Nodes:       0,
+			},
+			wantErr: false,
+		},
+		{
+			name:        "content type with charset",
+			body:        `{"kind":"recipeCriteria","apiVersion":"cns.nvidia.com/v1alpha1","spec":{"service":"eks"}}`,
+			contentType: "application/json; charset=utf-8",
+			want: &Criteria{
+				Service:     CriteriaServiceEKS,
+				Accelerator: CriteriaAcceleratorAny,
+				Intent:      CriteriaIntentAny,
+				OS:          CriteriaOSAny,
+				Nodes:       0,
+			},
+			wantErr: false,
+		},
+		{
+			name:        "empty body",
+			body:        "",
+			contentType: "application/json",
+			wantErr:     true,
+		},
+		{
+			name:        "invalid JSON",
+			body:        `{invalid json}`,
+			contentType: "application/json",
+			wantErr:     true,
+		},
+		{
+			name: "invalid YAML",
+			body: `spec:
+  service: [unclosed`,
+			contentType: "application/x-yaml",
+			wantErr:     true,
+		},
+		{
+			name:        "invalid service in body",
+			body:        `{"spec":{"service":"invalid"}}`,
+			contentType: "application/json",
+			wantErr:     true,
+		},
+		{
+			name:        "invalid kind",
+			body:        `{"kind":"wrongKind","spec":{"service":"eks"}}`,
+			contentType: "application/json",
+			wantErr:     true,
+		},
+		{
+			name:        "invalid apiVersion",
+			body:        `{"kind":"recipeCriteria","apiVersion":"wrong/v1","spec":{"service":"eks"}}`,
+			contentType: "application/json",
+			wantErr:     true,
+		},
+		{
+			name:        "unknown content type tries JSON",
+			body:        `{"spec":{"service":"eks"}}`,
+			contentType: "text/plain",
+			want: &Criteria{
+				Service:     CriteriaServiceEKS,
+				Accelerator: CriteriaAcceleratorAny,
+				Intent:      CriteriaIntentAny,
+				OS:          CriteriaOSAny,
+				Nodes:       0,
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			reader := strings.NewReader(tt.body)
+			got, err := ParseCriteriaFromBody(reader, tt.contentType)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseCriteriaFromBody() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.wantErr {
+				return
+			}
+			if got.Service != tt.want.Service {
+				t.Errorf("Service = %v, want %v", got.Service, tt.want.Service)
+			}
+			if got.Accelerator != tt.want.Accelerator {
+				t.Errorf("Accelerator = %v, want %v", got.Accelerator, tt.want.Accelerator)
+			}
+			if got.Intent != tt.want.Intent {
+				t.Errorf("Intent = %v, want %v", got.Intent, tt.want.Intent)
+			}
+			if got.OS != tt.want.OS {
+				t.Errorf("OS = %v, want %v", got.OS, tt.want.OS)
+			}
+			if got.Nodes != tt.want.Nodes {
+				t.Errorf("Nodes = %v, want %v", got.Nodes, tt.want.Nodes)
+			}
+		})
+	}
+}
+
+func TestParseCriteriaFromBody_NilBody(t *testing.T) {
+	_, err := ParseCriteriaFromBody(nil, "application/json")
+	if err == nil {
+		t.Error("expected error for nil body")
+	}
+}
+
+// writeTestFile is a helper to create test files.
+func writeTestFile(path, content string) error {
+	return os.WriteFile(path, []byte(content), 0o644)
 }

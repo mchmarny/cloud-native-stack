@@ -23,10 +23,36 @@
 //	cnsctl recipe --os ubuntu --osv 24.04 --service eks --gpu h100 --intent training
 //	cnsctl recipe --snapshot system.yaml --intent inference --output recipe.yaml
 //	cnsctl recipe -s cm://namespace/snapshot -o cm://namespace/recipe  # ConfigMap I/O
+//	cnsctl recipe --criteria criteria.yaml --output recipe.yaml  # Criteria file mode
 //
 // Generates optimized configuration recipes based on either:
 //   - Specified environment parameters (OS, service, GPU, intent)
 //   - Existing system snapshot (analyzes snapshot to extract parameters)
+//   - Criteria file (Kubernetes-style YAML/JSON with kind: recipeCriteria)
+//
+// # Criteria File Mode
+//
+// The --criteria/-c flag allows defining criteria in a Kubernetes-style
+// resource file instead of individual CLI flags:
+//
+//	cnsctl recipe --criteria /path/to/criteria.yaml
+//
+// Criteria file format (YAML or JSON):
+//
+//	kind: recipeCriteria
+//	apiVersion: cns.nvidia.com/v1alpha1
+//	metadata:
+//	  name: my-deployment-criteria
+//	spec:
+//	  service: eks
+//	  accelerator: gb200
+//	  os: ubuntu
+//	  intent: training
+//	  nodes: 8
+//
+// Individual CLI flags override criteria file values:
+//
+//	cnsctl recipe --criteria criteria.yaml --service gke  # service=gke overrides file
 //
 // validate - Validate recipe constraints (Step 3):
 //

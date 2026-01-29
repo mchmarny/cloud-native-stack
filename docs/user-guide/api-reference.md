@@ -49,11 +49,23 @@ docker run -p 8080:8080 ghcr.io/nvidia/cnsd:latest
 Generate an optimized configuration recipe for your environment:
 
 ```shell
-# Basic recipe for H100 on EKS
+# GET: Basic recipe for H100 on EKS (query parameters)
 curl "http://localhost:8080/v1/recipe?accelerator=h100&service=eks"
 
-# Training workload on Ubuntu
+# GET: Training workload on Ubuntu
 curl "http://localhost:8080/v1/recipe?accelerator=h100&service=eks&intent=training&os=ubuntu"
+
+# POST: Recipe from criteria file (YAML body)
+curl -X POST "http://localhost:8080/v1/recipe" \
+  -H "Content-Type: application/x-yaml" \
+  -d 'kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: my-config
+spec:
+  service: eks
+  accelerator: h100
+  intent: training'
 
 # Save recipe to file
 curl -s "http://localhost:8080/v1/recipe?accelerator=h100&service=eks" -o recipe.json
@@ -108,6 +120,82 @@ curl "http://localhost:8080/v1/recipe?gpu=gb200&service=gke"
 # Pretty print with jq
 curl -s "http://localhost:8080/v1/recipe?accelerator=h100" | jq '.'
 ```
+
+---
+
+### POST /v1/recipe
+
+Generate an optimized configuration recipe from a criteria file body. This endpoint provides an alternative to query parameters, accepting a Kubernetes-style `RecipeCriteria` resource in the request body.
+
+**Content Types:**
+- `application/json` - JSON format
+- `application/x-yaml` - YAML format
+
+**Request Body:**
+
+The request body must be a `RecipeCriteria` resource:
+
+```yaml
+kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: my-criteria
+spec:
+  service: eks
+  accelerator: gb200
+  os: ubuntu
+  intent: training
+  nodes: 8
+```
+
+**Examples:**
+
+```shell
+# POST with YAML body
+curl -X POST "http://localhost:8080/v1/recipe" \
+  -H "Content-Type: application/x-yaml" \
+  -d 'kind: recipeCriteria
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: training-config
+spec:
+  service: eks
+  accelerator: h100
+  intent: training'
+
+# POST with JSON body
+curl -X POST "http://localhost:8080/v1/recipe" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "kind": "recipeCriteria",
+    "apiVersion": "cns.nvidia.com/v1alpha1",
+    "metadata": {"name": "training-config"},
+    "spec": {
+      "service": "eks",
+      "accelerator": "h100",
+      "intent": "training"
+    }
+  }'
+
+# POST with criteria file
+curl -X POST "http://localhost:8080/v1/recipe" \
+  -H "Content-Type: application/yaml" \
+  -d @criteria.yaml
+
+# Pretty print response
+curl -s -X POST "http://localhost:8080/v1/recipe" \
+  -H "Content-Type: application/json" \
+  -d '{"kind":"recipeCriteria","apiVersion":"cns.nvidia.com/v1alpha1","spec":{"service":"eks","accelerator":"h100"}}' \
+  | jq '.'
+```
+
+**Response:**
+
+Same as GET /v1/recipe - returns a recipe JSON response.
+
+**Error Responses:**
+- `400 Bad Request` - Invalid criteria format, missing required fields, or invalid enum values
+- `405 Method Not Allowed` - Only GET and POST are supported
 
 **Response:**
 

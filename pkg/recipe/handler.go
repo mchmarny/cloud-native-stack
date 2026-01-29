@@ -22,24 +22,38 @@ var (
 )
 
 // HandleRecipes processes recipe requests using the criteria-based system.
-// It supports GET requests with query parameters to specify recipe criteria.
+// It supports GET requests with query parameters and POST requests with JSON/YAML body
+// to specify recipe criteria.
 // The response returns a RecipeResult with component references and constraints.
 // Errors are handled and returned in a structured format.
 func (b *Builder) HandleRecipes(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.Header().Set("Allow", http.MethodGet)
-		server.WriteError(w, r, http.StatusMethodNotAllowed, cnserrors.ErrCodeMethodNotAllowed,
-			"Method not allowed", false, map[string]any{
-				"method": r.Method,
-			})
-		return
-	}
-
 	// Add request-scoped timeout
 	ctx, cancel := context.WithTimeout(r.Context(), defaults.RecipeHandlerTimeout)
 	defer cancel()
 
-	criteria, err := ParseCriteriaFromRequest(r)
+	var criteria *Criteria
+	var err error
+
+	switch r.Method {
+	case http.MethodGet:
+		criteria, err = ParseCriteriaFromRequest(r)
+	case http.MethodPost:
+		criteria, err = ParseCriteriaFromBody(r.Body, r.Header.Get("Content-Type"))
+		defer func() {
+			if r.Body != nil {
+				r.Body.Close()
+			}
+		}()
+	default:
+		w.Header().Set("Allow", "GET, POST")
+		server.WriteError(w, r, http.StatusMethodNotAllowed, cnserrors.ErrCodeMethodNotAllowed,
+			"Method not allowed", false, map[string]any{
+				"method":  r.Method,
+				"allowed": []string{"GET", "POST"},
+			})
+		return
+	}
+
 	if err != nil {
 		server.WriteError(w, r, http.StatusBadRequest, cnserrors.ErrCodeInvalidRequest,
 			"Invalid recipe criteria", false, map[string]any{

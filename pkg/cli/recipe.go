@@ -40,6 +40,9 @@ Examples:
 Generate recipe from explicit criteria:
   cnsctl recipe --service eks --accelerator h100 --os ubuntu --intent training
 
+Generate recipe from a criteria file:
+  cnsctl recipe --criteria criteria.yaml
+
 Generate recipe from a snapshot file:
   cnsctl recipe --snapshot snapshot.yaml
 
@@ -48,6 +51,9 @@ Generate recipe from a ConfigMap snapshot:
 
 Save recipe to a file:
   cnsctl recipe --snapshot cm://gpu-operator/cns-snapshot -o recipe.yaml
+
+Override criteria file values with flags:
+  cnsctl recipe --criteria criteria.yaml --service gke
 
 Override snapshot-detected criteria:
   cnsctl recipe --snapshot cm://gpu-operator/cns-snapshot --service gke`,
@@ -80,6 +86,12 @@ Override snapshot-detected criteria:
 	Supports: file paths, HTTP/HTTPS URLs, or ConfigMap URIs (cm://namespace/name).
 	If provided, criteria are extracted from the snapshot.`,
 			},
+			&cli.StringFlag{
+				Name:    "criteria",
+				Aliases: []string{"c"},
+				Usage: `Path to criteria file (YAML/JSON), alternative to individual flags.
+	Criteria file fields can be overridden by individual flags.`,
+			},
 			dataFlag,
 			outputFlag,
 			formatFlag,
@@ -104,8 +116,12 @@ Override snapshot-detected criteria:
 
 			var result *recipe.RecipeResult
 
-			// Check if using snapshot
+			// Check if using snapshot or criteria file
+			// Precedence: snapshot > criteria file > CLI flags
 			snapFilePath := cmd.String("snapshot")
+			criteriaFilePath := cmd.String("criteria")
+
+			//nolint:gocritic // if-else chain is appropriate for non-empty string conditions
 			if snapFilePath != "" {
 				slog.Info("loading snapshot from", "uri", snapFilePath)
 				snap, loadErr := serializer.FromFileWithKubeconfig[snapshotter.Snapshot](snapFilePath, cmd.String("kubeconfig"))
@@ -146,6 +162,21 @@ Override snapshot-detected criteria:
 							"reason", w.Reason)
 					}
 				}
+			} else if criteriaFilePath != "" {
+				// Load criteria from file
+				slog.Info("loading criteria from file", "path", criteriaFilePath)
+				criteria, loadErr := recipe.LoadCriteriaFromFile(criteriaFilePath)
+				if loadErr != nil {
+					return fmt.Errorf("failed to load criteria from %q: %w", criteriaFilePath, loadErr)
+				}
+
+				// Apply CLI overrides (individual flags take precedence over file)
+				if applyErr := applyCriteriaOverrides(cmd, criteria); applyErr != nil {
+					return applyErr
+				}
+
+				slog.Info("building recipe from criteria file", "criteria", criteria.String())
+				result, err = builder.BuildFromCriteria(ctx, criteria)
 			} else {
 				// Build criteria from CLI flags
 				criteria, buildErr := buildCriteriaFromCmd(cmd)
@@ -155,7 +186,7 @@ Override snapshot-detected criteria:
 
 				// Validate that at least some criteria was provided
 				if criteria.Specificity() == 0 {
-					return fmt.Errorf("no criteria provided: specify at least one of --service, --accelerator, --intent, --os, --nodes, or use --snapshot to load from a snapshot file")
+					return fmt.Errorf("no criteria provided: specify at least one of --service, --accelerator, --intent, --os, --nodes, --criteria, or use --snapshot to load from a snapshot file")
 				}
 
 				slog.Info("building recipe from criteria", "criteria", criteria.String())
