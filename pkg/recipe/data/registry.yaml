@@ -144,3 +144,18 @@ components:
           - alertmanager.alertmanagerSpec.tolerations
           - grafana.tolerations
           - prometheusOperator.tolerations
+
+  - name: prometheus-adapter
+    displayName: prometheus-adapter
+    valueOverrideKeys:
+      - prometheusadapter
+    helm:
+      defaultRepository: https://prometheus-community.github.io/helm-charts
+      defaultChart: prometheus-community/prometheus-adapter
+      defaultVersion: 4.14.0
+    nodeScheduling:
+      system:
+        nodeSelectorPaths:
+          - nodeSelector
+        tolerationPaths:
+          - tolerations

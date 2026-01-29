@@ -46,3 +46,11 @@ spec:
       source: https://prometheus-community.github.io/helm-charts
       version: 81.2.2
       valuesFile: components/prometheus/values.yaml
+
+    - name: prometheus-adapter
+      type: Helm
+      source: https://prometheus-community.github.io/helm-charts
+      version: 4.14.0
+      valuesFile: components/prometheus-adapter/values.yaml
+      dependencyRefs:
+        - prometheus
