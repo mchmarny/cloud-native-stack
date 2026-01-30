@@ -35,10 +35,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      GO_VERSION: '1.25'
-      GOLANGCI_LINT_VERSION: v2.6
-      ADDLICENSE_VERSION: v1.1.1
-      CRANE_VERSION: 'v0.20.6'
       IDENTITY_PROVIDER: 'projects/116689922666/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
       PROJECT_ID: 'eidosx'
       SERVICE_ACCOUNT: 'github-actions-user'
@@ -50,13 +46,17 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
 
+      - name: Load versions
+        id: versions
+        uses: ./.github/actions/load-versions
+
       # Setup, Test, and Lint
       - name: Run Go CI (setup, test, lint)
         uses: ./.github/actions/go-ci
         with:
-          go_version: '${{ env.GO_VERSION }}'
-          golangci_lint_version: '${{ env.GOLANGCI_LINT_VERSION }}'
-          addlicense_version: '${{ env.ADDLICENSE_VERSION }}'
+          go_version: ${{ steps.versions.outputs.go }}
+          golangci_lint_version: ${{ steps.versions.outputs.golangci_lint }}
+          addlicense_version: ${{ steps.versions.outputs.addlicense }}
           upload_codecov: 'false'
 
       # Build and Release
@@ -71,14 +71,14 @@ jobs:
         with:
           image_name: ghcr.io/${{ github.repository_owner }}/cnsd
           tag: ${{ github.ref_name }}
-          crane_version: ${{ env.CRANE_VERSION }}
+          crane_version: ${{ steps.versions.outputs.crane }}
 
       - name: Attest cnsctl image
         uses: ./.github/actions/attest-image-from-tag
         with:
           image_name: ghcr.io/${{ github.repository_owner }}/cns
           tag: ${{ github.ref_name }}
-          crane_version: ${{ env.CRANE_VERSION }}
+          crane_version: ${{ steps.versions.outputs.crane }}
 
       # Deploy to Cloud Run
       - name: Deploy API to Cloud Run

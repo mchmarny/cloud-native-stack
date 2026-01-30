@@ -46,23 +46,22 @@ jobs:
     name: Test Code
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      GO_VERSION: '1.25'
-      GOLANGCI_LINT_VERSION: v2.6
-      ADDLICENSE_VERSION: v1.1.1
-      SCAN_SEVERITY: 'MEDIUM'
     steps:
 
       - name: Checkout Code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
 
+      - name: Load versions
+        id: versions
+        uses: ./.github/actions/load-versions
+
       # Setup, Test, and Lint
       - name: Run Go CI (setup, test, lint)
         uses: ./.github/actions/go-ci
         with:
-          go_version: '${{ env.GO_VERSION }}'
-          golangci_lint_version: '${{ env.GOLANGCI_LINT_VERSION }}'
-          addlicense_version: '${{ env.ADDLICENSE_VERSION }}'
+          go_version: ${{ steps.versions.outputs.go }}
+          golangci_lint_version: ${{ steps.versions.outputs.golangci_lint }}
+          addlicense_version: ${{ steps.versions.outputs.addlicense }}
           upload_codecov: 'true'
           codecov_token: ${{ secrets.CODECOV_TOKEN }}
 
@@ -70,5 +69,5 @@ jobs:
       - name: Security Scan
         uses: ./.github/actions/security-scan
         with:
-          severity: ${{ env.SCAN_SEVERITY }}
+          severity: 'MEDIUM'
           category: 'trivy-fs'

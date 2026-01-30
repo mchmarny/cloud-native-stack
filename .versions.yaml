@@ -20,6 +20,7 @@ languages:
 build_tools:
   goreleaser: 'v2'
   ko: 'v0.18.0'
+  crane: 'v0.20.6'
 
 # Linting
 linting:

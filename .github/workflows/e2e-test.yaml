@@ -43,17 +43,19 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      GO_VERSION: '1.25'
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8  # v6.0.1
 
+      - name: Load versions
+        id: versions
+        uses: ./.github/actions/load-versions
+
       - name: Set up Go
         uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b  # v5.4.0
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version: ${{ steps.versions.outputs.go }}
           cache: true
 
       - name: Free up disk space
