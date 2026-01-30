@@ -78,11 +78,13 @@ direnv allow
 
 If you prefer to install tools manually:
 
-- **Go**: Version 1.21 or higher ([download](https://golang.org/dl/))
-- **golangci-lint**: Latest version ([installation](https://golangci-lint.run/usage/install/))
+- **Go**: Version 1.25 or higher ([download](https://golang.org/dl/))
+- **golangci-lint**: For Go linting ([installation](https://golangci-lint.run/usage/install/))
 - **yamllint**: For YAML validation (`pip install yamllint`)
 - **grype**: For vulnerability scanning ([installation](https://github.com/anchore/grype#installation))
 - **goreleaser**: For building releases ([installation](https://goreleaser.com/install/))
+- **ko**: For container image builds ([installation](https://ko.build/install/))
+- **yq**: For YAML parsing in scripts ([installation](https://github.com/mikefarah/yq#install))
 - **addlicense**: For license header management (`go install github.com/google/addlicense@latest`)
 - **make**: For build automation (usually pre-installed on Unix systems)
 - **git**: For version control
