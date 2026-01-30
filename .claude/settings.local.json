@@ -12,11 +12,11 @@
       "Bash(wc *)",
       "Bash(which *)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:golangci-lint.run)",
-      "WebFetch(domain:raw.githubusercontent.com)",
-      "WebSearch",
       "WebFetch(domain:gitlab-master.nvidia.com)",
-      "WebFetch(domain:goreleaser.com)"
+      "WebFetch(domain:golangci-lint.run)",
+      "WebFetch(domain:goreleaser.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebSearch"
     ]
   }
 }
