@@ -24,12 +24,6 @@ It **is not**:
 - A managed control plane or hosted service
 - A replacement for cloud provider or OEM platforms
 
----
-
-> **Note on previous versions:** Earlier versions of Cloud Native Stack focused primarily on manual installation guides and playbooks. Those materials remain available under [`/~archive/cns-v1`](/~archive/cns-v1/). The current repository reflects a transition toward structured configuration data and generated artifacts.
-
----
-
 ## How It Works
 
 Cloud Native Stack separates **validated configuration knowledge** from **how that knowledge is consumed**.
@@ -118,7 +112,6 @@ You are integrating CNS into CI/CD pipelines, GitOps workflows, or a larger prod
 - `infra/` — Infrastructure as code (Terraform) for deployments
 - `pkg/` — Core Go packages (collectors, recipe engine, bundlers, serializers)
 - `tools/` — Build scripts, E2E testing, and utilities
-- `~archive/` — Archived v1 installation guides and playbooks
 
 ## Documentation & Resources
 

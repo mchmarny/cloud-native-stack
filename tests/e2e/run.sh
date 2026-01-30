@@ -1,4 +1,18 @@
 #!/bin/bash
+# Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set -euo pipefail
 
 # =============================================================================
@@ -498,7 +512,7 @@ setup_fake_gpu() {
   fi
 
   # Inject fake nvidia-smi into Kind worker node
-  local fake_smi="${ROOT_DIR}/scripts/fake-nvidia-smi.sh"
+  local fake_smi="${ROOT_DIR}/tools/fake-nvidia-smi"
   if [ -f "$fake_smi" ]; then
     # Find Kind worker nodes
     local workers
@@ -506,7 +520,7 @@ setup_fake_gpu() {
     if [ -n "$workers" ]; then
       for worker in $workers; do
         msg "Injecting fake nvidia-smi into $worker"
-        echo -e "${DIM}  \$ docker cp fake-nvidia-smi.sh ${worker}:/usr/local/bin/nvidia-smi${NC}"
+        echo -e "${DIM}  \$ docker cp fake-nvidia-smi ${worker}:/usr/local/bin/nvidia-smi${NC}"
         docker cp "$fake_smi" "${worker}:/usr/local/bin/nvidia-smi"
         docker exec "$worker" chmod +x /usr/local/bin/nvidia-smi
         # Show what GPU is being simulated

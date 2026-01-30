@@ -47,7 +47,7 @@ Memory: 192GB HBM3e per GPU
 ```
 
 Components:
-1. **fake-nvidia-smi** - Script injected into Kind nodes (`scripts/fake-nvidia-smi.sh`)
+1. **fake-nvidia-smi** - Script injected into Kind nodes (`tools/fake-nvidia-smi`)
 2. **fake-gpu-operator** - Optional K8s-level GPU resource simulation
 
 ### Setting up Fake GPU locally
@@ -55,7 +55,7 @@ Components:
 ```bash
 # Inject fake nvidia-smi into Kind worker nodes
 for node in $(docker ps --filter "name=-worker" --format "{{.Names}}"); do
-  docker cp scripts/fake-nvidia-smi.sh "${node}:/usr/local/bin/nvidia-smi"
+  docker cp tools/fake-nvidia-smi "${node}:/usr/local/bin/nvidia-smi"
   docker exec "$node" chmod +x /usr/local/bin/nvidia-smi
 done
 
@@ -101,7 +101,7 @@ brew install kind tilt-dev/tap/tilt tilt-dev/tap/ctlptl ko
 
 ```
 [INFO] Setting up fake GPU environment
-  $ docker cp fake-nvidia-smi.sh cns-worker:/usr/local/bin/nvidia-smi
+  $ docker cp fake-nvidia-smi cns-worker:/usr/local/bin/nvidia-smi
      → Simulated: GPU 0: NVIDIA B200 (UUID: GPU-fake-0000-0000-0000-000000000000)
      → Driver: NVIDIA-SMI 560.35.03    Driver Version: 560.35.03    CUDA Version: 12.6
 [PASS] setup/fake-nvidia-smi

@@ -5,7 +5,7 @@ REPO_NAME          := cloud-native-stack
 VERSION            ?= $(shell git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
 IMAGE_REGISTRY     ?= ghcr.io/nvidia
 IMAGE_TAG          ?= latest
-YAML_FILES         := $(shell find . -type f \( -iname "*.yml" -o -iname "*.yaml" \) ! -path "./examples/*" ! -path "./~archive/*" ! -path "./bundles/*" ! -path "./.flox/*")
+YAML_FILES         := $(shell find . -type f \( -iname "*.yml" -o -iname "*.yaml" \) ! -path "./examples/*" ! -path "./bundles/*" ! -path "./.flox/*")
 COMMIT             := $(shell git rev-parse HEAD)
 BRANCH             := $(shell git rev-parse --abbrev-ref HEAD)
 GO_VERSION         := $(shell go env GOVERSION 2>/dev/null | sed 's/go//')
@@ -77,8 +77,8 @@ generate: ## Runs go generate for code generation
 	@echo "Code generation completed"
 
 .PHONY: lint
-lint: lint-go lint-yaml ## Lints the entire project (Go and YAML)
-	@echo "Completed Go and YAML lints"
+lint: lint-go lint-yaml license ## Lints the entire project (Go, YAML, and license headers)
+	@echo "Completed Go and YAML lints and ensured license headers"
 
 .PHONY: lint-go
 lint-go: ## Lints Go files with golangci-lint and go vet
@@ -95,6 +95,30 @@ lint-yaml: ## Lints YAML files with yamllint
 	else \
 		echo "No YAML files found to lint."; \
 	fi
+
+# License ignore patterns (reused by license target)
+LICENSE_IGNORES = \
+	-ignore '.flox/**' \
+	-ignore '.git/**' \
+	-ignore '.venv/**' \
+	-ignore '**/__pycache__/**' \
+	-ignore '**/.venv/**' \
+	-ignore '**/site-packages/**' \
+	-ignore '*/.venv/**' \
+	-ignore '**/.idea/**' \
+	-ignore '**/*.csv' \
+	-ignore '**/*.pyc' \
+	-ignore '**/*.xml' \
+	-ignore '**/*.toml' \
+	-ignore '**/*lock.hcl' \
+	-ignore '**/*pb2*' \
+	-ignore 'bundles/**' \
+	-ignore 'dist/**'
+
+.PHONY: license
+license: ## Add/verify license headers in source files
+	@echo "Ensuring license headers..."
+	@addlicense -f .github/headers/LICENSE $(LICENSE_IGNORES) .
 
 .PHONY: test
 test: ## Runs unit tests with race detector and coverage
