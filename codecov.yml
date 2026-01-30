@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+codecov:
+  max_report_age: 12h
+
 coverage:
   precision: 2
-  round: down
+  round: nearest
   range: "60...90"
 
   status:
