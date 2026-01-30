@@ -1,12 +1,10 @@
 # Cloud Native Stack
 
-[![Release](https://img.shields.io/github/v/release/mchmarny/cloud-native-stack)](https://github.com/mchmarny/cloud-native-stack/releases/latest)
 [![On Push CI](https://github.com/mchmarny/cloud-native-stack/actions/workflows/on-push.yaml/badge.svg)](https://github.com/mchmarny/cloud-native-stack/actions/workflows/on-push.yaml)
 [![On Tag Release](https://github.com/mchmarny/cloud-native-stack/actions/workflows/on-tag.yaml/badge.svg?branch=main)](https://github.com/mchmarny/cloud-native-stack/actions/workflows/on-tag.yaml)
 [![Codecov](https://codecov.io/gh/mchmarny/cloud-native-stack/branch/main/graph/badge.svg)](https://codecov.io/gh/mchmarny/cloud-native-stack)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/mchmarny/cloud-native-stack)](https://go.dev/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mchmarny/cloud-native-stack)](https://goreportcard.com/report/github.com/mchmarny/cloud-native-stack)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/mchmarny/cloud-native-stack/badge)](https://securityscorecards.dev/viewer/?uri=github.com/mchmarny/cloud-native-stack)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-1.25+-326CE5.svg?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
 [![Helm](https://img.shields.io/badge/Helm-3.0+-0F1689.svg?logo=helm&logoColor=white)](https://helm.sh/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
