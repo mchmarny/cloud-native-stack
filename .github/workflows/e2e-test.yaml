@@ -65,6 +65,27 @@ jobs:
       - name: Run Tilt CI
         run: make tilt-ci
 
+      - name: Build and push CNS image to local registry
+        run: |
+          # Build and push cns image for snapshot agent
+          KO_DOCKER_REPO=localhost:5001/cns ko build --bare --tags=local ./cmd/cnsctl
+          # Verify image is available
+          curl -sf http://localhost:5001/v2/cns/tags/list
+
+      - name: Set up fake GPU environment
+        run: |
+          # Create gpu-operator namespace
+          kubectl create namespace gpu-operator --dry-run=client -o yaml | kubectl apply -f -
+
+          # Inject fake nvidia-smi into Kind worker nodes
+          for node in $(docker ps --filter "name=-worker" --format "{{.Names}}"); do
+            echo "Injecting fake nvidia-smi into $node"
+            docker cp scripts/fake-nvidia-smi.sh "${node}:/usr/local/bin/nvidia-smi"
+            docker exec "$node" chmod +x /usr/local/bin/nvidia-smi
+            # Verify it works
+            docker exec "$node" nvidia-smi --version
+          done
+
       - name: Set up port forwarding
         run: |
           kubectl port-forward -n cns svc/cnsd 8080:8080 &
@@ -72,6 +93,9 @@ jobs:
           curl -sf http://localhost:8080/health || exit 1
 
       - name: Run E2E tests
+        env:
+          CNS_IMAGE: localhost:5001/cns:local
+          FAKE_GPU_ENABLED: "true"
         run: ./tests/e2e/run.sh
 
       - name: Collect debug artifacts
