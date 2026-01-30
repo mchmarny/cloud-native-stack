@@ -1,0 +1,35 @@
+# Tiltfile for Cloud Native Stack local development
+#
+# Usage:
+#   tilt up -f tilt/Tiltfile
+#
+# Or use Makefile targets:
+#   make tilt-up
+#   make dev-env (creates cluster + starts Tilt)
+
+# Allow deploying to kind-cns cluster
+allow_k8s_contexts('kind-kind-cns')
+
+# Deploy namespace and RBAC first
+k8s_yaml('k8s/namespace.yaml')
+k8s_yaml('k8s/rbac.yaml')
+k8s_yaml('k8s/service.yaml')
+k8s_yaml('k8s/deployment.yaml')
+
+# Build cnsd using ko for fast Go builds
+custom_build(
+    'localhost:5001/cnsd',
+    '../tools/ko-tilt-build.sh ../cmd/cnsd $EXPECTED_REF',
+    deps=['../cmd/cnsd', '../pkg'],
+    skips_local_docker=True,
+)
+
+# Configure the cnsd resource
+k8s_resource(
+    'cnsd',
+    port_forwards=[
+        port_forward(8080, 8080, name='API'),
+        port_forward(9090, 9090, name='Metrics'),
+    ],
+    labels=['api'],
+)

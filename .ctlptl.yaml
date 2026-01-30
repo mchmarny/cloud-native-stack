@@ -1,0 +1,25 @@
+# ctlptl configuration for local Kubernetes development
+# Creates a Kind cluster with an embedded container registry
+#
+# Usage:
+#   ctlptl apply -f .ctlptl.yaml    # Create cluster + registry
+#   ctlptl delete -f .ctlptl.yaml   # Delete cluster + registry
+#
+# Or use Makefile targets:
+#   make cluster-create
+#   make cluster-delete
+
+apiVersion: ctlptl.dev/v1alpha1
+kind: Registry
+name: ctlptl-registry
+port: 5001
+---
+apiVersion: ctlptl.dev/v1alpha1
+kind: Cluster
+product: kind
+name: kind-cns
+registry: ctlptl-registry
+kindV1Alpha4Cluster:
+  nodes:
+    - role: control-plane
+    - role: worker
