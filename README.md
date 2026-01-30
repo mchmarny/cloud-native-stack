@@ -5,8 +5,6 @@
 [![Codecov](https://codecov.io/gh/mchmarny/cloud-native-stack/branch/main/graph/badge.svg)](https://codecov.io/gh/mchmarny/cloud-native-stack)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/mchmarny/cloud-native-stack)](https://go.dev/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mchmarny/cloud-native-stack)](https://goreportcard.com/report/github.com/mchmarny/cloud-native-stack)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-1.25+-326CE5.svg?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
-[![Helm](https://img.shields.io/badge/Helm-3.0+-0F1689.svg?logo=helm&logoColor=white)](https://helm.sh/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 Cloud Native Stack (CNS) provides validated configuration guidance for deploying GPU-accelerated Kubernetes infrastructure. It captures known-good combinations of software, configuration, and system requirements and makes them consumable as documentation and generated deployment artifacts.
