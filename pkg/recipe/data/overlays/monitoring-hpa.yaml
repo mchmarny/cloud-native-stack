@@ -1,0 +1,22 @@
+kind: recipeMetadata
+apiVersion: cns.nvidia.com/v1alpha1
+metadata:
+  name: monitoring-hpa
+
+spec:
+  # Inherits from base recipe
+  base: base
+
+  criteria:
+    intent: any
+
+  componentRefs:
+    # Prometheus Adapter enables Kubernetes HPA with custom GPU metrics
+    # Requires prometheus to be deployed (included in base)
+    - name: prometheus-adapter
+      type: Helm
+      source: https://prometheus-community.github.io/helm-charts
+      version: 4.14.0
+      valuesFile: components/prometheus-adapter/values.yaml
+      dependencyRefs:
+        - prometheus

@@ -4,6 +4,10 @@
 # Prometheus configuration
 prometheus:
   prometheusSpec:
+    # Discover ServiceMonitors across all namespaces (e.g., dcgm-exporter in nvidia-gpu-operator)
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+
     # Resource configuration
     resources:
       requests:
@@ -57,65 +61,3 @@ nodeExporter:
 # kube-state-metrics - for Kubernetes object metrics
 kubeStateMetrics:
   enabled: true
-
-# ServiceMonitor for DCGM exporter - automatic GPU metrics collection
-additionalServiceMonitors:
-  - name: dcgm-exporter
-    selector:
-      matchLabels:
-        app: nvidia-dcgm-exporter
-    endpoints:
-      - port: metrics
-        interval: 30s
-        path: /metrics
-
-# Prometheus Adapter - enables HPA with custom GPU metrics
-prometheusAdapter:
-  enabled: true
-  prometheus:
-    url: http://prometheus-kube-prometheus-prometheus
-    port: 9090
-  rules:
-    # Custom metrics for GPU-based autoscaling
-    custom:
-      # GPU Utilization - scale based on GPU usage percentage
-      - seriesQuery: 'DCGM_FI_DEV_GPU_UTIL{namespace!="",pod!=""}'
-        metricsQuery: 'avg_over_time(<<.Series>>[2m])'
-        name:
-          matches: "DCGM_FI_DEV_GPU_UTIL"
-          as: "gpu_utilization"
-        resources:
-          overrides:
-            namespace: {resource: "namespace"}
-            pod: {resource: "pod"}
-
-      # GPU Memory Usage - scale based on GPU memory consumption
-      - seriesQuery: 'DCGM_FI_DEV_FB_USED{namespace!="",pod!=""}'
-        metricsQuery: 'avg_over_time(<<.Series>>[2m])'
-        name:
-          matches: "DCGM_FI_DEV_FB_USED"
-          as: "gpu_memory_used"
-        resources:
-          overrides:
-            namespace: {resource: "namespace"}
-            pod: {resource: "pod"}
-
-      # GPU Power Usage - scale based on power consumption
-      - seriesQuery: 'DCGM_FI_DEV_POWER_USAGE{namespace!="",pod!=""}'
-        metricsQuery: 'avg_over_time(<<.Series>>[2m])'
-        name:
-          matches: "DCGM_FI_DEV_POWER_USAGE"
-          as: "gpu_power_usage"
-        resources:
-          overrides:
-            namespace: {resource: "namespace"}
-            pod: {resource: "pod"}
-
-  # Resource configuration for the adapter
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 250m
-      memory: 256Mi
