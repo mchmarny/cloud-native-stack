@@ -2,6 +2,7 @@
 version = 1
 
 [install]
+addlicense.pkg-path = "addlicense"
 git.pkg-path = "git"
 gnumake.pkg-path = "gnumake"
 go.pkg-path = "go"

@@ -19,7 +19,7 @@ k8s_yaml('k8s/deployment.yaml')
 # Build cnsd using ko for fast Go builds
 custom_build(
     'localhost:5001/cnsd',
-    '../tools/ko-tilt-build.sh ../cmd/cnsd $EXPECTED_REF',
+    '../tools/ko-tilt-build ../cmd/cnsd $EXPECTED_REF',
     deps=['../cmd/cnsd', '../pkg'],
     skips_local_docker=True,
 )

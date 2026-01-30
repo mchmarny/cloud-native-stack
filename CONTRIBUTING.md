@@ -39,8 +39,6 @@ This project follows NVIDIA's commitment to fostering an open and welcoming envi
 
 - Fix typos, clarify instructions, or add examples
 - Update README.md for user-facing changes
-- Update installation guides in [~archive/cns-v1/install-guides](~archive/cns-v1/install-guides)
-- Enhance playbook documentation in [~archive/cns-v1/playbooks](~archive/cns-v1/playbooks)
 - Update API documentation when endpoints change
 
 ### Contributing Code
@@ -85,6 +83,7 @@ If you prefer to install tools manually:
 - **yamllint**: For YAML validation (`pip install yamllint`)
 - **grype**: For vulnerability scanning ([installation](https://github.com/anchore/grype#installation))
 - **goreleaser**: For building releases ([installation](https://goreleaser.com/install/))
+- **addlicense**: For license header management (`go install github.com/google/addlicense@latest`)
 - **make**: For build automation (usually pre-installed on Unix systems)
 - **git**: For version control
 
@@ -255,9 +254,10 @@ make test-race    # Run tests with race detection
 make qualify      # Run tests, lints, and scans (full check)
 
 # Code Quality
-make lint         # Lint Go and YAML files
+make lint         # Lint Go and YAML files and ensure license headers
 make lint-go      # Lint Go files only
 make lint-yaml    # Lint YAML files only
+make license      # Add/verify license headers in source files
 make scan         # Security and vulnerability scanning
 
 # Dependency Management
@@ -1151,6 +1151,35 @@ pkg/component/gpuoperator/
 
 ## Code Quality Standards
 
+### License Headers
+
+All Go source files must include the Apache 2.0 license header. The header is automatically added using `addlicense`.
+
+**Required license header:**
+```go
+// Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+```
+
+**Ensuring license headers:**
+```bash
+# Add/verify license headers (idempotent - safe to run anytime)
+make license
+```
+
+This is part of `make lint` and runs automatically in CI.
+
 ### Go Code Style
 
 - Follow [Effective Go](https://golang.org/doc/effective_go.html) guidelines
@@ -1314,13 +1343,18 @@ Current key dependencies:
 make qualify
 ```
 
-**2. Update documentation:**
+**2. Ensure license headers are present:**
+```bash
+make license
+```
+
+**3. Update documentation:**
 - [ ] README.md for user-facing changes
 - [ ] CONTRIBUTING.md for developer workflow changes
 - [ ] Code comments and godoc
 - [ ] docs/ for guides or playbooks
 
-**3. Commit with DCO sign-off:**
+**4. Commit with DCO sign-off:**
 ```bash
 git add .
 git commit -s -m "Add network collector for system configuration
@@ -1335,7 +1369,7 @@ Fixes #123"
 
 **Important**: Always use `-s` flag for DCO sign-off.
 
-**4. Push to your fork:**
+**5. Push to your fork:**
 ```bash
 git push origin feature/your-feature-name
 ```
@@ -1373,6 +1407,7 @@ None / Describe any breaking changes
 ## Checklist
 - [x] All tests pass (`make test`)
 - [x] Linting passes (`make lint`)
+- [x] License headers present (`make license`)
 - [x] Security scan passes (`make scan`)
 - [x] Documentation updated
 - [x] Commits are signed off (DCO)
@@ -1743,10 +1778,6 @@ go tool pprof cpu.prof
 ### Project Documentation
 - [README.md](README.md) - User documentation and quick start
 - [docs/OVERVIEW.md](docs/OVERVIEW.md) - System overview and glossary
-- [~archive/cns-v1/install-guides](~archive/cns-v1/install-guides) - Platform-specific installation (archived)
-- [~archive/cns-v1/playbooks](~archive/cns-v1/playbooks) - Ansible automation guides (archived)
-- [~archive/cns-v1/optimizations](~archive/cns-v1/optimizations) - Performance tuning guides (archived)
-- [~archive/cns-v1/troubleshooting](~archive/cns-v1/troubleshooting) - Common issues and solutions (archived)
 
 ### External Resources
 - [Go Documentation](https://golang.org/doc/)
