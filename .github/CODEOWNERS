@@ -20,15 +20,9 @@
 
 # Go source code
 /pkg/ @nvidia/cns-maintainers
-/cmd/ @nvidia/cns-maintainers
-/internal/ @nvidia/cns-maintainers
 
 # Recipe data (components, overlays, registry)
 /pkg/recipe/data/ @nvidia/cns-maintainers
-
-# Documentation
-/docs/ @nvidia/cns-docs
-*.md @nvidia/cns-docs
 
 # CI/CD and automation
 /.github/ @nvidia/cns-maintainers
@@ -39,7 +33,3 @@
 /.versions.yaml @nvidia/cns-maintainers
 /.golangci.yaml @nvidia/cns-maintainers
 /.yamllint.yaml @nvidia/cns-maintainers
-
-# Testing
-/tests/ @nvidia/cns-maintainers
-/tools/ @nvidia/cns-maintainers
