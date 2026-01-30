@@ -4,13 +4,13 @@ Cloud Native Stack (CNS) provides validated configuration guidance for deploying
 
 ## Why We Built This
 
-Running GPU-accelerated Kubernetes clusters reliably is hard. Small differences in kernel versions, drivers, container runtimes, operators, and Kubernetes releases can cause failures that are difficult to diagnose and expensive to reproduce.
+Running NVIDIA-accelerated Kubernetes clusters reliably is hard. Small differences in kernel versions, drivers, container runtimes, operators, and Kubernetes releases can cause failures that are difficult to diagnose and expensive to reproduce.
 
 Historically, this knowledge has lived in internal validation pipelines, playbooks, and tribal knowledge. Cloud Native Stack exists to externalize that experience. Its goal is to make validated configurations visible, repeatable, and reusable across environments.
 
 ## What Cloud Native Stack Is (and Is Not)
 
-Cloud Native Stack is a **source of validated configuration knowledge** for GPU-accelerated Kubernetes environments.
+Cloud Native Stack is a **source of validated configuration knowledge** for NVIDIA-accelerated Kubernetes environments.
 
 It **is**:
 - A curated set of tested and validated component combinations
