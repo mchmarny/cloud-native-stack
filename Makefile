@@ -130,12 +130,6 @@ scan: ## Scans for vulnerabilities with grype
 qualify: test lint e2e scan ## Qualifies the codebase (test, lint, e2e, scan)
 	@echo "Codebase qualification completed"
 
-.PHONY: install
-install: ## Installs cnsctl binary to GOPATH/bin
-	@echo "Installing cnsctl..."
-	@go install ./cmd/cnsctl
-	@echo "Installed cnsctl to $$(go env GOPATH)/bin/cnsctl"
-
 .PHONY: server
 server: ## Starts a local development server with debug logging
 	@set -e; \
