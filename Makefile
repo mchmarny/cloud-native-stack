@@ -7,6 +7,8 @@ IMAGE_REGISTRY     ?= ghcr.io/nvidia
 IMAGE_TAG          ?= latest
 YAML_FILES         := $(shell find . -type f \( -iname "*.yml" -o -iname "*.yaml" \) ! -path "./examples/*" ! -path "./~archive/*" ! -path "./bundles/*" ! -path "./.flox/*")
 COMMIT             := $(shell git rev-parse HEAD)
+SHORT_COMMIT       := $(shell git rev-parse --short HEAD)
+DATE               := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 BRANCH             := $(shell git rev-parse --abbrev-ref HEAD)
 GO_VERSION         := $(shell go env GOVERSION 2>/dev/null | sed 's/go//')
 GOLINT_VERSION      = $(shell golangci-lint --version 2>/dev/null | awk '{print $$4}' | sed 's/golangci-lint version //' || echo "not installed")
@@ -132,8 +134,8 @@ qualify: test lint e2e scan ## Qualifies the codebase (test, lint, e2e, scan)
 
 .PHONY: install
 install: ## Installs cnsctl binary to GOPATH/bin
-	@echo "Installing cnsctl..."
-	@go install ./cmd/cnsctl
+	@echo "Installing cnsctl $(VERSION)..."
+	@go install -ldflags "-X github.com/NVIDIA/cloud-native-stack/pkg/cli.version=$(VERSION) -X github.com/NVIDIA/cloud-native-stack/pkg/cli.commit=$(SHORT_COMMIT) -X github.com/NVIDIA/cloud-native-stack/pkg/cli.date=$(DATE)" ./cmd/cnsctl
 	@echo "Installed cnsctl to $$(go env GOPATH)/bin/cnsctl"
 
 .PHONY: server
