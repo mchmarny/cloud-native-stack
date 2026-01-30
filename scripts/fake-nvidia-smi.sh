@@ -1,0 +1,304 @@
+#!/bin/bash
+# Fake nvidia-smi for e2e testing
+# Simulates 8x NVIDIA B200 192GB GPUs (GB200 Superchip)
+#
+# This script is injected into Kind nodes to provide nvidia-smi output
+# without requiring actual NVIDIA hardware or drivers.
+
+set -euo pipefail
+
+# Check if XML output is requested (CNS collector uses -q -x)
+if [[ "$*" == *"-x"* ]] || [[ "$*" == *"--xml"* ]]; then
+  cat << 'XML'
+<?xml version="1.0" ?>
+<!DOCTYPE nvidia_smi_log SYSTEM "nvsmi_device_v12.dtd">
+<nvidia_smi_log>
+  <timestamp>Thu Jan 30 12:00:00 2026</timestamp>
+  <driver_version>560.35.03</driver_version>
+  <cuda_version>12.6</cuda_version>
+  <attached_gpus>8</attached_gpus>
+  <gpu id="00000000:00:04.0">
+    <product_name>NVIDIA B200</product_name>
+    <product_brand>NVIDIA</product_brand>
+    <product_architecture>Blackwell</product_architecture>
+    <uuid>GPU-fake-0000-0000-0000-000000000000</uuid>
+    <minor_number>0</minor_number>
+    <fb_memory_usage>
+      <total>196608 MiB</total>
+      <used>1024 MiB</used>
+      <free>195584 MiB</free>
+    </fb_memory_usage>
+    <utilization>
+      <gpu_util>0 %</gpu_util>
+      <memory_util>0 %</memory_util>
+    </utilization>
+    <temperature>
+      <gpu_temp>32 C</gpu_temp>
+    </temperature>
+    <power_readings>
+      <power_draw>85.00 W</power_draw>
+      <power_limit>1000.00 W</power_limit>
+    </power_readings>
+    <pci>
+      <pci_bus>00</pci_bus>
+      <pci_device>04</pci_device>
+      <pci_domain>0000</pci_domain>
+    </pci>
+  </gpu>
+  <gpu id="00000000:00:05.0">
+    <product_name>NVIDIA B200</product_name>
+    <product_brand>NVIDIA</product_brand>
+    <product_architecture>Blackwell</product_architecture>
+    <uuid>GPU-fake-0000-0000-0000-000000000001</uuid>
+    <minor_number>1</minor_number>
+    <fb_memory_usage>
+      <total>196608 MiB</total>
+      <used>1024 MiB</used>
+      <free>195584 MiB</free>
+    </fb_memory_usage>
+    <utilization>
+      <gpu_util>0 %</gpu_util>
+      <memory_util>0 %</memory_util>
+    </utilization>
+    <temperature>
+      <gpu_temp>33 C</gpu_temp>
+    </temperature>
+    <power_readings>
+      <power_draw>84.00 W</power_draw>
+      <power_limit>1000.00 W</power_limit>
+    </power_readings>
+    <pci>
+      <pci_bus>00</pci_bus>
+      <pci_device>05</pci_device>
+      <pci_domain>0000</pci_domain>
+    </pci>
+  </gpu>
+  <gpu id="00000000:00:06.0">
+    <product_name>NVIDIA B200</product_name>
+    <product_brand>NVIDIA</product_brand>
+    <product_architecture>Blackwell</product_architecture>
+    <uuid>GPU-fake-0000-0000-0000-000000000002</uuid>
+    <minor_number>2</minor_number>
+    <fb_memory_usage>
+      <total>196608 MiB</total>
+      <used>1024 MiB</used>
+      <free>195584 MiB</free>
+    </fb_memory_usage>
+    <utilization>
+      <gpu_util>0 %</gpu_util>
+      <memory_util>0 %</memory_util>
+    </utilization>
+    <temperature>
+      <gpu_temp>31 C</gpu_temp>
+    </temperature>
+    <power_readings>
+      <power_draw>83.00 W</power_draw>
+      <power_limit>1000.00 W</power_limit>
+    </power_readings>
+    <pci>
+      <pci_bus>00</pci_bus>
+      <pci_device>06</pci_device>
+      <pci_domain>0000</pci_domain>
+    </pci>
+  </gpu>
+  <gpu id="00000000:00:07.0">
+    <product_name>NVIDIA B200</product_name>
+    <product_brand>NVIDIA</product_brand>
+    <product_architecture>Blackwell</product_architecture>
+    <uuid>GPU-fake-0000-0000-0000-000000000003</uuid>
+    <minor_number>3</minor_number>
+    <fb_memory_usage>
+      <total>196608 MiB</total>
+      <used>1024 MiB</used>
+      <free>195584 MiB</free>
+    </fb_memory_usage>
+    <utilization>
+      <gpu_util>0 %</gpu_util>
+      <memory_util>0 %</memory_util>
+    </utilization>
+    <temperature>
+      <gpu_temp>32 C</gpu_temp>
+    </temperature>
+    <power_readings>
+      <power_draw>86.00 W</power_draw>
+      <power_limit>1000.00 W</power_limit>
+    </power_readings>
+    <pci>
+      <pci_bus>00</pci_bus>
+      <pci_device>07</pci_device>
+      <pci_domain>0000</pci_domain>
+    </pci>
+  </gpu>
+  <gpu id="00000000:00:08.0">
+    <product_name>NVIDIA B200</product_name>
+    <product_brand>NVIDIA</product_brand>
+    <product_architecture>Blackwell</product_architecture>
+    <uuid>GPU-fake-0000-0000-0000-000000000004</uuid>
+    <minor_number>4</minor_number>
+    <fb_memory_usage>
+      <total>196608 MiB</total>
+      <used>1024 MiB</used>
+      <free>195584 MiB</free>
+    </fb_memory_usage>
+    <utilization>
+      <gpu_util>0 %</gpu_util>
+      <memory_util>0 %</memory_util>
+    </utilization>
+    <temperature>
+      <gpu_temp>34 C</gpu_temp>
+    </temperature>
+    <power_readings>
+      <power_draw>87.00 W</power_draw>
+      <power_limit>1000.00 W</power_limit>
+    </power_readings>
+    <pci>
+      <pci_bus>00</pci_bus>
+      <pci_device>08</pci_device>
+      <pci_domain>0000</pci_domain>
+    </pci>
+  </gpu>
+  <gpu id="00000000:00:09.0">
+    <product_name>NVIDIA B200</product_name>
+    <product_brand>NVIDIA</product_brand>
+    <product_architecture>Blackwell</product_architecture>
+    <uuid>GPU-fake-0000-0000-0000-000000000005</uuid>
+    <minor_number>5</minor_number>
+    <fb_memory_usage>
+      <total>196608 MiB</total>
+      <used>1024 MiB</used>
+      <free>195584 MiB</free>
+    </fb_memory_usage>
+    <utilization>
+      <gpu_util>0 %</gpu_util>
+      <memory_util>0 %</memory_util>
+    </utilization>
+    <temperature>
+      <gpu_temp>33 C</gpu_temp>
+    </temperature>
+    <power_readings>
+      <power_draw>84.00 W</power_draw>
+      <power_limit>1000.00 W</power_limit>
+    </power_readings>
+    <pci>
+      <pci_bus>00</pci_bus>
+      <pci_device>09</pci_device>
+      <pci_domain>0000</pci_domain>
+    </pci>
+  </gpu>
+  <gpu id="00000000:00:0A.0">
+    <product_name>NVIDIA B200</product_name>
+    <product_brand>NVIDIA</product_brand>
+    <product_architecture>Blackwell</product_architecture>
+    <uuid>GPU-fake-0000-0000-0000-000000000006</uuid>
+    <minor_number>6</minor_number>
+    <fb_memory_usage>
+      <total>196608 MiB</total>
+      <used>1024 MiB</used>
+      <free>195584 MiB</free>
+    </fb_memory_usage>
+    <utilization>
+      <gpu_util>0 %</gpu_util>
+      <memory_util>0 %</memory_util>
+    </utilization>
+    <temperature>
+      <gpu_temp>32 C</gpu_temp>
+    </temperature>
+    <power_readings>
+      <power_draw>83.00 W</power_draw>
+      <power_limit>1000.00 W</power_limit>
+    </power_readings>
+    <pci>
+      <pci_bus>00</pci_bus>
+      <pci_device>0A</pci_device>
+      <pci_domain>0000</pci_domain>
+    </pci>
+  </gpu>
+  <gpu id="00000000:00:0B.0">
+    <product_name>NVIDIA B200</product_name>
+    <product_brand>NVIDIA</product_brand>
+    <product_architecture>Blackwell</product_architecture>
+    <uuid>GPU-fake-0000-0000-0000-000000000007</uuid>
+    <minor_number>7</minor_number>
+    <fb_memory_usage>
+      <total>196608 MiB</total>
+      <used>1024 MiB</used>
+      <free>195584 MiB</free>
+    </fb_memory_usage>
+    <utilization>
+      <gpu_util>0 %</gpu_util>
+      <memory_util>0 %</memory_util>
+    </utilization>
+    <temperature>
+      <gpu_temp>31 C</gpu_temp>
+    </temperature>
+    <power_readings>
+      <power_draw>82.00 W</power_draw>
+      <power_limit>1000.00 W</power_limit>
+    </power_readings>
+    <pci>
+      <pci_bus>00</pci_bus>
+      <pci_device>0B</pci_device>
+      <pci_domain>0000</pci_domain>
+    </pci>
+  </gpu>
+</nvidia_smi_log>
+XML
+  exit 0
+fi
+
+# Version output
+if [[ "$*" == *"--version"* ]] || [[ "$*" == *"-v"* ]]; then
+  echo "NVIDIA-SMI 560.35.03    Driver Version: 560.35.03    CUDA Version: 12.6"
+  exit 0
+fi
+
+# List GPUs
+if [[ "$*" == *"-L"* ]] || [[ "$*" == *"--list-gpus"* ]]; then
+  for i in {0..7}; do
+    echo "GPU $i: NVIDIA B200 (UUID: GPU-fake-0000-0000-0000-00000000000$i)"
+  done
+  exit 0
+fi
+
+# Default text output (nvidia-smi with no args)
+cat << 'TEXT'
+Thu Jan 30 12:00:00 2026
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 560.35.03              Driver Version: 560.35.03      CUDA Version: 12.6    |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|=========================================+========================+======================|
+|   0  NVIDIA B200                    On  | 00000000:00:04.0   Off |                    0 |
+| N/A   32C    P0              85W /1000W |    1024MiB /196608MiB  |      0%      Default |
++-----------------------------------------+------------------------+----------------------+
+|   1  NVIDIA B200                    On  | 00000000:00:05.0   Off |                    0 |
+| N/A   33C    P0              84W /1000W |    1024MiB /196608MiB  |      0%      Default |
++-----------------------------------------+------------------------+----------------------+
+|   2  NVIDIA B200                    On  | 00000000:00:06.0   Off |                    0 |
+| N/A   31C    P0              83W /1000W |    1024MiB /196608MiB  |      0%      Default |
++-----------------------------------------+------------------------+----------------------+
+|   3  NVIDIA B200                    On  | 00000000:00:07.0   Off |                    0 |
+| N/A   32C    P0              86W /1000W |    1024MiB /196608MiB  |      0%      Default |
++-----------------------------------------+------------------------+----------------------+
+|   4  NVIDIA B200                    On  | 00000000:00:08.0   Off |                    0 |
+| N/A   34C    P0              87W /1000W |    1024MiB /196608MiB  |      0%      Default |
++-----------------------------------------+------------------------+----------------------+
+|   5  NVIDIA B200                    On  | 00000000:00:09.0   Off |                    0 |
+| N/A   33C    P0              84W /1000W |    1024MiB /196608MiB  |      0%      Default |
++-----------------------------------------+------------------------+----------------------+
+|   6  NVIDIA B200                    On  | 00000000:00:0A.0   Off |                    0 |
+| N/A   32C    P0              83W /1000W |    1024MiB /196608MiB  |      0%      Default |
++-----------------------------------------+------------------------+----------------------+
+|   7  NVIDIA B200                    On  | 00000000:00:0B.0   Off |                    0 |
+| N/A   31C    P0              82W /1000W |    1024MiB /196608MiB  |      0%      Default |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+TEXT
