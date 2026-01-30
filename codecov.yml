@@ -65,6 +65,7 @@ ignore:
   - "docs/**"
   - "tools/**"
   - "deployments/**"
+  - "pkg/recipe/data/**"
 
   # Templates (not Go code)
   - "**/*.tmpl"
@@ -78,11 +79,11 @@ component_management:
         threshold: 2%
   individual_components:
     - component_id: bundler
-      name: Bundler Framework
+      name: Bundlers
       paths:
         - pkg/bundler/**
     - component_id: components
-      name: Component Bundlers
+      name: Components
       paths:
         - pkg/component/**
     - component_id: collector
@@ -90,7 +91,7 @@ component_management:
       paths:
         - pkg/collector/**
     - component_id: recipe
-      name: Recipe System
+      name: Recipes
       paths:
         - pkg/recipe/**
     - component_id: validator
